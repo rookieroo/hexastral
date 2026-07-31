@@ -26,14 +26,18 @@ import {
   useBondInvitation,
 } from '@zhop/scenario-kindred'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Keyboard, Pressable, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { SignInSheet } from '@/components/SignInSheet'
 import { YuelMark } from '@/components/YuelMark'
+import { useAuth } from '@/lib/auth'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { isPaywall, relationshipLabel, shareInvite } from '@/lib/inviteSubmit'
 import { clearDraft, updateDraft, useDraft } from '@/lib/onboardingDraft'
+import { ensureSelfBirthForBonds } from '@/lib/selfBirth'
+import { markInviteSignInNudgeShown, shouldNudgeSignInAfterInvite } from '@/lib/sign-in-nudge'
 import { suppressNextSplash } from '@/lib/splash-control'
 import { markOnboardingComplete } from '../index'
 
@@ -42,42 +46,81 @@ export default function InviteScreen() {
   const locale = useMemo<Locale>(() => resolveLocale(), [])
   const draft = useDraft()
   const { create } = useBondInvitation()
-  // Referral-unlock target — set when this invite was launched from a locked
-  // report's unlock wall, so a new member joining opens THAT report for A.
   const { unlockBondId } = useLocalSearchParams<{ unlockBondId?: string }>()
   const [name, setName] = useState<string>(draft.otherName)
   const [relType, setRelType] = useState<RelationshipType>('romantic')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Open by default — don't make the user tap to reveal the "what you call them"
-  // field (the relationship name is still a fine fallback if they leave it blank).
   const [showNameField, setShowNameField] = useState(true)
+  const [ready, setReady] = useState(false)
+  const [signInOpen, setSignInOpen] = useState(false)
+  const { hasLinkedSignIn, userId } = useAuth()
+
+  const goSelfForInvite = useCallback(() => {
+    router.replace({
+      pathname: '/(onboarding)/self',
+      params: {
+        next: 'invite',
+        ...(unlockBondId ? { unlockBondId } : {}),
+      },
+    })
+  }, [router, unlockBondId])
+
+  const finishToHome = () => {
+    suppressNextSplash()
+    router.replace('/(reading)')
+  }
+
+  useEffect(() => {
+    let cancelled = false
+    void ensureSelfBirthForBonds(
+      userId,
+      () => {
+        if (!cancelled) goSelfForInvite()
+      },
+      'invite'
+    ).then((ok) => {
+      if (!cancelled && ok) setReady(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [userId, goSelfForInvite])
+
+  if (!ready) {
+    return <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }} />
+  }
 
   const handleShare = async () => {
     if (sending) return
     setSending(true)
     setError(null)
     try {
+      // Re-check + sync at tap time (mount gate can race a wiped account).
+      const ok = await ensureSelfBirthForBonds(userId, goSelfForInvite, 'invite')
+      if (!ok) {
+        setSending(false)
+        return
+      }
       const label = relationshipLabel(relType, locale)
-      // targetName: what A calls B. Falls back to the relationship label when
-      // no name is given — the channel is anonymous, so there's no other id.
       const targetName = name.trim() || label
-      // Pass A's locale so the server composes the share message + landing URL
-      // in A's language (else it falls back to the stored locale / 'en').
       const result = await create({
         targetName,
         relationshipLabel: label,
         language: locale,
-        // Carry the locked report through, so a new-member accept unlocks it for A.
         unlockBondId: unlockBondId || undefined,
       })
       await shareInvite(result.mailto, result.resonateUrl)
       updateDraft({ otherMode: 'invite', otherName: targetName, relationshipLabel: label })
       await markOnboardingComplete()
       await clearDraft()
-      suppressNextSplash()
-      // Home's Threads section shows the pending thread.
-      router.replace('/(reading)')
+      if (!hasLinkedSignIn && (await shouldNudgeSignInAfterInvite())) {
+        await markInviteSignInNudgeShown()
+        setSending(false)
+        setSignInOpen(true)
+        return
+      }
+      finishToHome()
     } catch (err) {
       if (isPaywall(err)) {
         setSending(false)
@@ -87,7 +130,14 @@ export default function InviteScreen() {
         })
         return
       }
-      setError(err instanceof Error ? err.message : 'Failed')
+      const msg = err instanceof Error ? err.message : 'Failed'
+      // Server still missing birth — send them to the form instead of a dead-end error.
+      if (/birth/i.test(msg) || /missing_required/i.test(msg)) {
+        setSending(false)
+        goSelfForInvite()
+        return
+      }
+      setError(msg)
       setSending(false)
     }
   }
@@ -186,6 +236,18 @@ export default function InviteScreen() {
         />
         <View style={{ height: kindredSpacing.lg }} />
       </Pressable>
+
+      <SignInSheet
+        visible={signInOpen}
+        onClose={() => {
+          setSignInOpen(false)
+          finishToHome()
+        }}
+        onAuthed={() => {
+          setSignInOpen(false)
+          finishToHome()
+        }}
+      />
     </SafeAreaView>
   )
 }

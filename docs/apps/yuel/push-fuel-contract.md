@@ -7,20 +7,22 @@
 
 Yuel sells **relationship time**, not just a PDF-like report. Each Pro 合盘 mints
 push fuel into `kindred_push_queue`; the home **Upcoming** strip surfaces the
-aggregated future window. Cron at **19:00** local sends ≤1/user/day (no LLM).
+aggregated future window. Cron at **10:00** local sends ≤1/user/day (no LLM at
+send time). Settings exposes **one** Notifications toggle; content/timing are
+system-decided (harvest schema → D1 queue → cron).
 
 ## Per-report fuel disclosure (copy)
 
 | Report | Window | Cadence |
 |---|---|---|
-| Pro 合盘 | ~30–45 days: conditional (resonance/tension/neutral) + dated (~7d / ~30d / node) | 19:00 pick from union queue |
+| Pro 合盘 | ~30–45 days: conditional (resonance/tension/neutral) + dated (~7d / ~30d / node) | 10:00 local pick from union queue |
 | Personal 命书 | Not in MVP | — |
-| Timeline / 流月 nodes | Boundary teasers | Local today; **server 09:00** target path planned |
+| Timeline / 流月 nodes | Boundary teasers | Local today; **server ~09:00** target path |
 
 On report complete / unlock:
 
 - Disclose: “本报告将产生约 N 条关系提醒（约 30–45 天窗口）+ 可选节点日”
-- Settings: ~19:00, not a personal morning almanac
+- Settings: single Notifications switch (system chooses what/when; default daytime)
 - Empty harvest → surface “本次未生成提醒窗口” (no silent failure)
 
 ## LLM batches (do not merge)

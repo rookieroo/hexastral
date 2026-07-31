@@ -287,73 +287,130 @@ const SYNASTRY_CANON_KINDS: readonly string[] = [FIRST_SYNASTRY_CHAPTER, ...REST
 type ChapterLike = { kind?: unknown }
 
 /**
- * Background top-up of the remaining five synastry chapters (2026-06 progressive
- * report). The create/accept path persists the SHELL (flat interpretation + the
- * first chapter, marked `chaptersPending`) and returns immediately so the client
- * leaves the moon loader; this then re-calls svc-astro for the rest and merges
- * them into the given reading row(s), clearing the pending flag. Designed to run
- * inside `executionCtx.waitUntil`.
- *
- * Best-effort and self-contained: any failure leaves the shell (with ch1) intact
- * and `chaptersPending` true — the client's poll simply stops after its budget and
- * the reader keeps a usable, if shorter, report. Idempotent across the mirror rows.
+ * Merge incoming chapters into a reading's interpretation JSON; persist.
+ * Returns the merged chapter count (canonical kinds only).
+ */
+async function mergeChaptersIntoReading(
+  db: AppDb,
+  readingId: string,
+  incoming: readonly ChapterLike[]
+): Promise<number> {
+  const row = await db
+    .select({ interpretation: pairReadings.interpretation })
+    .from(pairReadings)
+    .where(eq(pairReadings.id, readingId))
+    .get()
+  if (!row) return 0
+
+  let interp: Record<string, unknown>
+  try {
+    interp = JSON.parse(row.interpretation) as Record<string, unknown>
+  } catch {
+    return 0
+  }
+
+  const existing = Array.isArray(interp.chapters) ? (interp.chapters as ChapterLike[]) : []
+  const byKind = new Map<string, ChapterLike>()
+  for (const ch of [...existing, ...incoming]) {
+    const k = (ch as ChapterLike).kind
+    if (typeof k === 'string') byKind.set(k, ch)
+  }
+  const merged = SYNASTRY_CANON_KINDS.flatMap((k) => {
+    const ch = byKind.get(k)
+    return ch ? [ch] : []
+  })
+  interp.chapters = merged
+  // Keep pending until the full canonical set landed (partial merge ≠ done).
+  interp.chaptersPending = merged.length < SYNASTRY_TOTAL_CHAPTERS
+
+  await db
+    .update(pairReadings)
+    .set({ interpretation: JSON.stringify(interp) })
+    .where(eq(pairReadings.id, readingId))
+
+  return merged.length
+}
+
+/**
+ * Generate + merge exactly one missing rest chapter (first in canonical order).
+ * Returns updated count / pending. Used by sync continue + waitUntil loop.
+ */
+async function topUpOneMissingChapter(
+  env: CloudflareBindings,
+  db: AppDb,
+  readingIds: readonly string[],
+  hehunPayload: Record<string, unknown>
+): Promise<{ chapterCount: number; pending: boolean; generatedKind: string | null }> {
+  if (readingIds.length === 0) {
+    return { chapterCount: 0, pending: false, generatedKind: null }
+  }
+
+  const seed = await db
+    .select({ interpretation: pairReadings.interpretation })
+    .from(pairReadings)
+    .where(eq(pairReadings.id, readingIds[0]!))
+    .get()
+  if (!seed) return { chapterCount: 0, pending: false, generatedKind: null }
+
+  let have = new Set<string>()
+  try {
+    const parsed = JSON.parse(seed.interpretation) as { chapters?: ChapterLike[] }
+    const chs = Array.isArray(parsed.chapters) ? parsed.chapters : []
+    for (const ch of chs) {
+      if (typeof ch.kind === 'string') have.add(ch.kind)
+    }
+  } catch {
+    return { chapterCount: 0, pending: false, generatedKind: null }
+  }
+
+  const missing = REST_SYNASTRY_CHAPTERS.filter((k) => !have.has(k))
+  if (missing.length === 0) {
+    let count = 0
+    for (const readingId of readingIds) {
+      count = await mergeChaptersIntoReading(db, readingId, [])
+    }
+    return { chapterCount: count, pending: false, generatedKind: null }
+  }
+
+  const kind = missing[0]!
+  const { interpretation: rest } = await callAstro<{
+    interpretation: { chapters?: ChapterLike[] } | null
+  }>(env.SVC_ASTRO, '/pair/compute', {
+    ...hehunPayload,
+    chapterKinds: [kind],
+    skipInterpretation: true,
+    skipSnippets: true,
+  })
+  const batch = rest && Array.isArray(rest.chapters) ? rest.chapters : []
+  if (batch.length === 0) {
+    throw new Error(`chapter top-up empty for kind=${kind}`)
+  }
+
+  let chapterCount = 0
+  for (const readingId of readingIds) {
+    chapterCount = await mergeChaptersIntoReading(db, readingId, batch)
+  }
+  return {
+    chapterCount,
+    pending: chapterCount < SYNASTRY_TOTAL_CHAPTERS,
+    generatedKind: kind,
+  }
+}
+
+/**
+ * Background top-up of the remaining synastry chapters (2026-06 progressive
+ * report). One chapter per svc-astro call; merge after each. Prefer the sync
+ * `POST /:id/chapters/continue` path (client-driven) — waitUntil often dies
+ * mid-LLM. This remains as best-effort repair on GET.
  */
 async function topUpRestChapters(
   env: CloudflareBindings,
   db: AppDb,
   readingIds: readonly string[],
-  // The same payload sent to /pair/compute for the shell — reused verbatim with a
-  // chapter subset so the background chapters share the exact chart context.
   hehunPayload: Record<string, unknown>
 ): Promise<void> {
-  const { interpretation: rest } = await callAstro<{
-    interpretation: { chapters?: ChapterLike[] } | null
-  }>(env.SVC_ASTRO, '/pair/compute', {
-    ...hehunPayload,
-    chapterKinds: REST_SYNASTRY_CHAPTERS,
-    skipInterpretation: true,
-    skipSnippets: true,
-  })
-
-  const restChapters = rest && Array.isArray(rest.chapters) ? rest.chapters : []
-  if (restChapters.length === 0) return
-
-  for (const readingId of readingIds) {
-    const row = await db
-      .select({ interpretation: pairReadings.interpretation })
-      .from(pairReadings)
-      .where(eq(pairReadings.id, readingId))
-      .get()
-    if (!row) continue
-
-    let interp: Record<string, unknown>
-    try {
-      interp = JSON.parse(row.interpretation) as Record<string, unknown>
-    } catch {
-      continue
-    }
-
-    // Merge shell (ch1) + the freshly generated rest, dedupe by kind, re-emit in
-    // canonical order. Newer (rest) wins on collision, but ch1 isn't in `rest`.
-    const existing = Array.isArray(interp.chapters) ? (interp.chapters as ChapterLike[]) : []
-    const byKind = new Map<string, ChapterLike>()
-    for (const ch of [...existing, ...restChapters]) {
-      const k = (ch as ChapterLike).kind
-      if (typeof k === 'string') byKind.set(k, ch)
-    }
-    const merged = SYNASTRY_CANON_KINDS.flatMap((k) => {
-      const ch = byKind.get(k)
-      return ch ? [ch] : []
-    })
-    interp.chapters = merged
-    // Keep pending until the full canonical set landed (partial merge ≠ done).
-    interp.chaptersPending = merged.length < SYNASTRY_TOTAL_CHAPTERS
-
-    await db
-      .update(pairReadings)
-      .set({ interpretation: JSON.stringify(interp) })
-      .where(eq(pairReadings.id, readingId))
-  }
+  // At most one chapter per waitUntil slice — surviving wall-clock cuts.
+  await topUpOneMissingChapter(env, db, readingIds, hehunPayload)
 }
 
 /** Isolate-local lock so GET poll repair does not stack parallel top-ups for one reading. */
@@ -2665,6 +2722,101 @@ bondRoutes.post('/:id/relocalize', zValidator('json', relocalizeSchema), async (
   return jsonOk(c, { relocalized: updated != null })
 })
 
+// ── POST /:id/chapters/continue — sync generate ONE missing chapter ─────────
+// Client-driven progressive fill. waitUntil top-up is best-effort and often
+// dies mid-LLM; this endpoint awaits a single chapter inside the request so
+// the Worker cpu budget actually covers the svc-astro call.
+bondRoutes.post('/:id/chapters/continue', async (c) => {
+  const bondId = c.req.param('id')
+  const userId = requireUserId(c)
+  const db = c.get('db')
+
+  const bond = await db
+    .select({
+      hehunReadingId: userBonds.hehunReadingId,
+      chaptersUnlocked: userBonds.chaptersUnlocked,
+    })
+    .from(userBonds)
+    .where(and(eq(userBonds.id, bondId), eq(userBonds.ownerId, userId)))
+    .get()
+  if (!bond?.hehunReadingId) {
+    return jsonErr(c, 404, ApiErrorCode.not_found, 'Bond not found')
+  }
+
+  const readingId = bond.hehunReadingId
+  const rawReading = await db
+    .select({
+      interpretation: pairReadings.interpretation,
+      personASolarDate: pairReadings.personASolarDate,
+      personATimeIndex: pairReadings.personATimeIndex,
+      personAGender: pairReadings.personAGender,
+      personAName: pairReadings.personAName,
+      personBSolarDate: pairReadings.personBSolarDate,
+      personBTimeIndex: pairReadings.personBTimeIndex,
+      personBGender: pairReadings.personBGender,
+      personBName: pairReadings.personBName,
+      personBLongitude: pairReadings.personBLongitude,
+      personBTimezoneId: pairReadings.personBTimezoneId,
+      relationshipCategory: pairReadings.relationshipCategory,
+      customRelationshipLabel: pairReadings.customRelationshipLabel,
+    })
+    .from(pairReadings)
+    .where(eq(pairReadings.id, readingId))
+    .get()
+  if (!rawReading) return jsonErr(c, 404, ApiErrorCode.not_found, 'Reading not found')
+
+  let storedChapterCount = 0
+  let language: string | undefined
+  try {
+    const parsed = JSON.parse(rawReading.interpretation) as {
+      chapters?: unknown[]
+      language?: string
+    }
+    storedChapterCount = Array.isArray(parsed.chapters) ? parsed.chapters.length : 0
+    if (typeof parsed.language === 'string') language = parsed.language
+  } catch {
+    return jsonErr(c, 500, ApiErrorCode.internal_error, 'Malformed interpretation')
+  }
+
+  if (storedChapterCount >= SYNASTRY_TOTAL_CHAPTERS) {
+    return jsonOk(c, {
+      chaptersPending: false,
+      chapterCount: storedChapterCount,
+      generatedKind: null,
+    })
+  }
+
+  // Another isolate / waitUntil already topping up — client should retry shortly.
+  if (toppingUpReadings.has(readingId)) {
+    return jsonOk(c, {
+      chaptersPending: true,
+      chapterCount: storedChapterCount,
+      generatedKind: null,
+      busy: true,
+    })
+  }
+
+  toppingUpReadings.add(readingId)
+  try {
+    const result = await topUpOneMissingChapter(
+      c.env,
+      db,
+      [readingId],
+      buildTopUpPayloadFromReading(rawReading, userId, language)
+    )
+    return jsonOk(c, {
+      chaptersPending: result.pending,
+      chapterCount: result.chapterCount,
+      generatedKind: result.generatedKind,
+    })
+  } catch (err) {
+    console.error('[bonds] chapters/continue failed:', err)
+    return jsonErr(c, 502, ApiErrorCode.generation_failed, 'Chapter generation failed')
+  } finally {
+    toppingUpReadings.delete(readingId)
+  }
+})
+
 const bondGetQuerySchema = z.object({ lc: z.string().max(16).optional() })
 
 bondRoutes.get('/:id', zValidator('query', bondGetQuerySchema), async (c) => {
@@ -2718,6 +2870,9 @@ bondRoutes.get('/:id', zValidator('query', bondGetQuerySchema), async (c) => {
   } | null = null
 
   let interpretation: Record<string, unknown> | null = null
+  // Ungated chapter count from DB (before free-tier gate) — used for progressive
+  // repair / pending. Gated payload length must not drive top-up decisions.
+  let storedChapterCount = 0
   // True when the reading's birth snapshot no longer matches the viewer's current
   // birth (they edited it after generation). Powers the report's "recompute with
   // new birth" affordance. Same rule as GET / (neither snapshot matches current).
@@ -2786,20 +2941,19 @@ bondRoutes.get('/:id', zValidator('query', bondGetQuerySchema), async (c) => {
 
       try {
         const parsed = JSON.parse(rawReading.interpretation) as Record<string, unknown>
-        if (parsed && typeof parsed === 'object') interpretation = parsed
+        if (parsed && typeof parsed === 'object') {
+          interpretation = parsed
+          storedChapterCount = Array.isArray(parsed.chapters) ? parsed.chapters.length : 0
+        }
       } catch {
         // Malformed interpretation JSON — leave as null so the client falls back gracefully.
       }
 
-      // Progressive repair: if the shell is still pending and incomplete, re-enqueue
-      // the background top-up (waitUntil may have died locally / after poll budget).
-      if (
-        interpretation?.chaptersPending === true &&
-        Array.isArray(interpretation.chapters) &&
-        interpretation.chapters.length < SYNASTRY_TOTAL_CHAPTERS
-      ) {
+      // Progressive repair: incomplete chapter set (pending flag OR legacy stuck
+      // rows where pending was cleared early). Re-enqueue one-kind-at-a-time top-up.
+      if (storedChapterCount > 0 && storedChapterCount < SYNASTRY_TOTAL_CHAPTERS) {
         const lang =
-          typeof interpretation.language === 'string'
+          typeof interpretation?.language === 'string'
             ? interpretation.language
             : c.req.valid('query').lc
         enqueueTopUpRestChapters(
@@ -2910,9 +3064,11 @@ bondRoutes.get('/:id', zValidator('query', bondGetQuerySchema), async (c) => {
     interpretation = gateInterpretationChapters(interpretation, unlockedCount)
   }
 
-  // Progressive report: true while the background pass is still generating the
-  // remaining chapters. The client renders what's here (shell + ch1) and polls.
-  const chaptersPending = interpretation?.chaptersPending === true
+  // Progressive report: true while DB still lacks the full canonical set (or the
+  // flag says so). Use ungated count so free-tier gating does not look "pending".
+  const chaptersPending =
+    interpretation?.chaptersPending === true ||
+    (storedChapterCount > 0 && storedChapterCount < SYNASTRY_TOTAL_CHAPTERS)
 
   return jsonOk(c, {
     ...bond,

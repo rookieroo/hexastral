@@ -83,8 +83,14 @@ const EDIT_COPY: Record<Locale, { title: string; body: string; save: string }> =
 
 export default function SelfBirthScreen() {
   const router = useRouter()
-  const params = useLocalSearchParams<{ mode?: string }>()
+  const params = useLocalSearchParams<{
+    mode?: string
+    next?: string
+    unlockBondId?: string
+  }>()
   const isEdit = params.mode === 'edit'
+  const nextAfterSave = params.next
+  const unlockBondId = params.unlockBondId
   const locale = useMemo<Locale>(() => resolveLocale(), [])
   const lang = useMemo(() => localeToLang(locale), [locale])
   const { userId } = useAuth()
@@ -171,6 +177,18 @@ export default function SelfBirthScreen() {
     // Edit → back to wherever the user opened it from (Settings).
     if (isEdit) {
       router.back()
+      return
+    }
+    // Resume thread creation after a birth gate (mode / invite redirected here).
+    if (nextAfterSave === 'invite') {
+      router.replace({
+        pathname: '/(onboarding)/invite',
+        params: unlockBondId ? { unlockBondId } : {},
+      })
+      return
+    }
+    if (nextAfterSave === 'mode') {
+      router.replace('/(onboarding)/mode')
       return
     }
     // Add → solo-first (first run), else the add-thread partner flow.

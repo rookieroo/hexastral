@@ -49,7 +49,7 @@ kindredPushRoutes.get('/fuel', async (c) => {
     return jsonOk(c, {
       remaining: 0,
       next: [],
-      slotLocalHour: 19,
+      slotLocalHour: 10,
       pro: false,
     })
   }
@@ -86,7 +86,7 @@ kindredPushRoutes.get('/fuel', async (c) => {
   return jsonOk(c, {
     remaining: Number(remainingRow?.n ?? 0),
     next: queued,
-    slotLocalHour: 19,
+    slotLocalHour: 10,
     pro,
   })
 })

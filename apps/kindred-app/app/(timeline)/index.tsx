@@ -45,6 +45,7 @@ import { PrimaryButton } from '@/components/PrimaryButton'
 import { type RailItem, RelationshipGitGraph } from '@/components/timeline/RelationshipGitGraph'
 import { YuelMark } from '@/components/YuelMark'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
+import { MVP_LIVING_LAYER_ENABLED } from '@/lib/mvp-flags'
 import {
   ensureTimelinePushPermission,
   syncLiuyueDigest,
@@ -126,17 +127,14 @@ export default function TimelineScreen() {
     }))
   }, [nodes])
 
-  // Lay the (Pro-only, server-computed) reminder timetable onto the device as
-  // local notifications — prompts for permission on the first Pro timeline view,
-  // then reschedules the rolling window on every visit (idempotent by node id).
-  // Free users get an empty timetable → nothing scheduled + stale items cleared.
-  // Two Pro local-push sets: the lifetime-axis key nodes (server timetable) + the
-  // monthly 流月 relationship digest (the recurring touch between rarer nodes,
-  // derived client-side from the liuyue window). Separate id prefixes → no clash.
+  // Lay Pro reminder timetables onto the device when OS permission is ALREADY
+  // granted (Settings daily-push opt-in). Never prompt here — MVP push opt-in
+  // is Settings-only.
   useEffect(() => {
     if (!pro || (notifications.length === 0 && liuyue.length === 0)) return
     void (async () => {
-      await ensureTimelinePushPermission()
+      const ok = await ensureTimelinePushPermission()
+      if (!ok) return
       await syncTimelinePush(notifications, locale)
       await syncLiuyueDigest(liuyue, locale)
     })()
@@ -203,10 +201,14 @@ export default function TimelineScreen() {
               liuyue={liuyue}
               pro={false}
               locale={locale}
-              onUpsell={() => router.push('/(commerce)/paywall')}
+              onUpsell={
+                MVP_LIVING_LAYER_ENABLED ? () => router.push('/(commerce)/paywall') : undefined
+              }
             />
           ) : null}
-          <UpsellBanner locale={locale} onPress={() => router.push('/(commerce)/paywall')} />
+          {MVP_LIVING_LAYER_ENABLED ? (
+            <UpsellBanner locale={locale} onPress={() => router.push('/(commerce)/paywall')} />
+          ) : null}
           <LockedPreview locale={locale} />
         </ScrollView>
       </SafeAreaView>
@@ -266,7 +268,9 @@ export default function TimelineScreen() {
             liuyue={liuyue}
             pro={pro}
             locale={locale}
-            onUpsell={() => router.push('/(commerce)/paywall')}
+            onUpsell={
+              MVP_LIVING_LAYER_ENABLED ? () => router.push('/(commerce)/paywall') : undefined
+            }
           />
         ) : null}
 
@@ -365,7 +369,7 @@ function LiuYueStrip({
   liuyue: BondsTimelineNode[]
   pro: boolean
   locale: Locale
-  onUpsell: () => void
+  onUpsell?: () => void
 }) {
   const [selectedKey, setSelectedKey] = useState<string>(liuyue[0]?.key ?? '')
   const selected = liuyue.find((n) => n.key === selectedKey) ?? liuyue[0]
@@ -404,7 +408,7 @@ function LiuYueStrip({
             onPress={() => setSelectedKey(node.key)}
           />
         ))}
-        {!pro ? (
+        {!pro && onUpsell ? (
           <Pressable
             onPress={onUpsell}
             accessibilityRole='button'

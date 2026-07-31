@@ -5,8 +5,10 @@
  * lib/ux/pushNotifications.ts, adapted to kindred's lazy-guarded `notif()` (the
  * native module is absent in JS-only reloads) + lib/hmac signing.
  *
- * "Has a token" IS the opt-in: register only when the daily push is enabled
+ * "Has a token" IS the opt-in: register only when Notifications are enabled
  * (getDailyPushEnabled) AND OS permission is granted; DELETE the token when off.
+ * One Settings switch covers relationship + timeline pushes; the server decides
+ * what/when (queue + cron, default daytime local slot).
  *
  * Foreground display + tap routing are already wired globally by lib/timeline-push.ts
  * (configureTimelineNotifications + attachTimelineTapHandler, which routes ANY push
@@ -67,6 +69,10 @@ async function signedHeaders(
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${userId}`, ...sig }
 }
 
+export type PushRegisterResult =
+  | { ok: true }
+  | { ok: false; reason: 'no_module' | 'no_user' | 'denied' | 'token' | 'network' }
+
 /**
  * Register this device's Expo token. By default does NOT prompt — it registers
  * only when permission is already granted (safe to call on every launch). Pass
@@ -76,17 +82,27 @@ export async function registerPushToken(
   userId: string | null | undefined,
   opts?: { prompt?: boolean }
 ): Promise<boolean> {
+  const result = await registerPushTokenDetailed(userId, opts)
+  return result.ok
+}
+
+/** Same as registerPushToken but surfaces why enable failed (Settings UX). */
+export async function registerPushTokenDetailed(
+  userId: string | null | undefined,
+  opts?: { prompt?: boolean }
+): Promise<PushRegisterResult> {
   const N = notif()
-  if (!N || !userId || Platform.OS === 'web') return false
+  if (!N) return { ok: false, reason: 'no_module' }
+  if (!userId || Platform.OS === 'web') return { ok: false, reason: 'no_user' }
   let status: PushPermissionStatus
   if (opts?.prompt) {
     status = await requestPushPermission()
   } else {
     status = (await N.getPermissionsAsync()).status as PushPermissionStatus
   }
-  if (status !== 'granted') return false
+  if (status !== 'granted') return { ok: false, reason: 'denied' }
   const token = await getExpoPushToken()
-  if (!token) return false
+  if (!token) return { ok: false, reason: 'token' }
   try {
     const body = JSON.stringify({
       userId,
@@ -95,15 +111,15 @@ export async function registerPushToken(
       timezoneId: Intl.DateTimeFormat().resolvedOptions().timeZone,
     })
     const headers = await signedHeaders(userId, 'POST', body)
-    if (!headers) return false
+    if (!headers) return { ok: false, reason: 'network' }
     const res = await fetch(`${config.apiUrl}/api/notify/register-device`, {
       method: 'POST',
       headers,
       body,
     })
-    return res.ok
+    return res.ok ? { ok: true } : { ok: false, reason: 'network' }
   } catch {
-    return false
+    return { ok: false, reason: 'network' }
   }
 }
 

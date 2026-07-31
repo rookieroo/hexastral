@@ -39,9 +39,15 @@ export interface SelfBirth {
 }
 
 let cached: SelfBirth | null | undefined
+const subscribers = new Set<(b: SelfBirth | null) => void>()
+
+function notifySubscribers(birth: SelfBirth | null): void {
+  for (const sub of subscribers) sub(birth)
+}
 
 export async function saveSelfBirth(birth: SelfBirth): Promise<void> {
   cached = birth
+  notifySubscribers(birth)
   await AsyncStorage.setItem(SELF_BIRTH_KEY, JSON.stringify(birth))
   // Any change invalidates the server-sync marker (re-sync on next attempt).
   await AsyncStorage.removeItem(SELF_BIRTH_SYNCED_KEY)
@@ -60,12 +66,13 @@ export async function loadSelfBirth(): Promise<SelfBirth | null> {
 
 export async function clearSelfBirth(): Promise<void> {
   cached = null
+  notifySubscribers(null)
   await AsyncStorage.multiRemove([SELF_BIRTH_KEY, SELF_BIRTH_SYNCED_KEY])
 }
 
 /**
  * useSelfBirth — undefined while loading, null when never saved, else the
- * stored birth info.
+ * stored birth info. Re-renders when save/clear runs (account delete included).
  */
 export function useSelfBirth(): SelfBirth | null | undefined {
   const [birth, setBirth] = useState<SelfBirth | null | undefined>(cached)
@@ -74,8 +81,13 @@ export function useSelfBirth(): SelfBirth | null | undefined {
     void loadSelfBirth().then((b) => {
       if (!cancelled) setBirth(b)
     })
+    const sub = (b: SelfBirth | null) => {
+      if (!cancelled) setBirth(b)
+    }
+    subscribers.add(sub)
     return () => {
       cancelled = true
+      subscribers.delete(sub)
     }
   }, [])
   return birth
@@ -143,6 +155,44 @@ export async function syncSelfBirthToServer(
   } catch {
     return 'error'
   }
+}
+
+/**
+ * True when local self birth is complete enough to create bonds / invite.
+ * Matches server gate: solarDate + gender + timeIndex (null unknown → synced as 0).
+ */
+export function isSelfBirthReady(birth: SelfBirth | null | undefined): boolean {
+  if (!birth?.solarDate) return false
+  if (birth.gender !== '男' && birth.gender !== '女') return false
+  // Must have an explicit hour choice (0..12) or unknown (null). Missing field ≠ ready.
+  if (!('timeIndex' in birth)) return false
+  return true
+}
+
+/**
+ * Ensure local + server birth before invite / mode. Returns false after redirecting
+ * to the self form when anything is missing or sync fails.
+ */
+export async function ensureSelfBirthForBonds(
+  userId: string | null | undefined,
+  redirect: (next: 'mode' | 'invite') => void,
+  next: 'mode' | 'invite'
+): Promise<boolean> {
+  const birth = await loadSelfBirth()
+  if (!isSelfBirthReady(birth) || !birth) {
+    redirect(next)
+    return false
+  }
+  if (!userId) {
+    redirect(next)
+    return false
+  }
+  // Always push (idempotent on server) — don't trust a stale local "synced" flag
+  // after account wipe / re-provision.
+  const result = await syncSelfBirthToServer(userId, birth)
+  if (result === 'ok') return true
+  redirect(next)
+  return false
 }
 
 /**

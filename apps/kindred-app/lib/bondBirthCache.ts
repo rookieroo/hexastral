@@ -55,3 +55,12 @@ export async function getBondBirth(bondId: string): Promise<CachedBondBirth | nu
   const all = await readAll()
   return all[bondId] ?? null
 }
+
+/** Drop every locally-cached partner birth (account wipe). */
+export async function clearBondBirthCache(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(KEY)
+  } catch {
+    // Non-fatal.
+  }
+}

@@ -75,7 +75,7 @@ Deferred implementation (documented only): relationTier scoring, hard TTL, rest-
 - **Deep links:** `day` → Today; timeline → `/timeline` (+ node); birthday → person when possible.
 
 ### Yuel (`kindred_push_queue` + `push_tokens`)
-- **Slots:** 19:00 local relationship nudge ≤1 / user / day; **09:00** timeline node teasers (server `timeline-targets`, Pro).
+- **Slots:** 10:00 local relationship nudge ≤1 / user / day; **09:00** timeline node teasers (server `timeline-targets`, Pro).
 - **Fuel:** union of harvest rows from active bonds/reports (Stage C parallel with shell + optional Pass-2 after chapters); same-day pick by priority. Timeline nodes from `composeBondsTimeline` fireDate — no LLM at send.
 - **Caps:** ≤5 queued per bond; ≤20 queued per user; expire stale.
 - **Row contract:** `fireOn | bondId | triggerKind | title | body | sourceReadingId | locale | status`.

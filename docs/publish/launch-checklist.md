@@ -92,7 +92,7 @@ Yuel (relationships / 合盘):
 - Relationship analysis using 八字 (Bazi) — entertainment / cultural reference.
 - Sign-in required to record bonds (each is stored under the user's identity).
 - No matchmaking / dating features.
-- Daily relationship nudge (~19:00) is optional; not a personal almanac morning push.
+- Daily relationship nudge (~10:00 local) is optional; not a personal almanac morning push.
 ```
 
 ---

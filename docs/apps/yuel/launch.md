@@ -47,7 +47,7 @@ Kindred is the relationships product — a user-centred multi-bond graph with �
 ### Polish (known gaps, prioritized for June)
 - [ ] Verify the bond-language hardcoded `'zh-CN'` from Auspice's transfer doesn't break Kindred's non-zh-Hans rendering (Kindred fetches its own locale; the transferred bond is just data) — Auspice now passes `resolveLocale()`; still verify on device
 - [x] First-open affordance when bonds-from-portfolio land (carry-over banner + empty-sub copy) — shipped 2026-07
-- [x] Settings daily-push copy clarifies **relationship ~19:00**, not personal 命书 morning push
+- [x] Settings daily-push: one Notifications toggle; system decides content/timing (default ~10:00 local), not personal 命书 morning push
 
 ### Post-launch (NOT June)
 - Real-time Bond sync (write the other direction back to Auspice)

@@ -527,7 +527,7 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
     { name: 'auspice-morning', run: () => runAuspicePush(env, 'morning', 8) },
     { name: 'auspice-evening', run: () => runAuspicePush(env, 'evening', 20) },
     { name: 'auspice-timeline', run: () => runAuspiceTimelinePush(env, 9) },
-    { name: 'kindred', run: () => runKindredPush(env, 19) },
+    { name: 'kindred', run: () => runKindredPush(env, 10) },
     { name: 'kindred-timeline', run: () => runKindredTimelinePush(env, 9) },
     { name: 'faceoracle-09', run: () => runFaceoraclePush(env, 9) },
     { name: 'faceoracle-21', run: () => runFaceoraclePush(env, 21) },

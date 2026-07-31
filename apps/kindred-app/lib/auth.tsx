@@ -26,6 +26,7 @@ import {
   useMemo,
   useState,
 } from 'react'
+import { deleteYuelAccount } from './account-delete'
 import { config } from './config'
 import { clearDeviceSecret, getDeviceSecret, signRequest, storeDeviceSecret } from './hmac'
 import { fetchUserProfile } from './user-api'
@@ -124,6 +125,8 @@ interface ApiError {
 export interface AuthState {
   userId: string | null
   userEmail: string | null
+  /** True when Apple / Google / email is linked (not anonymous device-only). */
+  hasLinkedSignIn: boolean
   isLoading: boolean
   signOut: () => Promise<void>
   /** Re-sync deviceSecret from POST /api/user (e.g. after 403 Authentication failed). */
@@ -136,6 +139,12 @@ export interface AuthState {
   linkApple: (input: AppleLinkInput) => Promise<AppleLinkResult>
   /** Link the current user to a Google account, or recover an existing one. */
   linkGoogle: (input: GoogleLinkInput) => Promise<GoogleLinkResult>
+  /**
+   * Hard-delete the server account + local mirrors, then provision a fresh
+   * anonymous session. Clears email / Linked UI state (delete alone used to
+   * leave AuthContext stale).
+   */
+  deleteAccount: () => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -148,6 +157,7 @@ export interface AuthProviderProps {
 export function AuthProvider({ locale, children }: AuthProviderProps) {
   const [userId, setUserId] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [hasLinkedSignIn, setHasLinkedSignIn] = useState(false)
   const [isLoading, setIsLoading] = useState<boolean>(true)
 
   const refreshProfile = useCallback(async () => {
@@ -156,6 +166,7 @@ export function AuthProvider({ locale, children }: AuthProviderProps) {
     try {
       const profile = await fetchUserProfile(id)
       setUserEmail(profile.email)
+      setHasLinkedSignIn(profile.hasLinkedSignIn)
     } catch (err) {
       if (__DEV__) console.warn('[Kindred auth] refreshProfile failed', err)
     }
@@ -189,7 +200,10 @@ export function AuthProvider({ locale, children }: AuthProviderProps) {
           setUserId(id)
           try {
             const profile = await fetchUserProfile(id)
-            if (!cancelled) setUserEmail(profile.email)
+            if (!cancelled) {
+              setUserEmail(profile.email)
+              setHasLinkedSignIn(profile.hasLinkedSignIn)
+            }
           } catch {
             // non-fatal — Settings can refresh later
           }
@@ -275,36 +289,72 @@ export function AuthProvider({ locale, children }: AuthProviderProps) {
     [linkProvider]
   )
 
+  /** Clear React auth fields and mint a new anonymous device identity. */
+  const resetToAnonymousSession = useCallback(async () => {
+    setUserEmail(null)
+    setHasLinkedSignIn(false)
+    try {
+      // Keys may already be gone after account wipe — provisionSession creates fresh.
+      await AsyncStorage.removeItem(USER_ID_KEY).catch(() => undefined)
+      await clearDeviceSecret().catch(() => undefined)
+      const id = await provisionSession()
+      setUserId(id)
+      try {
+        const profile = await fetchUserProfile(id)
+        setUserEmail(profile.email)
+        setHasLinkedSignIn(profile.hasLinkedSignIn)
+      } catch {
+        setUserEmail(null)
+        setHasLinkedSignIn(false)
+      }
+    } catch (err) {
+      if (__DEV__) console.error('[Kindred auth] re-provision failed', err)
+      setUserId(null)
+      setUserEmail(null)
+      setHasLinkedSignIn(false)
+    }
+  }, [])
+
+  const signOut = useCallback(async () => {
+    await resetToAnonymousSession()
+  }, [resetToAnonymousSession])
+
+  const deleteAccount = useCallback(async (): Promise<boolean> => {
+    const ok = await deleteYuelAccount()
+    if (!ok) return false
+    await resetToAnonymousSession()
+    return true
+  }, [resetToAnonymousSession])
+
   const value = useMemo<AuthState>(
     () => ({
       userId,
       userEmail,
+      hasLinkedSignIn,
       isLoading,
-      signOut: async () => {
-        await AsyncStorage.removeItem(USER_ID_KEY)
-        await clearDeviceSecret()
-        setUserEmail(null)
-        try {
-          const id = await provisionSession()
-          setUserId(id)
-          try {
-            const profile = await fetchUserProfile(id)
-            setUserEmail(profile.email)
-          } catch {
-            // ignore
-          }
-        } catch (err) {
-          if (__DEV__) console.error('[Kindred auth] re-provision after sign-out failed', err)
-          setUserId(null)
-        }
-      },
+      signOut,
+      deleteAccount,
       resyncCredentials,
       refreshProfile,
-      setUserEmail,
+      setUserEmail: (email: string) => {
+        setUserEmail(email)
+        setHasLinkedSignIn(true)
+      },
       linkApple,
       linkGoogle,
     }),
-    [userId, userEmail, isLoading, resyncCredentials, refreshProfile, linkApple, linkGoogle]
+    [
+      userId,
+      userEmail,
+      hasLinkedSignIn,
+      isLoading,
+      signOut,
+      deleteAccount,
+      resyncCredentials,
+      refreshProfile,
+      linkApple,
+      linkGoogle,
+    ]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

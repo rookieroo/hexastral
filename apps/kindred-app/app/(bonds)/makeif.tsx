@@ -45,6 +45,7 @@ import { PrimaryButton } from '@/components/PrimaryButton'
 import { type RailItem, RelationshipGitGraph } from '@/components/timeline/RelationshipGitGraph'
 import { YuelMark } from '@/components/YuelMark'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
+import { MVP_LIVING_LAYER_ENABLED } from '@/lib/mvp-flags'
 
 /**
  * Relationship-move chips (the auspice make-if parallel, honestly adapted). The
@@ -157,7 +158,9 @@ export default function MakeIfScreen() {
           quote={quote}
           bondId={id ?? ''}
           explainWindow={explainWindow}
-          onUpsell={() => router.push('/(commerce)/paywall')}
+          onUpsell={
+            MVP_LIVING_LAYER_ENABLED ? () => router.push('/(commerce)/paywall') : () => undefined
+          }
         />
       ) : null}
     </SafeAreaView>
@@ -517,7 +520,9 @@ function Body({
               <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>
                 {t(locale, 'makeif.upsell.body')}
               </Text>
-              <PrimaryButton label={t(locale, 'makeif.upsell.cta')} onPress={onUpsell} />
+              {MVP_LIVING_LAYER_ENABLED ? (
+                <PrimaryButton label={t(locale, 'makeif.upsell.cta')} onPress={onUpsell} />
+              ) : null}
             </View>
           ) : null}
         </>

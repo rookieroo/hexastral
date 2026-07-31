@@ -3,39 +3,69 @@
  *
  * Uses Kindred's `yuan_user_id` + HMAC (not portfolio session). Order:
  *   1. DELETE /api/user/:id (purge bonds / invitations / kindred_push_queue / tokens)
- *   2. Clear local AsyncStorage + device secret
+ *   2. Clear local AsyncStorage + in-memory birth/draft caches + device secret
  *   3. RevenueCat logOut (best-effort)
+ *
+ * After this, "Open your reading" must disappear — self birth + reading chapter
+ * caches + onboarding-complete flag are all wiped (and React subscribers notified).
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { clearBondReportCache } from '@zhop/scenario-kindred'
+import { clearBondBirthCache } from './bondBirthCache'
 import { config } from './config'
 import { clearDeviceSecret, signRequest } from './hmac'
+import { clearDraft } from './onboardingDraft'
+import { clearSelfBirth } from './selfBirth'
 
 const USER_ID_KEY = 'yuan_user_id'
 
-/** Local keys that must leave the device with the account. */
+/** Explicit keys that must leave the device with the account. */
 const LOCAL_KEYS = [
   USER_ID_KEY,
   'yuan_onboarding_complete_v1',
   'yuan_onboarding_draft_v1',
   'kindred_daily_push_v1',
-  'kindred.selfBirth',
-  'kindred.selfBirth.synced',
+  'kindred_self_birth_v1',
+  'kindred_self_birth_synced_v1',
   'kindred_carryover_hint_v1',
   'kindred.primer.seen',
+  'kindred_reading_primer_v1',
+  'kindred_signin_nudge_invite_v1',
+  'kindred.bond_birth_cache_v1',
+  'kindred_ddl_claimed',
+  'kindred_ddl_token',
 ]
 
 async function clearLocalKeys(): Promise<void> {
+  clearBondReportCache()
+  await clearSelfBirth().catch((err) => {
+    console.warn('[yuel.account] clearSelfBirth failed', err)
+  })
+  await clearDraft().catch((err) => {
+    console.warn('[yuel.account] clearDraft failed', err)
+  })
+  await clearBondBirthCache().catch((err) => {
+    console.warn('[yuel.account] clearBondBirthCache failed', err)
+  })
+
   try {
     await AsyncStorage.multiRemove(LOCAL_KEYS)
   } catch (err) {
     console.warn('[yuel.account] clear async keys failed', err)
   }
-  // Report / highlight caches are keyed with prefixes — wipe by scanning.
+
+  // Sweep every kindred/yuan/bond prefixed key (reading chapters, monthly depth,
+  // highlights, chart-ready flags, etc.) so solo "Open your reading" cannot revive.
   try {
     const all = await AsyncStorage.getAllKeys()
     const extra = all.filter(
-      (k) => k.startsWith('kindred.') || k.startsWith('yuan_') || k.startsWith('bond.')
+      (k) =>
+        k.startsWith('kindred.') ||
+        k.startsWith('kindred_') ||
+        k.startsWith('yuan_') ||
+        k.startsWith('bond.') ||
+        k.startsWith('auspice.')
     )
     if (extra.length > 0) await AsyncStorage.multiRemove(extra)
   } catch (err) {
@@ -71,7 +101,6 @@ export async function deleteYuelAccount(): Promise<boolean> {
         ...signed,
       },
     })
-    // 404 = already gone — clear local and succeed.
     if (!res.ok && res.status !== 404) {
       console.error('[yuel.account] server rejected delete', res.status, await res.text())
       return false

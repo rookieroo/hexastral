@@ -68,20 +68,16 @@ export function configureTimelineNotifications(): void {
 }
 
 /**
- * Ask for notification permission, but only when it's still undetermined — never
- * re-prompts after grant/deny. Call at a deliberate moment (opening the timeline).
+ * Return whether notification permission is already granted.
+ * Does NOT present the OS prompt — Settings daily-push toggle is the only
+ * intentional opt-in (MVP). Timeline schedules only when already authorized.
  */
 export async function ensureTimelinePushPermission(): Promise<boolean> {
   const N = notif()
   if (!N || Platform.OS === 'web') return false
   try {
     const existing = await N.getPermissionsAsync()
-    if (existing.status === 'granted') return true
-    if (!existing.canAskAgain) return false
-    const req = await N.requestPermissionsAsync({
-      ios: { allowAlert: true, allowBadge: false, allowSound: false },
-    })
-    return req.status === 'granted'
+    return existing.status === 'granted'
   } catch {
     return false
   }

@@ -58,7 +58,6 @@ import { GeneratingStages } from '@/components/reading/GeneratingStages'
 import { LivingLayerFab } from '@/components/reading/LivingLayerFab'
 import { ReadingPrimer } from '@/components/reading/ReadingPrimer'
 import { ReportBloom } from '@/components/reading/ReportBloom'
-import { PushFuelDisclosure } from '@/components/reading/PushFuelDisclosure'
 import { SelectionActionBar } from '@/components/SelectionActionBar'
 import { SignInSheet } from '@/components/SignInSheet'
 import { emitUnlockFunnel } from '@/lib/analytics'
@@ -71,6 +70,7 @@ import { type Locale, localeFromTag, relativeSentLabel, resolveLocale, useI18n }
 import { getKindredSinglePrice, purchaseKindredSingle } from '@/lib/iap'
 import { useImageShare } from '@/lib/imageShare'
 import { KINDRED_BRAND_URL, KINDRED_INSTALL_URL, kindredShareCaption } from '@/lib/kindredShare'
+import { MVP_LIVING_LAYER_ENABLED } from '@/lib/mvp-flags'
 import { hasSeenReadingPrimer, markReadingPrimerSeen } from '@/lib/primer-seen'
 
 type ClipboardModule = typeof import('expo-clipboard')
@@ -643,8 +643,7 @@ export default function BondDetailScreen({
       chaptersPending && !reportLocked
         ? Math.max(0, SYNASTRY_TOTAL_CHAPTERS - viewedChapters.length)
         : 0
-    // Same subscription paywall the timeline / what-if screens raise for their own
-    // Pro upsell (no special reason → the default subtitle).
+    // Same subscription paywall the timeline / what-if screens raise (Phase 2).
     const openPaywall = () => router.push('/(commerce)/paywall')
     const unlockWall =
       lockedChapters.length > 0 ? (
@@ -728,10 +727,7 @@ export default function BondDetailScreen({
               currentIndex={chapterIndex}
               onIndexChange={setChapterIndex}
               onShareChapter={() => void handleShare()}
-              trailing={
-                unlockWall ??
-                (!reportLocked ? <PushFuelDisclosure bondId={detail.id} /> : null)
-              }
+              trailing={unlockWall}
               pendingCount={pendingChapterCount}
               aElement={aElement}
               bElement={bElement}
@@ -796,11 +792,8 @@ export default function BondDetailScreen({
           </SafeAreaView>
         </ReportBloom>
 
-        {/* Living layer (the subscription surfaces) — Timeline + What-if + Chat as
-            icon-only discs that pop from a floating bottom-right FAB. Hidden while a
-            sentence is picked (the selection bar owns the bottom) or while the
-            overlay is collapsing. Active bonds only. Chat disc only appears once the
-            bond has a pair reading (same gate as the 划词 chat action). */}
+        {/* Living layer FAB — MVP keeps share only; Timeline / What-if / Chat are
+            Kindred Pro Phase 2 (subscription). Unlock wall sells one-time chapters. */}
         {detail.status === 'active' && !pickedQuote && !closing ? (
           <LivingLayerFab
             labels={{
@@ -814,24 +807,30 @@ export default function BondDetailScreen({
                   : 'Share',
             }}
             onShare={() => void handleShare()}
-            onTimeline={() =>
-              reportLocked
-                ? openPaywall()
-                : router.push({
-                    pathname: '/(timeline)',
-                    params: { bondId: detail.id, bondName: displayName },
-                  })
+            onTimeline={
+              MVP_LIVING_LAYER_ENABLED
+                ? () =>
+                    reportLocked
+                      ? openPaywall()
+                      : router.push({
+                          pathname: '/(timeline)',
+                          params: { bondId: detail.id, bondName: displayName },
+                        })
+                : undefined
             }
-            onWhatIf={() =>
-              reportLocked
-                ? openPaywall()
-                : router.push({
-                    pathname: '/(bonds)/makeif',
-                    params: { id: detail.id, title: displayName },
-                  })
+            onWhatIf={
+              MVP_LIVING_LAYER_ENABLED
+                ? () =>
+                    reportLocked
+                      ? openPaywall()
+                      : router.push({
+                          pathname: '/(bonds)/makeif',
+                          params: { id: detail.id, title: displayName },
+                        })
+                : undefined
             }
             onChat={
-              pairReadingId != null
+              MVP_LIVING_LAYER_ENABLED && pairReadingId != null
                 ? () =>
                     router.push({
                       pathname: '/(bonds)/chat',
@@ -889,7 +888,7 @@ export default function BondDetailScreen({
             setPickedQuote(null)
           }}
           onChat={
-            pairReadingId != null
+            MVP_LIVING_LAYER_ENABLED && pairReadingId != null
               ? () => {
                   const q = pickedQuote
                   setPickedQuote(null)

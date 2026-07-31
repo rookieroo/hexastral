@@ -1,23 +1,18 @@
 /**
- * Settings — email binding, account sign-in (Apple/Google sheet), sign out,
- * legal links (privacy / terms) the App Store requires, and a daily-reading
- * push toggle.
- *
- * Sign-in moved out of an inline Apple-only card into the shared
- * `<SignInSheet>` (Apple + Google, bottom-drawer) — matches the ming-pan
- * pattern the user asked for.
+ * Settings — email, Apple/Google sign-in, birth edit, daily push, reference,
+ * legal. Row chrome mirrors Yuun Me: title-only rows (no long captions); Sign
+ * out only when a recoverable identity is linked.
  */
 
 import { Card } from '@zhop/core-ui'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import * as Linking from 'expo-linking'
 import { useRouter } from 'expo-router'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { EmailVerifyModal } from '@/components/EmailVerifyModal'
 import { SignInSheet } from '@/components/SignInSheet'
-import { deleteYuelAccount } from '@/lib/account-delete'
 import { useAuth } from '@/lib/auth'
 import { devClearReportCache, devSetServerPro, devWipeUserAndRestart } from '@/lib/dev-tools'
 import {
@@ -31,14 +26,10 @@ import {
 import { getKindredDevPro, type KindredDevPro, setKindredDevPro } from '@/lib/iap'
 import { clearDraft } from '@/lib/onboardingDraft'
 import { getDailyPushEnabled, setDailyPushEnabled } from '@/lib/push-preference'
-import { registerPushToken, unregisterPushToken } from '@/lib/serverPush'
+import { registerPushTokenDetailed, unregisterPushToken } from '@/lib/serverPush'
 import { devReplaySplash } from '@/lib/splash-control'
 import { resetOnboarding } from '../index'
 
-// Privacy + Terms URLs — Apple App Store requires both reachable from inside a
-// signed-in surface. Served on the Yuel brand subdomain: privacy is the per-app
-// `yuel` appendix (/[locale]/privacy/yuel); terms stay the shared suite
-// document (/[locale]/terms). Locale segment matches privacyPolicyUrl (zh-Hant → tw).
 const LEGAL_BASE = 'https://yuel.hexastral.com'
 function legalUrl(path: '/privacy' | '/terms', locale: Locale): string {
   if (path === '/privacy') return privacyPolicyUrl(locale)
@@ -57,51 +48,80 @@ function maskEmail(email: string): string {
   return `${local.slice(0, 2)}***@${domain}`
 }
 
-// Birth-info edit row — self-contained strings (the spam/quota policy is
-// specific to this entry). Routes to the shared self form in edit mode.
-const BIRTH_COPY: Record<Locale, { section: string; row: string; hint: string }> = {
-  en: {
-    section: 'Birth info',
-    row: 'Edit birth info',
-    hint: 'Date · time · place. Editing regenerates your personal reading — one free change, then unlock. Synastry reports you have already generated are unchanged (they keep the birth info used at the time).',
-  },
-  zh: {
-    section: '出生信息',
-    row: '修改出生信息',
-    hint: '出生日期 · 时辰 · 地点。修改会重新生成个人报告（免费仅 1 次，之后需解锁）；已生成的合盘报告不受影响，仍基于当时录入的生辰。',
-  },
-  'zh-Hant': {
-    section: '出生資訊',
-    row: '修改出生資訊',
-    hint: '出生日期 · 時辰 · 地點。修改會重新生成個人報告（免費僅 1 次，之後需解鎖）；已生成的合盤報告不受影響，仍基於當時錄入的生辰。',
-  },
-  ja: {
-    section: '出生情報',
-    row: '出生情報を編集',
-    hint: '生年月日 · 時辰 · 場所。編集すると個人レポートが再生成されます（無料は1回まで、以降は解除が必要）。すでに生成した相性レポートは当時の出生情報のまま変わりません。',
-  },
+const BIRTH_COPY: Record<Locale, { section: string; row: string }> = {
+  en: { section: 'Birth info', row: 'Edit birth info' },
+  zh: { section: '出生信息', row: '修改出生信息' },
+  'zh-Hant': { section: '出生資訊', row: '修改出生資訊' },
+  ja: { section: '出生情報', row: '出生情報を編集' },
+}
+
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <Text
+      style={[
+        kindredType.seal,
+        { color: kindredDark.textSecondary, marginBottom: kindredSpacing.sm },
+      ]}
+    >
+      {children}
+    </Text>
+  )
+}
+
+function RowDivider() {
+  return <View style={{ height: 0.5, backgroundColor: kindredDark.border }} />
+}
+
+function SettingsRow({
+  label,
+  onPress,
+  trailing,
+}: {
+  label: string
+  onPress?: () => void
+  trailing?: ReactNode
+}) {
+  const body = (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: kindredSpacing.md,
+        paddingVertical: kindredSpacing.sm,
+        paddingHorizontal: kindredSpacing.md,
+      }}
+    >
+      <Text style={[kindredType.body, { color: kindredDark.text, flex: 1 }]}>{label}</Text>
+      {trailing}
+    </View>
+  )
+  if (!onPress) return body
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={4}
+      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+    >
+      {body}
+    </Pressable>
+  )
 }
 
 export default function SettingsScreen() {
   const router = useRouter()
   const locale = useMemo(() => resolveLocale(), [])
-  const { userId, userEmail, signOut, refreshProfile, setUserEmail } = useAuth()
+  const { userId, userEmail, hasLinkedSignIn, signOut, deleteAccount, refreshProfile, setUserEmail } =
+    useAuth()
   const [signInOpen, setSignInOpen] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
   const [emailModalOpen, setEmailModalOpen] = useState(false)
   const [dailyPush, setDailyPushState] = useState(false)
   const [dailyPushBusy, setDailyPushBusy] = useState(false)
-  // DEV-only Pro override — cycles Off (real RC) → PRO → FREE. Sets the client
-  // override AND (TEMPORARY, removed at launch) grants/expires the real
-  // `universe_pro` in the DB via devSetServerPro, so SERVER-gated Pro (timeline /
-  // what-if / chapter wall / daily synastry) actually unlocks. Flip then re-open
-  // the report to see it change.
   const [devPro, setDevPro] = useState<KindredDevPro>(getKindredDevPro())
-  // DEV-only locale preview — cycle auto → en → zh → zh-Hant → ja so the report's
-  // en-vs-CJK rendering can be QA'd on one device. Reopen the screen/report to
-  // apply (resolveLocale is read once per mount).
   const [devLocale, setDevLocale] = useState<Locale | null>(getKindredDevLocale())
   const [deletingAccount, setDeletingAccount] = useState(false)
+
   const cycleDevLocale = () => {
     const order: (Locale | null)[] = [null, 'en', 'zh', 'zh-Hant', 'ja']
     const next = order[(order.indexOf(devLocale) + 1) % order.length] ?? null
@@ -112,7 +132,6 @@ export default function SettingsScreen() {
     const next: KindredDevPro = devPro === null ? 'pro' : devPro === 'pro' ? 'free' : null
     setKindredDevPro(next)
     setDevPro(next)
-    // TEMPORARY (remove at launch): also flip the real server entitlement.
     if (userId) void devSetServerPro(userId, next === 'pro')
   }
 
@@ -126,14 +145,34 @@ export default function SettingsScreen() {
     setDailyPushState(value)
     try {
       await setDailyPushEnabled(value)
-      // Register / unregister this device's token so the server relationship cron
-      // can (or can no longer) reach it. Enabling prompts for OS permission — if the
-      // user denies, revert the toggle (a stored pref with no token pushes nothing).
       if (value) {
-        const ok = await registerPushToken(userId, { prompt: true })
-        if (!ok) {
+        const result = await registerPushTokenDetailed(userId, { prompt: true })
+        if (!result.ok) {
           await setDailyPushEnabled(false)
           setDailyPushState(false)
+          if (result.reason === 'denied') {
+            Alert.alert(
+              t(locale, 'settings.dailyPush.deniedTitle'),
+              t(locale, 'settings.dailyPush.deniedBody'),
+              [
+                { text: t(locale, 'settings.deleteAccount.cancel'), style: 'cancel' },
+                {
+                  text: t(locale, 'settings.dailyPush.openSettings'),
+                  onPress: () => void Linking.openSettings(),
+                },
+              ]
+            )
+          } else if (result.reason === 'no_module' || result.reason === 'token') {
+            Alert.alert(
+              t(locale, 'settings.dailyPush.unavailableTitle'),
+              t(locale, 'settings.dailyPush.unavailableBody')
+            )
+          } else {
+            Alert.alert(
+              t(locale, 'settings.dailyPush.failedTitle'),
+              t(locale, 'settings.dailyPush.failedBody')
+            )
+          }
         }
       } else {
         await unregisterPushToken(userId)
@@ -186,11 +225,12 @@ export default function SettingsScreen() {
               if (deletingAccount) return
               setDeletingAccount(true)
               try {
-                const ok = await deleteYuelAccount()
+                const ok = await deleteAccount()
                 if (!ok) {
                   Alert.alert(t(locale, 'settings.deleteAccount.failed'))
                   return
                 }
+                setStatus('idle')
                 router.replace('/')
               } catch (err) {
                 if (__DEV__) console.error('[Settings] delete account failed', err)
@@ -234,343 +274,177 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView
-        // Settings is now long enough (email + account + notifications + privacy +
-        // legal + sign-out + DEV tools) that it needs to scroll on smaller phones.
         contentContainerStyle={{
           paddingHorizontal: kindredSpacing.screenH,
           paddingTop: kindredSpacing.xl,
           paddingBottom: kindredSpacing.xxl,
+          gap: kindredSpacing.lg,
         }}
         showsVerticalScrollIndicator={false}
       >
-        <Text
-          style={[
-            kindredType.seal,
-            { color: kindredDark.textSecondary, marginBottom: kindredSpacing.md },
-          ]}
-        >
-          {t(locale, 'settings.email.section')}
-        </Text>
-
-        <Card
-          variant='outlined'
-          padding='lg'
-          style={{
-            backgroundColor: kindredDark.card,
-            gap: kindredSpacing.sm,
-            marginBottom: kindredSpacing.lg,
-          }}
-        >
-          {userEmail ? (
-            <Text style={[kindredType.body, { color: kindredDark.text }]}>
-              {maskEmail(userEmail)}
-            </Text>
-          ) : (
-            <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>
-              {t(locale, 'settings.email.notLinked')}
-            </Text>
-          )}
-          <Pressable onPress={() => setEmailModalOpen(true)} hitSlop={8}>
-            <Text style={[kindredType.caption, { color: kindredDark.accent }]}>
-              {userEmail ? t(locale, 'settings.email.change') : t(locale, 'settings.email.link')}
-            </Text>
-          </Pressable>
-          <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>
-            {t(locale, 'settings.email.hint')}
-          </Text>
-        </Card>
-
-        <Text
-          style={[
-            kindredType.seal,
-            { color: kindredDark.textSecondary, marginBottom: kindredSpacing.md },
-          ]}
-        >
-          {t(locale, 'settings.account')}
-        </Text>
-
-        {/* Account — single Sign-in CTA that lifts the multi-provider drawer
-            (Apple + Google). Replaces the Apple-only inline button so the
-            UI matches ming-pan's sheet pattern the user asked for. The "✓
-            linked / recovered" status text fades back in once SignInSheet's
-            onAuthed callback fires and the profile email is refetched. */}
-        <Card
-          variant='outlined'
-          padding='lg'
-          style={{ backgroundColor: kindredDark.card, gap: kindredSpacing.sm }}
-        >
-          <Pressable
-            onPress={() => setSignInOpen(true)}
-            hitSlop={8}
-            style={({ pressed }) => ({
-              paddingVertical: kindredSpacing.md,
-              opacity: pressed ? 0.6 : 1,
-            })}
+        <View>
+          <SectionLabel>{t(locale, 'settings.email.section')}</SectionLabel>
+          <Card
+            variant='outlined'
+            padding='none'
+            style={{ backgroundColor: kindredDark.card, gap: 0, borderRadius: 0 }}
           >
-            <Text style={[kindredType.body, { color: kindredDark.text }]}>
-              {t(locale, 'signIn.title')}
-            </Text>
-            <Text
-              style={[
-                kindredType.caption,
-                { color: kindredDark.textMuted, lineHeight: 18, marginTop: kindredSpacing.xs },
-              ]}
-            >
-              {t(locale, 'settings.signInWithApple.hint')}
-            </Text>
-          </Pressable>
-
-          {status === 'linked' || status === 'already_linked' ? (
-            <Text style={[kindredType.caption, { color: kindredDark.accent }]}>
-              ✓ {t(locale, 'settings.linked')}
-            </Text>
-          ) : null}
-          {status === 'recovered' ? (
-            <Text style={[kindredType.caption, { color: kindredDark.accent }]}>
-              ✓ {t(locale, 'settings.recovered')}
-            </Text>
-          ) : null}
-        </Card>
-
-        <View style={{ height: kindredSpacing.lg }} />
-
-        {/* Birth info — the only edit entry for an existing user. The shared
-            self form (mode=edit) carries the regenerate + one-free-change
-            warning; a free user's 2nd chart-altering edit 403s → paywall. */}
-        <Text
-          style={[
-            kindredType.seal,
-            { color: kindredDark.textSecondary, marginBottom: kindredSpacing.md },
-          ]}
-        >
-          {BIRTH_COPY[locale].section}
-        </Text>
-
-        <Card variant='outlined' padding='lg' style={{ backgroundColor: kindredDark.card, gap: 0 }}>
-          <Pressable
-            onPress={() =>
-              router.push({ pathname: '/(onboarding)/self', params: { mode: 'edit' } })
-            }
-            hitSlop={4}
-            style={({ pressed }) => ({
-              paddingVertical: kindredSpacing.md,
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={[kindredType.body, { color: kindredDark.text }]}>
-              {BIRTH_COPY[locale].row}
-            </Text>
-            <Text
-              style={[
-                kindredType.caption,
-                { color: kindredDark.textMuted, lineHeight: 18, marginTop: kindredSpacing.xs },
-              ]}
-            >
-              {BIRTH_COPY[locale].hint}
-            </Text>
-          </Pressable>
-        </Card>
-
-        <View style={{ height: kindredSpacing.lg }} />
-
-        {/* No Privacy section at MVP: its only item was the cross-app memory
-            toggle, intentionally NOT shipped at MVP (business scope 2026-06: no
-            cross-app memory). Server flag stays default-false; restore the
-            section + toggle here when the feature ships post-MVP. */}
-
-        {/* Notifications — daily reading nudge. Delivery is server-driven
-            (svc-notify cron), so the toggle persists the user's preference
-            and the API reads it on profile sync. Off by default to avoid
-            unsolicited push (App Store guideline). */}
-        <Text
-          style={[
-            kindredType.seal,
-            { color: kindredDark.textSecondary, marginBottom: kindredSpacing.md },
-          ]}
-        >
-          {t(locale, 'settings.notifications.section')}
-        </Text>
-
-        <Card
-          variant='outlined'
-          padding='lg'
-          style={{ backgroundColor: kindredDark.card, gap: kindredSpacing.sm }}
-        >
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: kindredSpacing.md,
-            }}
-          >
-            <Text style={[kindredType.body, { color: kindredDark.text, flex: 1 }]}>
-              {t(locale, 'settings.dailyPush.label')}
-            </Text>
-            <Switch
-              value={dailyPush}
-              onValueChange={handleDailyPushToggle}
-              disabled={dailyPushBusy}
-              trackColor={{ false: kindredDark.border, true: kindredDark.seal }}
-              ios_backgroundColor={kindredDark.border}
+            <SettingsRow
+              label={userEmail ? maskEmail(userEmail) : t(locale, 'settings.email.notLinked')}
+              onPress={() => setEmailModalOpen(true)}
+              trailing={
+                <Text style={[kindredType.caption, { color: kindredDark.accent }]}>
+                  {userEmail ? t(locale, 'settings.email.change') : t(locale, 'settings.email.link')}
+                </Text>
+              }
             />
+          </Card>
+        </View>
+
+        <View>
+          <SectionLabel>{t(locale, 'settings.account')}</SectionLabel>
+          <Card
+            variant='outlined'
+            padding='none'
+            style={{ backgroundColor: kindredDark.card, gap: 0, borderRadius: 0 }}
+          >
+            {hasLinkedSignIn ? (
+              <SettingsRow
+                label={
+                  status === 'recovered'
+                    ? `✓ ${t(locale, 'settings.recovered')}`
+                    : `✓ ${t(locale, 'settings.linked')}`
+                }
+              />
+            ) : (
+              <SettingsRow
+                label={t(locale, 'signIn.title')}
+                onPress={() => setSignInOpen(true)}
+              />
+            )}
+          </Card>
+        </View>
+
+        <View>
+          <SectionLabel>{BIRTH_COPY[locale].section}</SectionLabel>
+          <Card
+            variant='outlined'
+            padding='none'
+            style={{ backgroundColor: kindredDark.card, gap: 0, borderRadius: 0 }}
+          >
+            <SettingsRow
+              label={BIRTH_COPY[locale].row}
+              onPress={() =>
+                router.push({ pathname: '/(onboarding)/self', params: { mode: 'edit' } })
+              }
+            />
+          </Card>
+        </View>
+
+        <View>
+          <SectionLabel>{t(locale, 'settings.notifications.section')}</SectionLabel>
+          <Card
+            variant='outlined'
+            padding='none'
+            style={{ backgroundColor: kindredDark.card, gap: 0, borderRadius: 0 }}
+          >
+            <SettingsRow
+              label={t(locale, 'settings.dailyPush.label')}
+              trailing={
+                <Switch
+                  value={dailyPush}
+                  onValueChange={handleDailyPushToggle}
+                  disabled={dailyPushBusy}
+                  trackColor={{ false: kindredDark.border, true: kindredDark.seal }}
+                  ios_backgroundColor={kindredDark.border}
+                />
+              }
+            />
+            <Text
+              style={[
+                kindredType.caption,
+                {
+                  color: kindredDark.textMuted,
+                  paddingHorizontal: kindredSpacing.md,
+                  paddingBottom: kindredSpacing.sm,
+                  lineHeight: 16,
+                },
+              ]}
+            >
+              {t(locale, 'settings.dailyPush.caption')}
+            </Text>
+          </Card>
+        </View>
+
+        <View>
+          <SectionLabel>{t(locale, 'settings.reference.section')}</SectionLabel>
+          <Card
+            variant='outlined'
+            padding='none'
+            style={{ backgroundColor: kindredDark.card, gap: 0, borderRadius: 0 }}
+          >
+            <SettingsRow
+              label={t(locale, 'settings.glossary.row')}
+              onPress={() => router.push('/(settings)/glossary')}
+            />
+            <RowDivider />
+            <SettingsRow
+              label={t(locale, 'settings.terms.row')}
+              onPress={() => router.push('/(settings)/terms')}
+            />
+          </Card>
+        </View>
+
+        <View>
+          <SectionLabel>{t(locale, 'settings.legal.section')}</SectionLabel>
+          <Card
+            variant='outlined'
+            padding='none'
+            style={{ backgroundColor: kindredDark.card, gap: 0, borderRadius: 0 }}
+          >
+            <SettingsRow
+              label={t(locale, 'settings.legal.privacy')}
+              onPress={() => openLegal('/privacy')}
+            />
+            <RowDivider />
+            <SettingsRow
+              label={t(locale, 'settings.legal.terms')}
+              onPress={() => openLegal('/terms')}
+            />
+          </Card>
+        </View>
+
+        {hasLinkedSignIn ? (
+          <View style={{ alignItems: 'center', gap: kindredSpacing.lg, marginTop: kindredSpacing.md }}>
+            <Pressable
+              onPress={handleDeleteAccount}
+              hitSlop={12}
+              disabled={deletingAccount}
+              style={{ opacity: deletingAccount ? 0.5 : 1 }}
+            >
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: kindredDark.textMuted, textDecorationLine: 'underline' },
+                ]}
+              >
+                {deletingAccount
+                  ? t(locale, 'settings.deleteAccount.working')
+                  : t(locale, 'settings.deleteAccount')}
+              </Text>
+            </Pressable>
+            <Pressable onPress={handleSignOut} hitSlop={12}>
+              <Text
+                style={[
+                  kindredType.caption,
+                  { color: kindredDark.textMuted, textDecorationLine: 'underline' },
+                ]}
+              >
+                {t(locale, 'settings.signOut')}
+              </Text>
+            </Pressable>
           </View>
-          <Text style={[kindredType.caption, { color: kindredDark.textMuted, lineHeight: 18 }]}>
-            {t(locale, 'settings.dailyPush.hint')}
-          </Text>
-        </Card>
-
-        <View style={{ height: kindredSpacing.lg }} />
-
-        {/* Reference — decodes the report's hand-built visual language (seals,
-            朱批 severity, 五行 用神 keys, ancient numerals). The report cards
-            label nothing inline, so this glossary is the one map-legend. */}
-        <Text
-          style={[
-            kindredType.seal,
-            { color: kindredDark.textSecondary, marginBottom: kindredSpacing.md },
-          ]}
-        >
-          {t(locale, 'settings.reference.section')}
-        </Text>
-
-        <Card variant='outlined' padding='lg' style={{ backgroundColor: kindredDark.card, gap: 0 }}>
-          <Pressable
-            onPress={() => router.push('/(settings)/glossary')}
-            hitSlop={4}
-            style={({ pressed }) => ({
-              paddingVertical: kindredSpacing.md,
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={[kindredType.body, { color: kindredDark.text }]}>
-              {t(locale, 'settings.glossary.row')}
-            </Text>
-            <Text
-              style={[
-                kindredType.caption,
-                { color: kindredDark.textMuted, lineHeight: 18, marginTop: kindredSpacing.xs },
-              ]}
-            >
-              {t(locale, 'settings.glossary.hint')}
-            </Text>
-          </Pressable>
-
-          <View style={{ height: 0.5, backgroundColor: kindredDark.border }} />
-
-          {/* The 命理 TERM glossary — decodes the words (五行/十神/神煞/格局/合冲/
-              用神…), as opposed to the symbol glossary above which decodes the
-              report's visual marks. Shares astro-i18n's curated terms table. */}
-          <Pressable
-            onPress={() => router.push('/(settings)/terms')}
-            hitSlop={4}
-            style={({ pressed }) => ({
-              paddingVertical: kindredSpacing.md,
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={[kindredType.body, { color: kindredDark.text }]}>
-              {t(locale, 'settings.terms.row')}
-            </Text>
-            <Text
-              style={[
-                kindredType.caption,
-                { color: kindredDark.textMuted, lineHeight: 18, marginTop: kindredSpacing.xs },
-              ]}
-            >
-              {t(locale, 'settings.terms.hint')}
-            </Text>
-          </Pressable>
-        </Card>
-
-        <View style={{ height: kindredSpacing.lg }} />
-
-        {/* Legal — App Store requires Privacy + Terms to be reachable from
-            the signed-in surface. We open the hosted versions on hexastral.com
-            so the documents stay versioned in one place. */}
-        <Text
-          style={[
-            kindredType.seal,
-            { color: kindredDark.textSecondary, marginBottom: kindredSpacing.md },
-          ]}
-        >
-          {t(locale, 'settings.legal.section')}
-        </Text>
-
-        <Card variant='outlined' padding='lg' style={{ backgroundColor: kindredDark.card, gap: 0 }}>
-          <Pressable
-            onPress={() => openLegal('/privacy')}
-            hitSlop={4}
-            style={({ pressed }) => ({
-              paddingVertical: kindredSpacing.md,
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={[kindredType.body, { color: kindredDark.text }]}>
-              {t(locale, 'settings.legal.privacy')}
-            </Text>
-          </Pressable>
-          <View style={{ height: 0.5, backgroundColor: kindredDark.border }} />
-          <Pressable
-            onPress={() => openLegal('/terms')}
-            hitSlop={4}
-            style={({ pressed }) => ({
-              paddingVertical: kindredSpacing.md,
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={[kindredType.body, { color: kindredDark.text }]}>
-              {t(locale, 'settings.legal.terms')}
-            </Text>
-          </Pressable>
-        </Card>
-
-        <View style={{ height: kindredSpacing.xxl }} />
-
-        <Pressable
-          onPress={handleDeleteAccount}
-          hitSlop={12}
-          disabled={deletingAccount}
-          style={{ alignSelf: 'center', opacity: deletingAccount ? 0.5 : 1 }}
-        >
-          <Text
-            style={[
-              kindredType.caption,
-              {
-                color: kindredDark.textMuted,
-                textDecorationLine: 'underline',
-              },
-            ]}
-          >
-            {deletingAccount
-              ? t(locale, 'settings.deleteAccount.working')
-              : t(locale, 'settings.deleteAccount')}
-          </Text>
-        </Pressable>
-
-        <View style={{ height: kindredSpacing.lg }} />
-
-        <Pressable onPress={handleSignOut} hitSlop={12} style={{ alignSelf: 'center' }}>
-          <Text
-            style={[
-              kindredType.caption,
-              {
-                color: kindredDark.textMuted,
-                textDecorationLine: 'underline',
-              },
-            ]}
-          >
-            {t(locale, 'settings.signOut')}
-          </Text>
-        </Pressable>
-        <Text
-          style={[
-            kindredType.caption,
-            { color: kindredDark.textMuted, textAlign: 'center', marginTop: kindredSpacing.xs },
-          ]}
-        >
-          {t(locale, 'settings.signOut.hint')}
-        </Text>
+        ) : null}
 
         {__DEV__ ? (
           <View
@@ -684,8 +558,6 @@ export default function SettingsScreen() {
                 DEV · 配对表单 (pair-input) →
               </Text>
             </Pressable>
-            {/* DEV launchers — jump straight into a scene without resetting state,
-                so intro / splash / report are quick to iterate on + repro. */}
             <Pressable onPress={() => router.push('/(onboarding)/intro')} hitSlop={12}>
               <Text
                 style={[
@@ -739,7 +611,10 @@ export default function SettingsScreen() {
       <SignInSheet
         visible={signInOpen}
         onClose={() => setSignInOpen(false)}
-        onAuthed={() => setStatus('linked')}
+        onAuthed={() => {
+          setStatus('linked')
+          void refreshProfile()
+        }}
       />
     </SafeAreaView>
   )

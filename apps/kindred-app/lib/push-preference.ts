@@ -1,13 +1,10 @@
 /**
- * Daily relationship push preference (Yuel / Kindred).
+ * Push preference (Yuel / Kindred) — one boolean for all Yuel notifications.
  *
- * Stores ONE boolean: whether the user wants the **relationship / synastry**
- * evening nudge (~19:00 local) from the kindred-push cron. This is NOT a
- * personal 命书 morning almanac (that lives in Yuun). Opt-in registers the
- * Expo push token via lib/serverPush.ts; without a token the cron skips them.
- *
- * Timeline node teasers: server cron at ~09:00 (`/api/kindred/push/timeline-targets`)
- * plus on-device reschedule when the timeline screen is opened (lib/timeline-push.ts).
+ * Opt-in registers the Expo push token via lib/serverPush.ts. What / when to
+ * send is decided server-side: harvest → `kindred_push_queue` (D1) → cron.
+ * Default send slot is daytime local (~10:00); timeline node teasers use ~09:00.
+ * This is NOT Yuun's personal 命书 almanac push.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'

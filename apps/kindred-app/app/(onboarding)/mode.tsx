@@ -23,7 +23,7 @@ import { YuelMark } from '@/components/YuelMark'
 import { useAuth } from '@/lib/auth'
 import { type Locale, resolveLocale, type TranslationKey, t } from '@/lib/i18n'
 import { updateDraft } from '@/lib/onboardingDraft'
-import { ensureSelfBirthSynced } from '@/lib/selfBirth'
+import { ensureSelfBirthForBonds } from '@/lib/selfBirth'
 
 type Intent = 'know' | 'invite'
 
@@ -40,12 +40,30 @@ export default function ModeScreen() {
   const locale = useMemo<Locale>(() => resolveLocale(), [])
   const { userId } = useAuth()
   const [intent, setIntent] = useState<Intent>('invite')
+  const [ready, setReady] = useState(false)
 
-  // Pre-sync person A's birth to the server (no-op when already synced) so
-  // the bond-creation calls at the end of either path never 400.
+  // Threads require person A's birth on the server. Missing / unsynced → self form.
   useEffect(() => {
-    if (userId) void ensureSelfBirthSynced(userId)
-  }, [userId])
+    let cancelled = false
+    void ensureSelfBirthForBonds(
+      userId,
+      () => {
+        if (!cancelled) {
+          router.replace({ pathname: '/(onboarding)/self', params: { next: 'mode' } })
+        }
+      },
+      'mode'
+    ).then((ok) => {
+      if (!cancelled && ok) setReady(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [router, userId])
+
+  if (!ready) {
+    return <SafeAreaView style={{ flex: 1, backgroundColor: kindredDark.bg }} />
+  }
 
   const handleNext = () => {
     if (intent === 'know') {

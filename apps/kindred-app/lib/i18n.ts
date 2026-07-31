@@ -356,9 +356,19 @@ export const translations: Translations = {
     'settings.crossAppMemory.hint':
       'Let chat reference your readings across Yuel and Yuun (UseONE apps). Same account only — never shared with anyone else.',
     'settings.notifications.section': 'Notifications',
-    'settings.dailyPush.label': 'Daily relationship nudge',
+    'settings.dailyPush.label': 'Notifications',
+    'settings.dailyPush.caption': 'Relationship notes when the timing is right — decided by the system.',
     'settings.dailyPush.hint':
-      'Around 19:00, a short note on one of your bonds — seeded by Pro 合盘 readings (~30–45 day windows), not a personal almanac morning push. Timeline nodes can also nudge around 09:00.',
+      'One switch for all Yuel pushes. Content and send time come from your readings (queued in the cloud); default daytime local slot, plus optional timeline node teasers. Not a personal almanac morning push.',
+    'settings.dailyPush.deniedTitle': 'Notifications are off',
+    'settings.dailyPush.deniedBody':
+      'Allow notifications for Yuel in iOS Settings to receive relationship reminders.',
+    'settings.dailyPush.openSettings': 'Open Settings',
+    'settings.dailyPush.unavailableTitle': 'Push unavailable',
+    'settings.dailyPush.unavailableBody':
+      'This build cannot register for push. Use a Dev Client / TestFlight build with notifications enabled.',
+    'settings.dailyPush.failedTitle': 'Could not enable',
+    'settings.dailyPush.failedBody': 'Check your network and try again.',
     'home.carryOver.banner':
       'We brought your people over from Yuun — tap a thread to deepen the reading.',
     'home.carryOver.dismiss': 'Got it',
@@ -466,9 +476,9 @@ export const translations: Translations = {
     'paywall.bullet.support': 'Relationship timing notes · node alerts · fine-art export',
     'report.fuel.kicker': 'After this reading',
     'report.fuel.pending':
-      'This Pro bond reading seeds evening relationship reminders for about 30–45 days, plus optional node teasers.',
+      'This Pro bond reading seeds relationship reminders for about 30–45 days, plus optional node teasers.',
     'report.fuel.ready':
-      'About {n} relationship reminders are queued for ~30–45 days (around 19:00). Timeline nodes can also nudge at ~09:00.',
+      'About {n} relationship reminders are queued for ~30–45 days. Timeline nodes can also nudge when relevant.',
     'report.fuel.empty': 'No reminder window was minted for this reading.',
     'report.fuel.settings': 'Push settings →',
     'paywall.monthly': 'Monthly',
@@ -790,9 +800,18 @@ export const translations: Translations = {
     'settings.crossAppMemory.hint':
       '允许对话参考你在 Yuel / Yuun（UseONE 应用）中的解读。仅限同一账户，绝不外泄。',
     'settings.notifications.section': '通知',
-    'settings.dailyPush.label': '每日关系提醒',
+    'settings.dailyPush.label': '推送通知',
+    'settings.dailyPush.caption': '合适的时候提醒你——具体内容与时间由系统决定。',
     'settings.dailyPush.hint':
-      '约晚上 19:00，就某一段关系推一句短讯——由 Pro 合盘种下约 30–45 天窗口，不是个人解读晨报。时间轴节点也可在约 09:00 提醒。',
+      '一个开关覆盖 Yuel 全部推送。内容与发送时机由合盘解读写入云端队列；默认白天本地时段，另有可选时间轴节点提醒。不是个人命书晨报。',
+    'settings.dailyPush.deniedTitle': '未开启通知权限',
+    'settings.dailyPush.deniedBody': '请在系统设置中允许 Yuel 发送通知，才能收到关系提醒。',
+    'settings.dailyPush.openSettings': '打开系统设置',
+    'settings.dailyPush.unavailableTitle': '当前无法开启推送',
+    'settings.dailyPush.unavailableBody':
+      '此安装包不支持推送注册。请使用带通知能力的开发客户端或 TestFlight 包。',
+    'settings.dailyPush.failedTitle': '开启失败',
+    'settings.dailyPush.failedBody': '请检查网络后重试。',
     'home.carryOver.banner': '已从 Yuun 带入你的亲友——点开牵绊即可加深合盘解读。',
     'home.carryOver.dismiss': '知道了',
     'settings.legal.section': '法律',
@@ -889,9 +908,9 @@ export const translations: Translations = {
     'paywall.bullet.support': '关系时机参考 · 节点推送 · 精装导出',
     'report.fuel.kicker': '报告之后',
     'report.fuel.pending':
-      '本 Pro 合盘会为未来约 30–45 天种下晚间关系提醒，并可选节点日推送。',
+      '本 Pro 合盘会为未来约 30–45 天种下关系提醒，并可选节点日推送。',
     'report.fuel.ready':
-      '约有 {n} 条关系提醒已入队（约 30–45 天窗口，约 19:00 发出）。时间轴节点也可在约 09:00 提醒。',
+      '约有 {n} 条关系提醒已入队（约 30–45 天窗口）。时间轴节点也可在合适时提醒。',
     'report.fuel.empty': '本次未生成提醒窗口。',
     'report.fuel.settings': '推送设置 →',
     'paywall.monthly': '月度',
@@ -1212,9 +1231,18 @@ export const translations: Translations = {
     'settings.crossAppMemory.hint':
       '允許對話參考你在 Yuel / Yuun（UseONE 應用）中的解讀。僅限同一帳號，絕不外洩。',
     'settings.notifications.section': '通知',
-    'settings.dailyPush.label': '每日關係提醒',
+    'settings.dailyPush.label': '推播通知',
+    'settings.dailyPush.caption': '合適的時候提醒你——具體內容與時間由系統決定。',
     'settings.dailyPush.hint':
-      '約晚上 19:00，就某一段關係推一句短訊——由 Pro 合盤種下約 30–45 天視窗，不是個人解讀晨報。時間軸節點也可在約 09:00 提醒。',
+      '一個開關覆蓋 Yuel 全部推播。內容與發送時機由合盤解讀寫入雲端佇列；預設白天本地時段，另有可選時間軸節點提醒。不是個人命書晨報。',
+    'settings.dailyPush.deniedTitle': '未開啟通知權限',
+    'settings.dailyPush.deniedBody': '請在系統設定中允許 Yuel 傳送通知，才能收到關係提醒。',
+    'settings.dailyPush.openSettings': '打開系統設定',
+    'settings.dailyPush.unavailableTitle': '目前無法開啟推播',
+    'settings.dailyPush.unavailableBody':
+      '此安裝包不支援推播註冊。請使用具備通知能力的開發客戶端或 TestFlight 包。',
+    'settings.dailyPush.failedTitle': '開啟失敗',
+    'settings.dailyPush.failedBody': '請檢查網路後重試。',
     'home.carryOver.banner': '已從 Yuun 帶入你的親友——點開牽絆即可加深合盤解讀。',
     'home.carryOver.dismiss': '知道了',
     'settings.legal.section': '法律',
@@ -1311,9 +1339,9 @@ export const translations: Translations = {
     'paywall.bullet.support': '關係時機參考 · 節點推送 · 精裝匯出',
     'report.fuel.kicker': '報告之後',
     'report.fuel.pending':
-      '本 Pro 合盤會為未來約 30–45 天種下晚間關係提醒，並可選節點日推送。',
+      '本 Pro 合盤會為未來約 30–45 天種下關係提醒，並可選節點日推送。',
     'report.fuel.ready':
-      '約有 {n} 條關係提醒已入隊（約 30–45 天視窗，約 19:00 發出）。時間軸節點也可在約 09:00 提醒。',
+      '約有 {n} 條關係提醒已入隊（約 30–45 天視窗）。時間軸節點也可在合適時提醒。',
     'report.fuel.empty': '本次未生成提醒視窗。',
     'report.fuel.settings': '推送設定 →',
     'paywall.monthly': '月度',
@@ -1640,9 +1668,19 @@ export const translations: Translations = {
     'settings.crossAppMemory.hint':
       'Yuel / Yuun（UseONE アプリ）の読みをチャットが参照できるようにします。同一アカウントのみ — 他者と共有されません。',
     'settings.notifications.section': '通知',
-    'settings.dailyPush.label': '毎日の関係リマインダー',
+    'settings.dailyPush.label': 'プッシュ通知',
+    'settings.dailyPush.caption': 'タイミングが来たらお知らせ——内容と時刻はシステムが決めます。',
     'settings.dailyPush.hint':
-      '19時頃、いずれかの絆について短い一言——Pro 合盤が約30〜45日の窓を残します（個人レポートの朝プッシュではありません）。タイムラインの節目は09時頃にも届きます。',
+      'Yuel の通知はこのスイッチ一つ。内容と送信タイミングは合盤読みからクラウドのキューへ。既定は日中のローカル枠、タイムラインの節目は任意。個人レポートの朝プッシュではありません。',
+    'settings.dailyPush.deniedTitle': '通知がオフです',
+    'settings.dailyPush.deniedBody':
+      '関係リマインダーを受け取るには、iOSの設定で Yuel の通知を許可してください。',
+    'settings.dailyPush.openSettings': '設定を開く',
+    'settings.dailyPush.unavailableTitle': 'プッシュを使えません',
+    'settings.dailyPush.unavailableBody':
+      'このビルドではプッシュ登録できません。通知対応の Dev Client / TestFlight を使ってください。',
+    'settings.dailyPush.failedTitle': '有効化に失敗',
+    'settings.dailyPush.failedBody': 'ネットワークを確認して再度お試しください。',
     'home.carryOver.banner':
       'Yuun の親しい人をこちらへ引き継ぎました——絆を開いて相性読みを深められます。',
     'home.carryOver.dismiss': '了解',
@@ -1744,9 +1782,9 @@ export const translations: Translations = {
     'paywall.bullet.support': '関係タイミングの参考 · 節目通知 · 高品質エクスポート',
     'report.fuel.kicker': 'レポートのあと',
     'report.fuel.pending':
-      'この Pro 合盤は、先の約 30〜45 日の夜の関係リマインダーと、任意の節目通知を残します。',
+      'この Pro 合盤は、先の約 30〜45 日の関係リマインダーと、任意の節目通知を残します。',
     'report.fuel.ready':
-      '約 {n} 件の関係リマインダーがキューにあります（約 30〜45 日・19:00 前後）。タイムラインの節目は 09:00 前後にも届きます。',
+      '約 {n} 件の関係リマインダーがキューにあります（約 30〜45 日）。タイムラインの節目も、タイミングが来たら届きます。',
     'report.fuel.empty': '今回はリマインダー枠を生成できませんでした。',
     'report.fuel.settings': '通知設定 →',
     'paywall.monthly': '月額',

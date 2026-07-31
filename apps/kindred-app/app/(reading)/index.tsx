@@ -62,9 +62,10 @@ import { PrimaryButton } from '@/components/PrimaryButton'
 import { ThreadListItem } from '@/components/ThreadListItem'
 import { YuelMark } from '@/components/YuelMark'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
+import { MVP_LIVING_LAYER_ENABLED } from '@/lib/mvp-flags'
 import { consumePendingOpenBond } from '@/lib/pending-open'
 import { fetchPushFuel, type PushFuelSnapshot } from '@/lib/push-fuel'
-import { useSelfBirth } from '@/lib/selfBirth'
+import { isSelfBirthReady, loadSelfBirth, useSelfBirth } from '@/lib/selfBirth'
 import { computeFateNatalChart, type FateNatalChart } from '@/lib/solo/natal'
 import { consumeSplashDecision } from '@/lib/splash-control'
 
@@ -371,7 +372,15 @@ export default function ReadingHomeScreen() {
           onPress: () => {
             void (async () => {
               const outcome = await recompute(bond.id)
-              if (outcome === 'needs_pro') router.push('/(commerce)/paywall')
+              if (outcome === 'needs_pro') {
+                // MVP: recompute is a Pro living-layer affordance — don't open the
+                // subscription paywall until Phase 2.
+                if (!MVP_LIVING_LAYER_ENABLED) {
+                  Alert.alert(t(locale, 'bond.recomputeFailed'))
+                  return
+                }
+                router.push('/(commerce)/paywall')
+              }
               else if (outcome === 'error') Alert.alert(t(locale, 'bond.recomputeFailed'))
             })()
           },
@@ -419,7 +428,14 @@ export default function ReadingHomeScreen() {
   // server per bond (chaptersUnlocked) and surfaced as the in-report unlock wall.
   // So we no longer pre-empt a paywall here — the flow always opens.
   const startNewThread = useCallback(() => {
-    router.push('/(onboarding)/mode')
+    void (async () => {
+      const birth = await loadSelfBirth()
+      if (!isSelfBirthReady(birth)) {
+        router.push({ pathname: '/(onboarding)/self', params: { next: 'mode' } })
+        return
+      }
+      router.push('/(onboarding)/mode')
+    })()
   }, [router])
 
   // Same left-swipe → Settings over the list area's blank space. activeOffsetX
