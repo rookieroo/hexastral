@@ -4,12 +4,15 @@
 
 import { Hono } from 'hono'
 import {
+  buildChapterPushDigest,
   computeHeHun,
   generateAnnualForecast,
   generateHeHunInterpretation,
   generateRelationshipPushSnippets,
+  generateRelationshipPushSnippetsPass2,
   generateSynastryChapters,
   summarizeZiweiPair,
+  unionPushSnippets,
 } from '../services/hehun/hehun'
 import type { Env } from '../types'
 
@@ -71,7 +74,25 @@ pairRoutes.post('/compute', async (c) => {
   // `interpretation.chapters` so the API layer can merge with one shape.
   const interpretation = flat || chaps ? { ...(flat ?? {}), ...(chaps ?? {}) } : null
 
-  const pushSnippets = snippetsResult.status === 'fulfilled' ? snippetsResult.value : []
+  let pushSnippets = snippetsResult.status === 'fulfilled' ? snippetsResult.value : []
+
+  // Pass-2 (C′): after shell chapters land, digest → extra multi-window fuel.
+  // Never merge into chapter JSON; skip on background top-ups (skipSnippets).
+  if (!skipSnippets && chaps && Array.isArray(chaps.chapters) && chaps.chapters.length > 0) {
+    const digest = buildChapterPushDigest(chaps.chapters, chaps.ahaHook)
+    try {
+      const pass2 = await generateRelationshipPushSnippetsPass2(
+        c.env,
+        result,
+        input,
+        language,
+        digest
+      )
+      pushSnippets = unionPushSnippets(pushSnippets, pass2)
+    } catch (err) {
+      console.error('[svc-astro/hehun] push Pass-2 failed:', err)
+    }
+  }
 
   // 紫微 summaries — persisted by the API layer so the living layer (timeline /
   // what-if) can fold a deterministic 紫微 signal without recomputing iztro.

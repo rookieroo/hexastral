@@ -20,17 +20,76 @@ import {
   type GanZhi,
   getFourPillars,
 } from '@zhop/astro-core'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { kindredPushQueue, pushTokens, userBonds, users } from '../db/schema'
 import type { AppEnv } from '../infra-types'
 import { userHasCapability } from '../lib/access/entitlement-access'
 import { jsonOk } from '../lib/api-response'
+import { requireUserId } from '../lib/auth'
+import {
+  kindredTimelinePushLabels,
+  pickKindredTimelineTeaserForUser,
+} from '../lib/kindred-timeline-push'
 
 export const kindredPushRoutes = new Hono<AppEnv>()
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+const FUEL_PREVIEW_LIMIT = 6
+
+/**
+ * GET /api/kindred/push/fuel — user-facing remaining relationship-push windows
+ * (home Upcoming strip). HMAC + requireUserId. Does NOT mark rows sent.
+ */
+kindredPushRoutes.get('/fuel', async (c) => {
+  const userId = requireUserId(c)
+  const db = c.get('db')
+  if (!db) {
+    return jsonOk(c, {
+      remaining: 0,
+      next: [],
+      slotLocalHour: 19,
+      pro: false,
+    })
+  }
+
+  const pro = await userHasCapability(db, userId, 'kindred')
+  const queued = await db
+    .select({
+      id: kindredPushQueue.id,
+      bondId: kindredPushQueue.bondId,
+      kind: kindredPushQueue.kind,
+      triggerKind: kindredPushQueue.triggerKind,
+      fireOn: kindredPushQueue.fireOn,
+      title: kindredPushQueue.title,
+      body: kindredPushQueue.body,
+      source: kindredPushQueue.source,
+      createdAt: kindredPushQueue.createdAt,
+    })
+    .from(kindredPushQueue)
+    .where(and(eq(kindredPushQueue.userId, userId), eq(kindredPushQueue.status, 'queued')))
+    .orderBy(
+      // Dated windows first (nulls last), then newest harvest.
+      sql`CASE WHEN ${kindredPushQueue.fireOn} IS NULL THEN 1 ELSE 0 END`,
+      asc(kindredPushQueue.fireOn),
+      asc(kindredPushQueue.createdAt)
+    )
+    .limit(FUEL_PREVIEW_LIMIT)
+
+  const remainingRow = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(kindredPushQueue)
+    .where(and(eq(kindredPushQueue.userId, userId), eq(kindredPushQueue.status, 'queued')))
+    .get()
+
+  return jsonOk(c, {
+    remaining: Number(remainingRow?.n ?? 0),
+    next: queued,
+    slotLocalHour: 19,
+    pro,
+  })
+})
 
 /** Synastry only reads year/day branches + day stem — all hour-independent — so
  *  noon is a safe pillar hour for every chart (matches the auspice nudge). */
@@ -237,6 +296,72 @@ kindredPushRoutes.get('/targets', async (c) => {
       .update(kindredPushQueue)
       .set({ status: 'sent', sentAt: new Date().toISOString() })
       .where(inArray(kindredPushQueue.id, consumed))
+  }
+
+  return jsonOk(c, { messages, hasMore, nextCursor: hasMore ? offset + limit : null })
+})
+
+/**
+ * GET /api/kindred/push/timeline-targets — server node teasers at 09:00 local
+ * (Yuun month-node analogue). Uses composeBondsTimeline fireDate === date;
+ * Pro-gated; no LLM. Local device scheduling remains as a fallback when the
+ * timeline screen is opened.
+ */
+kindredPushRoutes.get('/timeline-targets', async (c) => {
+  const key = c.req.header('X-Internal-Key')
+  if (!key || key !== c.env.INTERNAL_KEY) {
+    throw new HTTPException(401, { message: 'Unauthorized' })
+  }
+  const timezoneId = c.req.query('timezoneId')
+  const date = c.req.query('date')
+  if (!timezoneId || !date || !DATE_RE.test(date)) {
+    throw new HTTPException(400, { message: 'timezoneId + date=YYYY-MM-DD required' })
+  }
+  const db = c.get('db')
+  if (!db) return jsonOk(c, { messages: [], hasMore: false, nextCursor: null })
+
+  const limit = Math.min(Number.parseInt(c.req.query('limit') ?? '200', 10) || 200, 500)
+  const offset = Number.parseInt(c.req.query('cursor') ?? '0', 10)
+  const page0 = await db
+    .select({
+      token: pushTokens.token,
+      userId: pushTokens.userId,
+    })
+    .from(pushTokens)
+    .where(eq(pushTokens.timezoneId, timezoneId))
+    .limit(limit + 1)
+    .offset(offset)
+  const hasMore = page0.length > limit
+  const page = hasMore ? page0.slice(0, limit) : page0
+
+  const messages: Array<{
+    userId: string
+    token: string
+    title: string
+    body: string
+    data: Record<string, string>
+  }> = []
+  const seenUsers = new Set<string>()
+
+  for (const row of page) {
+    if (seenUsers.has(row.userId)) continue
+    seenUsers.add(row.userId)
+
+    const teaser = await pickKindredTimelineTeaserForUser(db, row.userId, date)
+    if (!teaser) continue
+    const L = kindredTimelinePushLabels(teaser.locale)
+    messages.push({
+      userId: row.userId,
+      token: row.token,
+      title: L.title,
+      body: L.body(teaser.kind, teaser.year, teaser.leadLabel),
+      data: {
+        type: 'kindred_timeline',
+        route: '/(timeline)',
+        key: teaser.key,
+        year: String(teaser.year),
+      },
+    })
   }
 
   return jsonOk(c, { messages, hasMore, nextCursor: hasMore ? offset + limit : null })

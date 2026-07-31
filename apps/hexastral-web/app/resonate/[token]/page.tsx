@@ -7,8 +7,9 @@ import { type Locale, routing } from '@/i18n/routing'
 /**
  * Kindred (Yuel) invite landing — what B sees when they tap A's share-sheet link.
  *
- * FIXED, locale-AGNOSTIC URL: `https://hexastral.com/resonate/{token}` (no `/zh/`,
- * `/tw/`, `/ja/` prefix). The page localises by the OPENING device, not the inviter:
+ * FIXED, locale-AGNOSTIC URL: `https://yuel.hexastral.com/resonate/{token}` (no `/zh/`,
+ * `/tw/`, `/ja/` prefix). Apex `hexastral.com/resonate/{token}` still works as a
+ * fallback. The page localises by the OPENING device, not the inviter:
  * the language is resolved from `?lc=` (optional explicit override) → `Accept-Language`
  * → default. This is the same non-localized share pattern as /hehun, /s/day, /u — and
  * it fixes the old `/zh/resonate/...` links, which a stale next.config redirect was

@@ -48,14 +48,15 @@ Free 黄历 is anonymous. **Subscribe** requires sign-in → portfolio auth → 
 
 ## Suggested ship order
 
-Per [ADR-0019](./decisions/0019-v1-wave-narrowed-cycle-feng-yuan.md) (updated for four apps):
+Per [ADR-0019](./decisions/0019-v1-wave-narrowed-cycle-feng-yuan.md) (updated 2026-07):
 
-1. **Yuun** — daily utility anchor + publisher credit
-2. **Yuel** — portfolio upsell (Yuun carry-over is the moat)
-3. **Feng** — parallel build; submit after Yuun stabilises
-4. **CoinCast** — after V1 trio telemetry validates 4.3(b) framing; see [apps/coincast/README.md](./apps/coincast/README.md)
+1. **Yuun** — daily utility anchor + publisher credit (**W1 live**)
+2. **Yuel** — portfolio upsell; Yuun 亲友 carry-over is the moat (**W2 live / brand host open**)
+3. **Kanyu / Yaul** — **deferred**: craft bar (风水深度) and GTM/physical-cast gap not ready
+4. **Syel last** — face/palm biometric sensitivity + App Review risk; after Yuun+Yuel stabilize
 
-Builds can run in parallel; ASC **submission** order follows the list above.
+Builds can run in parallel; ASC **submission** priority is Yuun → Yuel. Do not force
+Kanyu / Yaul / Syel into the next store wave.
 
 ---
 
@@ -65,12 +66,12 @@ Builds can run in parallel; ASC **submission** order follows the list above.
 
 | Tier | Apps | Role |
 |------|------|------|
-| **Flagship** | Yuel, Kanyu (Feng) | Depth, Pro reports, primary monetization |
-| **Funnel** | Yuun, Yaul (CoinCast) | Daily entry → upsell to flagship |
+| **Flagship** | Yuel (Kanyu later) | Depth, Pro reports, primary monetization |
+| **Funnel** | Yuun (Yaul later) | Daily entry → upsell to flagship |
 
-**Technical submission order** remains Yuun → Yuel → Feng → CoinCast (unchanged above).
+**Technical submission order:** Yuun → Yuel; Kanyu / Yaul / Syel not in the active wave.
 
-Single source for visibility, sitemap, and homepage cards: `apps/hexastral-web/lib/growth/launch-status.ts`. Bump `visibility` per wave (W1 Yuun live → W2 Yuel → W3 Kanyu + `kanyu.png` → W4 Yaul).
+Single source for visibility, sitemap, and homepage cards: `apps/hexastral-web/lib/growth/launch-status.ts`. Bump `visibility` per wave (W1 Yuun → W2 Yuel → defer Kanyu/Yaul → Syel last).
 
 **Not indexed on hexastral.com:** DreamOracle, FaceOracle, StarPalace, EightPillars, omnibus HexAstral iOS app, `/onboarding` flagship funnel.
 

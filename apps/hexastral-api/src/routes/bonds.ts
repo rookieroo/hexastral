@@ -802,6 +802,7 @@ bondRoutes.post('/invite', async (c) => {
   // Fixed, locale-agnostic landing URL — the web page localises by the OPENING
   // device (Accept-Language), not by A's locale. `locale` still drives the share
   // MESSAGE body below (A writes it in A's language); only the URL stays neutral.
+  // Yuel brand host is W2-live; keep /resonate/{token} on yuel for identity + brand.
   const resonateUrl = `https://yuel.hexastral.com/resonate/${token}`
 
   if (deliveryMode === 'server') {

@@ -2,10 +2,11 @@
  * Timeline push — the device wrapper that lays the (pure, unit-tested)
  * `buildTimelineNotificationPlan` onto expo-notifications.
  *
- * LOCAL scheduling: no push token, no cron — the rolling future window is
- * (re)scheduled whenever the relationship timeline is viewed. Mirrors
- * apps/auspice-app/lib/push.ts. The Pro gate lives server-side (the timetable is
- * only returned for Pro), so a free user yields an empty plan → nothing scheduled.
+ * LOCAL scheduling remains a fallback when the timeline is viewed. Primary Pro
+ * path is server cron at ~09:00 (`GET /api/kindred/push/timeline-targets` via
+ * svc-notify). Mirrors apps/auspice-app/lib/push.ts for the on-device window.
+ * The Pro gate lives server-side (the timetable is only returned for Pro), so a
+ * free user yields an empty plan → nothing scheduled.
  *
  * DEFENSIVE LOADING: `expo-notifications` ships a NATIVE module that only exists
  * after a prebuild / native rebuild. In a JS-only reload (or before the native

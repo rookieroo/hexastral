@@ -50,7 +50,8 @@ export function isPaywall(err: unknown): boolean {
  *
  * The server composes the link INTO the body. On iOS we lift it out into Share's
  * `url` item so AirDrop / social treat it as a LINK: AirDrop opens the resonate
- * webpage (and deep-links into the app via the hexastral.com Universal Link)
+ * webpage (and deep-links into the app via the hexastral.com Universal Link
+ * on `/resonate/{token}`)
  * instead of dropping text into Pages, and the page's opengraph-image renders a
  * rich card. SMS / Mail still get the text + a tappable link (unchanged). Android
  * Share has no `url` field, so keep the link inline there.

@@ -356,7 +356,8 @@ function buildHeHunPrompt(result: HeHunFullResult, input: HeHunInput): string {
   return `你是一位专注于关系能量分析的人际动力顾问。请根据以下双方八字合盘分析，生成一份专业且温暖的配对解读。
 
 ## 语体要求（重要）
-用典雅、克制的命理书面语（"日主""相生相济""刑冲合会""刚柔相济"等）。**严禁现代口语与网络话术**（如"咬合""适配""CP""能量场""磁场""上头""相爱相杀"等）与商业/工程比喻。可有记忆点、可分享，但须根植命理意象；中文尤忌轻佻。
+**通俗白话为主，汉字术语为锚。** 用普通人能大声读懂的句子写关系洞察；命理术语（日主、刑冲、合会等）可保留汉字原词，首次用白话承接含义。禁止文言口号堆砌、文邹邹全篇。
+**严禁**网络黑话与轻佻口吻（如"咬合""CP""能量场""磁场""上头""相爱相杀"）以及商业/工程硬套比喻。可有记忆点，但先让人懂。
 
 ${buildPairFacts(result, input)}
 
@@ -371,8 +372,8 @@ ${buildPairFacts(result, input)}
   "warnings": "注意事项（50字，需要经营的方面）",
   "advice": "相处建议（100字，具体可执行的增进感情的方法）",
   "summary": "一句话总结（15字以内）",
-  "archetypeName": "A memorable, shareable relationship label in the user's language, rooted in 命理 imagery — e.g. '宿命之牵', 'The Karmic Anchor', '刚柔相济'. MUST be 2-8 words. For CJK use classical 命理 register, NOT internet slang.",
-  "archetypeTagline": "One resonant line about this pairing in the user's language — under 20 words. Insightful and warm, NOT snark; for CJK keep the 命理 书面语 register.",
+  "archetypeName": "A memorable, shareable relationship label in the user's language, rooted in 命理 imagery — e.g. '宿命之牵', 'The Karmic Anchor', '刚柔相济'. MUST be 2-8 words. For CJK: plain + one classical hook OK; NOT internet slang.",
+  "archetypeTagline": "One resonant line about this pairing in the user's language — under 20 words. Insightful and warm, NOT snark; for CJK use plain spoken prose with optional 汉字 terms.",
   "archetypeCategory": "MUST be exactly one of: harmony | tension | growth | karmic | volatile — pick the most accurate description of the overall energy. Output English only.",
   "hookDimension": "MUST be exactly one of: long_term | communication | attraction | emotional — the dimension whose score deviates most from the other three (highest or lowest). Output English only.",
   "shareQuote": "社交分享金句（≤20字，朗朗上口，不含天命定论语气，适合截图分享）"
@@ -712,6 +713,7 @@ ${spec.focus}${monthlyNote}
 **用神【${yongshen}】是「解法」，并非双方日主本来的关系。** 凡 title／goldenLine 提到五行关系，必须落在双方日主真实的两个五行及其生/克/比和上（如日主为木与土，则言「木土」之相克），用神之五行只可作为「通关／解法」点出且须明示其为解法——切勿把用神当作双方日主的相生来写（例如不可因用神为火便写「木火相生」），以免与正文相克/相生的判断自相矛盾。
 
 ## 写作要求
+**语体：通俗白话 + 保留汉字术语。** 句子要让不懂命理的人也能读懂；日主、刑冲、神煞等保留汉字，首次用白话点明含义。禁止文言口号堆砌与文邹邹全篇。结构与主张仍要硬——反套话不变。
 分四层，直接引用命盘事实；写完整论述（四层合计宜 ≥500 字），不要短句敷衍。
 每一层都要走一遍推理链（缺环即空话）：命盘锚点(双方干支/刑冲合/神煞/宫星) → 机理(为什么，扣两方日主生克/格局张力) → 一个具体相处判断或场景。深度靠推演，不靠拉长。
 1. evidence：命盘机理（干支/刑冲/神煞/宫星）——先所见、再为什么。
@@ -757,7 +759,7 @@ ${buildPairFacts(result, input, ziweiBlock)}
 ## 要求
 - 基于两人命盘的真实互动，点出一个具体、可共鸣但留有余地的关系观察，引导用户解锁全文。
 - 必须像 aha：点名双方日主/宫星/刑冲之一 + 选边张力；删掉锚点后不能套任何人。
-- ≤30字，**不含天命定论、吉凶断语或「说中你」式恐吓话术**；典雅克制的命理书面语，严禁网络话术。
+- ≤30字，**不含天命定论、吉凶断语或「说中你」式恐吓话术**；白话可读，可点一个汉字术语，严禁网络黑话与文言口号。
 - 禁止空心好话（「很有缘」「能量互补」）；真话优先。
 
 ## 输出（严格 JSON）
@@ -1151,11 +1153,11 @@ ${buildPairFacts(result, input, ziweiBlock)}
 
 ## 目标（少硬约束、重贴合）
 - 写出短提醒：具体到这两人的互动事实，避免套话；让人想打开 App 再看这段关系。
-- 可同时给两类语料：
-  1) **conditional**：trigger 为 resonance / tension / neutral（按当日共鸣/张力匹配时发）；三种能量态都尽量覆盖，但不必凑满八股。
-  2) **dated**：含 fireOn(YYYY-MM-DD)、title、body；落在读完后不久到一两个月内、**真有理由提醒**的日子（不必凑条数）。
+- 可同时给两类语料（多段窗口，不必凑满）：
+  1) **conditional**：trigger 为 resonance / tension / neutral（按当日共鸣/张力匹配时发）；三种能量态都尽量覆盖。
+  2) **dated**：含 fireOn(YYYY-MM-DD)、title、body；落在读完后约 **7 天内 / 1 个月内 / 明确节点日** 且真有理由提醒的日子。
 - title / body 保持锁屏可读的短句即可，不必卡死字数。
-- 以「你」称呼接收方，对方称「对方」。典雅克制，不下天命定论、不铁口。
+- 以「你」称呼接收方，对方称「对方」。白话短句，可留一处汉字术语；不下天命定论、不铁口。
 
 ## 输出（严格 JSON）
 { "snippets": [ { "trigger": "resonance", "title": "…", "body": "…" }, { "trigger": "tension", "title": "…", "body": "…" }, { "trigger": "neutral", "fireOn": "2026-08-01", "title": "…", "body": "…" } ] }
@@ -1193,6 +1195,104 @@ export async function generateRelationshipPushSnippets(
         tier: 'standard',
         maxTokens: 900,
         metricLabel: attempt > 0 ? 'hehun-push-snippets:forbidden-retry' : 'hehun-push-snippets',
+        locale: language,
+      }
+    )
+    const snippets = parsePushSnippets(text)
+    const audit = auditGeneratedOutput(JSON.stringify(snippets))
+    if (audit.hits.length === 0) return snippets
+    rewriteSuffix = audit.rewriteSuffix ?? ''
+  }
+  return []
+}
+
+/** Deduplicate by title; prefer Stage-C rows, then Pass-2; hard cap 6 (harvest SSOT). */
+export function unionPushSnippets(
+  primary: RelationshipPushSnippet[],
+  extra: RelationshipPushSnippet[]
+): RelationshipPushSnippet[] {
+  const out: RelationshipPushSnippet[] = []
+  const seen = new Set<string>()
+  for (const s of [...primary, ...extra]) {
+    const key = s.title.trim().toLowerCase()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    out.push(s)
+    if (out.length >= 6) break
+  }
+  return out
+}
+
+/** Compact digest of chapter claims for Pass-2 harvest (not full chapter JSON). */
+export function buildChapterPushDigest(
+  chapters: SynastryChapterOutput[],
+  ahaHook?: string | null
+): string {
+  const lines: string[] = []
+  if (ahaHook?.trim()) lines.push(`aha: ${ahaHook.trim().slice(0, 120)}`)
+  for (const ch of chapters.slice(0, 6)) {
+    const claim = (ch.goldenLine || ch.title || ch.dynamic || '').trim().slice(0, 100)
+    if (claim) lines.push(`${ch.kind}: ${claim}`)
+  }
+  return lines.join('\n')
+}
+
+function buildPushPass2Prompt(
+  result: HeHunFullResult,
+  input: HeHunInput,
+  ziweiBlock: string,
+  digest: string
+): string {
+  return `你是一位专注于关系能量分析的人际动力顾问。合盘正文已生成；请据「章节要点」再补写多段推送窗口（Pass-2），勿重复 Stage-C 已有标题。
+
+${buildPairFacts(result, input, ziweiBlock)}
+
+## 章节要点（消化后的主张，不是全文）
+${digest}
+
+## 目标（少硬约束、重贴合；多段窗口）
+- 优先补 **dated**（约 7 天内 / 约 30 天内 / 明确节点日）与尚缺的 conditional（resonance/tension/neutral）。
+- 短句锁屏可读；白话；可留一处汉字术语；不下天命定论。
+- 每条须贴合上面章节要点，禁止套话。
+
+## 输出（严格 JSON）
+{ "snippets": [ { "trigger": "resonance", "title": "…", "body": "…" }, { "trigger": "neutral", "fireOn": "2026-08-15", "title": "…", "body": "…" } ] }
+
+只输出纯 JSON，不要任何其他内容。`
+}
+
+/**
+ * Pass-2 harvest after ≥1 chapter/aha exists (Syel-style digest → windows).
+ * Never merge into chapter JSON; non-fatal (returns [] on failure).
+ */
+export async function generateRelationshipPushSnippetsPass2(
+  env: AiRouterEnv,
+  result: HeHunFullResult,
+  input: HeHunInput,
+  language: string,
+  digest: string
+): Promise<RelationshipPushSnippet[]> {
+  if (!digest.trim()) return []
+  const ziweiBlock = buildZiweiBlock(input)
+  const systemPrompt = [
+    getSystemRole('hehun'),
+    '',
+    buildEnhancedGuardrails('相遇即是缘', language),
+    '',
+    buildLanguageBlock(language, 'hehun'),
+  ].join('\n')
+  const langReminder = buildLanguageReminder(language)
+  let rewriteSuffix = ''
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const text = await callWithFallback(
+      env,
+      systemPrompt,
+      buildPushPass2Prompt(result, input, ziweiBlock, digest) + langReminder + rewriteSuffix,
+      {
+        tier: 'standard',
+        maxTokens: 900,
+        metricLabel:
+          attempt > 0 ? 'hehun-push-snippets-pass2:forbidden-retry' : 'hehun-push-snippets-pass2',
         locale: language,
       }
     )

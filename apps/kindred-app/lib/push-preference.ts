@@ -6,7 +6,8 @@
  * personal 命书 morning almanac (that lives in Yuun). Opt-in registers the
  * Expo push token via lib/serverPush.ts; without a token the cron skips them.
  *
- * Relationship-TIMELINE reminders stay on-device (lib/timeline-push.ts).
+ * Timeline node teasers: server cron at ~09:00 (`/api/kindred/push/timeline-targets`)
+ * plus on-device reschedule when the timeline screen is opened (lib/timeline-push.ts).
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -16,21 +17,16 @@ const KEY = 'kindred_daily_push_v1'
 export async function getDailyPushEnabled(): Promise<boolean> {
   try {
     const v = await AsyncStorage.getItem(KEY)
-    // Default OFF — we don't push notifications at someone before they've
-    // explicitly opted in (App Store guidelines + good behaviour).
     return v === '1'
-  } catch (err) {
-    console.warn('[push-preference] read failed', err)
+  } catch {
     return false
   }
 }
 
-export async function setDailyPushEnabled(enabled: boolean): Promise<void> {
+export async function setDailyPushEnabled(on: boolean): Promise<void> {
   try {
-    await AsyncStorage.setItem(KEY, enabled ? '1' : '0')
-  } catch (err) {
-    // Best-effort — the preference rehydrates from the server on next sync
-    // if the local write fails.
-    console.warn('[push-preference] write failed', err)
+    await AsyncStorage.setItem(KEY, on ? '1' : '0')
+  } catch {
+    // Preference is best-effort; cron still requires a registered token.
   }
 }

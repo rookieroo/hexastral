@@ -17,9 +17,9 @@ describe('brandIdFromHost', () => {
 })
 
 describe('appIsPublicSurface', () => {
-  it('Yuun is public; other wave apps stay gated', () => {
+  it('Yuun + Yuel live; Kanyu / Yaul / Syel stay gated', () => {
     expect(appIsPublicSurface('yuun')).toBe(true)
-    expect(appIsPublicSurface('yuel')).toBe(false)
+    expect(appIsPublicSurface('yuel')).toBe(true)
     expect(appIsPublicSurface('kanyu')).toBe(false)
     expect(appIsPublicSurface('yaul')).toBe(false)
     expect(appIsPublicSurface('syel')).toBe(false)
@@ -37,11 +37,12 @@ describe('appIdForGatedPath', () => {
 })
 
 describe('isPathIndexable', () => {
-  it('drops hidden-app LPs from the index', () => {
+  it('indexes live-app LPs; drops deferred-app LPs', () => {
     expect(isPathIndexable('/lp/yuun')).toBe(true)
-    expect(isPathIndexable('/lp/yuel')).toBe(false)
+    expect(isPathIndexable('/lp/yuel')).toBe(true)
+    expect(isPathIndexable('/zh/lp/yuel')).toBe(true)
     expect(isPathIndexable('/lp/kanyu')).toBe(false)
-    expect(isPathIndexable('/zh/lp/yuel')).toBe(false)
+    expect(isPathIndexable('/lp/face')).toBe(false)
   })
 })
 

@@ -528,6 +528,7 @@ async function scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext)
     { name: 'auspice-evening', run: () => runAuspicePush(env, 'evening', 20) },
     { name: 'auspice-timeline', run: () => runAuspiceTimelinePush(env, 9) },
     { name: 'kindred', run: () => runKindredPush(env, 19) },
+    { name: 'kindred-timeline', run: () => runKindredTimelinePush(env, 9) },
     { name: 'faceoracle-09', run: () => runFaceoraclePush(env, 9) },
     { name: 'faceoracle-21', run: () => runFaceoraclePush(env, 21) },
   ]
@@ -794,6 +795,70 @@ async function runKindredPush(env: Env, targetHour: number): Promise<void> {
   }
 
   logger.info('kindred push complete', { sent, invalidTokens: invalidTokens.length })
+}
+
+/**
+ * Kindred relationship-timeline node push — Yuun month-node analogue at 09:00
+ * local. hexastral-api picks ONE teaser whose fireDate is today (大运/流年 lead);
+ * no LLM. Complements local expo scheduling when the timeline screen is opened.
+ */
+async function runKindredTimelinePush(env: Env, targetHour: number): Promise<void> {
+  const now = new Date()
+  const zones = TIMEZONE_POOL.filter((tz) => tzLocalHour(tz, now) === targetHour)
+  if (zones.length === 0) return
+  logger.info('kindred timeline push check', { targetHour, zones: zones.length })
+
+  const invalidTokens: string[] = []
+  let sent = 0
+
+  for (const tz of zones) {
+    const date = tzLocalDate(tz, now)
+    let cursor: string | null = '0'
+    while (cursor !== null) {
+      const url = new URL('https://internal/api/kindred/push/timeline-targets')
+      url.searchParams.set('timezoneId', tz)
+      url.searchParams.set('date', date)
+      url.searchParams.set('limit', '200')
+      url.searchParams.set('cursor', cursor)
+      const res = await env.SVC_API.fetch(url, { headers: { 'X-Internal-Key': env.INTERNAL_KEY } })
+      if (!res.ok) {
+        logger.error('kindred timeline push-targets failed', { tz, status: String(res.status) })
+        break
+      }
+      const json = await res.json<{
+        data: {
+          messages: Array<{
+            userId: string
+            token: string
+            title: string
+            body: string
+            data: Record<string, string>
+          }>
+          nextCursor: number | null
+        }
+      }>()
+      const msgs = json.data.messages
+      if (msgs.length > 0) {
+        const { invalidTokens: bad } = await sendExpoMessages(
+          msgs.map((m) => ({ to: m.token, title: m.title, body: m.body, data: m.data }))
+        )
+        invalidTokens.push(...bad)
+        sent += msgs.length - bad.length
+      }
+      cursor = json.data.nextCursor == null ? null : String(json.data.nextCursor)
+    }
+  }
+
+  if (invalidTokens.length > 0) {
+    await env.SVC_API.fetch('https://internal/api/notify/unregister-stale', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Internal-Key': env.INTERNAL_KEY },
+      body: JSON.stringify({ tokens: invalidTokens.slice(0, 100) }),
+      signal: AbortSignal.timeout(5_000),
+    }).catch(() => undefined)
+  }
+
+  logger.info('kindred timeline push complete', { sent, invalidTokens: invalidTokens.length })
 }
 
 /**

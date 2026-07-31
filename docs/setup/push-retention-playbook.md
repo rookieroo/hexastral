@@ -75,13 +75,15 @@ Deferred implementation (documented only): relationTier scoring, hard TTL, rest-
 - **Deep links:** `day` → Today; timeline → `/timeline` (+ node); birthday → person when possible.
 
 ### Yuel (`kindred_push_queue` + `push_tokens`)
-- **Slot:** 19:00 local, ≤1 / user / day.
-- **Fuel:** union of harvest rows from active bonds/reports; same-day pick by priority (dated today > conditionals; relationTier scoring not yet implemented).
+- **Slots:** 19:00 local relationship nudge ≤1 / user / day; **09:00** timeline node teasers (server `timeline-targets`, Pro).
+- **Fuel:** union of harvest rows from active bonds/reports (Stage C parallel with shell + optional Pass-2 after chapters); same-day pick by priority. Timeline nodes from `composeBondsTimeline` fireDate — no LLM at send.
 - **Caps:** ≤5 queued per bond; ≤20 queued per user; expire stale.
 - **Row contract:** `fireOn | bondId | triggerKind | title | body | sourceReadingId | locale | status`.
 - **Pro:** harvest + send require `kindred_pro` (or universe).
 - **Bond remove:** expire queued rows for that `bondId`.
-
+- **Home:** `GET /api/kindred/push/fuel` surfaces remaining windows (Upcoming strip).
+- **Layer-1 empty queue:** keep **silence** (㉘). Deterministic synastry templates for uncovered days are **proposed only** — require an explicit playbook change before coding (see [push-fuel-contract.md](../apps/yuel/push-fuel-contract.md)).
+- **Contract SSOT:** [docs/apps/yuel/push-fuel-contract.md](../apps/yuel/push-fuel-contract.md).
 ### Syel (`faceoracle_push_subs` + `faceoracle_push_queue`)
 - **Slots:** 09:00 (qi / observe / daytime), 21:00 (rest / pacing). **≤1 per user per slot**; same calendar day may get both if kinds differ.
 - **Fuel:** **latest Pro reading replaces** prior window **only when new windows.length > 0**. Oneshot = `reading_ready` only (no long window).

@@ -30,6 +30,8 @@ export const LLM_MODELS = {
    * Keep K2.6 (not K3) for structured oneshot JSON: K3 is always-on reasoning
    * (`moonshotai/kimi-k3`) and burns the cascade budget on reasoning_tokens.
    * Switch only after measuring wall-clock with reasoning_effort: 'low'.
+   * Shadow A/B (Yuel): one chapter kind only — never push harvest or 6-way
+   * parallel chapters until p95 / JSON parse / locale / cost gates pass.
    */
   KIMI: '@cf/moonshotai/kimi-k2.6',
   /** Available via env.AI.run — not on the flagship chain yet (see KIMI note). */

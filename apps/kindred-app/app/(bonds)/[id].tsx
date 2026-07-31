@@ -57,6 +57,7 @@ import { GeneratingStages } from '@/components/reading/GeneratingStages'
 import { LivingLayerFab } from '@/components/reading/LivingLayerFab'
 import { ReadingPrimer } from '@/components/reading/ReadingPrimer'
 import { ReportBloom } from '@/components/reading/ReportBloom'
+import { PushFuelDisclosure } from '@/components/reading/PushFuelDisclosure'
 import { SelectionActionBar } from '@/components/SelectionActionBar'
 import { SignInSheet } from '@/components/SignInSheet'
 import { emitUnlockFunnel } from '@/lib/analytics'
@@ -714,7 +715,10 @@ export default function BondDetailScreen({
               currentIndex={chapterIndex}
               onIndexChange={setChapterIndex}
               onShareChapter={() => void handleShare()}
-              trailing={unlockWall}
+              trailing={
+                unlockWall ??
+                (!reportLocked ? <PushFuelDisclosure bondId={detail.id} /> : null)
+              }
               pendingCount={pendingChapterCount}
               aElement={aElement}
               bElement={bElement}

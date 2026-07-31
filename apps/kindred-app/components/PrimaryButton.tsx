@@ -49,7 +49,13 @@ export function PrimaryButton({
 
   const bg = tone === 'seal' ? kindredDark.seal : kindredDark.accent
   // Gold fill → dark label (the app's void bg); cinnabar fill → ivory label.
-  const fg = tone === 'seal' ? kindredDark.textOnDark : kindredDark.bg
+  // Disabled: keep solid fill; mute the label only — whole-control opacity washes
+  // moonlight + dark ink into illegible dark-on-dark.
+  const fg = disabled
+    ? kindredDark.textMuted
+    : tone === 'seal'
+      ? kindredDark.textOnDark
+      : kindredDark.bg
 
   const handlePress = () => {
     if (inactive) return
@@ -69,7 +75,6 @@ export function PrimaryButton({
         accessibilityLabel={label}
         style={{
           backgroundColor: bg,
-          opacity: disabled ? 0.35 : 1,
           borderRadius: kindredRadius.md,
           paddingVertical: kindredSpacing.md,
           paddingHorizontal: kindredSpacing.lg,
@@ -77,6 +82,13 @@ export function PrimaryButton({
           alignItems: 'center',
           justifyContent: 'center',
           gap: kindredSpacing.sm,
+          ...(disabled
+            ? {
+                borderWidth: 0.5,
+                borderColor: kindredDark.border,
+                backgroundColor: 'transparent',
+              }
+            : {}),
         }}
       >
         {loading ? (

@@ -64,6 +64,7 @@ import { YuelMark } from '@/components/YuelMark'
 import { getCarryOverHintPending, markCarryOverHintSeen } from '@/lib/carry-over-hint'
 import { type Locale, resolveLocale, t } from '@/lib/i18n'
 import { consumePendingOpenBond } from '@/lib/pending-open'
+import { fetchPushFuel, type PushFuelSnapshot } from '@/lib/push-fuel'
 import { useSelfBirth } from '@/lib/selfBirth'
 import { computeFateNatalChart, type FateNatalChart } from '@/lib/solo/natal'
 import { consumeSplashDecision } from '@/lib/splash-control'
@@ -84,6 +85,10 @@ interface HomeCopy {
   emptySub: string
   noBirthTitle: string
   noBirthCta: string
+  upcoming: string
+  upcomingEmpty: string
+  upcomingEmptyCta: string
+  upcomingMore: (n: number) => string
 }
 
 const HOME_COPY: Record<Locale, HomeCopy> = {
@@ -97,6 +102,10 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     emptySub: 'Invite someone close — or sign in so people from Yuun can join your sky.',
     noBirthTitle: 'Begin with your own chart',
     noBirthCta: 'Enter your birth info →',
+    upcoming: 'Upcoming',
+    upcomingEmpty: 'A Pro bond reading mints evening reminders for the weeks ahead.',
+    upcomingEmptyCta: 'Start a thread →',
+    upcomingMore: (n: number) => (n === 1 ? '1 reminder queued' : `${n} reminders queued`),
   },
   zh: {
     cardKicker: '你的个人解读',
@@ -108,6 +117,10 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     emptySub: '邀请在意的人，或登录后让 Yuun 里的亲友亮起在夜空。',
     noBirthTitle: '从你自己的命盘开始',
     noBirthCta: '填写生辰 →',
+    upcoming: '即将到来',
+    upcomingEmpty: '一次 Pro 合盘会为未来数周种下晚间关系提醒。',
+    upcomingEmptyCta: '开启一段牵绊 →',
+    upcomingMore: (n: number) => `还有 ${n} 条提醒在队列中`,
   },
   'zh-Hant': {
     cardKicker: '你的個人解讀',
@@ -119,6 +132,10 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     emptySub: '邀請在意的人，或登入後讓 Yuun 裡的親友亮起在夜空。',
     noBirthTitle: '從你自己的命盤開始',
     noBirthCta: '填寫生辰 →',
+    upcoming: '即將到來',
+    upcomingEmpty: '一次 Pro 合盤會為未來數周種下晚間關係提醒。',
+    upcomingEmptyCta: '開啟一段牽絆 →',
+    upcomingMore: (n: number) => `還有 ${n} 條提醒在佇列中`,
   },
   ja: {
     cardKicker: 'あなたの個人レポート',
@@ -130,6 +147,10 @@ const HOME_COPY: Record<Locale, HomeCopy> = {
     emptySub: '大切な人を招くか、サインインして Yuun の人を夜空へ。',
     noBirthTitle: 'あなた自身の命式から',
     noBirthCta: '生年月日を入力 →',
+    upcoming: 'これから',
+    upcomingEmpty: 'Pro の合盤レポートが、先の数週間の夜のリマインダーを残します。',
+    upcomingEmptyCta: '絆をはじめる →',
+    upcomingMore: (n: number) => `キューに ${n} 件`,
   },
 }
 
@@ -262,12 +283,14 @@ export default function ReadingHomeScreen() {
     deleteBond,
     recompute,
   } = useBondList()
+  const [pushFuel, setPushFuel] = useState<PushFuelSnapshot | null>(null)
   useFocusEffect(
     useCallback(() => {
       setFocused(true)
       // Silent revalidation: the cached list shows instantly; no loader/spinner
       // on return. A manual pull-to-refresh is the only visible refresh.
       void refetch({ silent: true })
+      void fetchPushFuel().then(setPushFuel)
       // Fallback only — the useState initializer above is the primary, flash-free
       // path (it catches the pending bond before the first paint when the reset
       // remounted the home). This covers the rare re-focus that did NOT remount.
@@ -614,6 +637,112 @@ export default function ReadingHomeScreen() {
             {copy.month}
           </Text>
         </Pressable>
+      </View>
+
+      {/* Upcoming — aggregated push fuel from Pro bond reports (retention loop). */}
+      <View
+        style={{
+          marginHorizontal: kindredSpacing.screenH,
+          marginBottom: kindredSpacing.md,
+          paddingVertical: kindredSpacing.sm,
+          paddingHorizontal: kindredSpacing.md,
+          borderWidth: 0.5,
+          borderRadius: 0,
+          borderColor: kindredDark.border,
+        }}
+      >
+        <Text
+          style={{
+            fontFamily: kindredFonts.mono,
+            fontSize: 11,
+            letterSpacing: 2,
+            textTransform: 'uppercase',
+            color: kindredDark.accent,
+            marginBottom: 8,
+          }}
+        >
+          {copy.upcoming}
+        </Text>
+        {pushFuel && pushFuel.next.length > 0 ? (
+          <>
+            {pushFuel.next.slice(0, 3).map((item) => (
+              <Pressable
+                key={item.id}
+                onPress={() => {
+                  if (item.bondId) setOpenBond({ id: item.bondId, origin: null })
+                  else startNewThread()
+                }}
+                style={({ pressed }) => ({
+                  opacity: pressed ? 0.6 : 1,
+                  marginBottom: 10,
+                })}
+              >
+                <Text
+                  style={{
+                    fontFamily: isCjkLocale(locale) ? kindredFonts.cjk : kindredFonts.serif,
+                    fontSize: 14,
+                    lineHeight: 20,
+                    color: kindredDark.text,
+                  }}
+                  numberOfLines={2}
+                >
+                  {item.title}
+                </Text>
+                {item.fireOn ? (
+                  <Text
+                    style={{
+                      marginTop: 2,
+                      fontFamily: kindredFonts.mono,
+                      fontSize: 11,
+                      color: kindredDark.textMuted,
+                    }}
+                  >
+                    {item.fireOn}
+                  </Text>
+                ) : null}
+              </Pressable>
+            ))}
+            {pushFuel.remaining > pushFuel.next.length ? (
+              <Text
+                style={{
+                  fontFamily: kindredFonts.mono,
+                  fontSize: 11,
+                  color: kindredDark.textMuted,
+                }}
+              >
+                {copy.upcomingMore(pushFuel.remaining)}
+              </Text>
+            ) : null}
+          </>
+        ) : (
+          <Pressable
+            onPress={startNewThread}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+          >
+            <Text
+              style={{
+                fontFamily: isCjkLocale(locale) ? kindredFonts.cjk : kindredFonts.serif,
+                fontSize: 13,
+                lineHeight: 20,
+                color: kindredDark.textMuted,
+              }}
+            >
+              {copy.upcomingEmpty}
+            </Text>
+            <Text
+              style={{
+                marginTop: 6,
+                fontFamily: kindredFonts.mono,
+                fontSize: 11,
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+                color: kindredDark.accent,
+              }}
+            >
+              {copy.upcomingEmptyCta}
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       {/* The threads-section header (title + inline "add") is gone: New Thread now

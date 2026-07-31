@@ -4,11 +4,11 @@
  * "Web disclosure".
  *
  * Wave unlock cheat sheet (edit APP_LAUNCH below, redeploy hexastral-web):
- *   W1 Yuun live  → yuun.visibility = 'live'   (current)
+ *   W1 Yuun live  → yuun.visibility = 'live'   (shipped)
  *   W2 Yuel live  → yuel: visibility 'live', showOnHomepage true, brandHostIndexable true
- *   W3 Kanyu live → kanyu: same + sync kanyu.png / App Store URL
- *   W4 Yaul live  → yaul: same
- *   W5 Syel live  → syel: same (or teaser first if you want a homepage card before store)
+ *   ── deferred ──
+ *   Kanyu / Yaul  → stay `hidden` until craft + GTM bar is clear (not next)
+ *   Syel last     → biometric / App Review sensitivity; after Yuun+Yuel stabilize
  *
  * visibility:
  *   'live'   — homepage + CTAs + brand host + /lp + privacy appendix (+ indexable when flagged)
@@ -42,9 +42,10 @@ export const APP_LAUNCH: Record<AppId, AppLaunchConfig> = {
     id: 'yuel',
     displayName: 'Yuel',
     role: 'flagship',
-    visibility: 'hidden',
-    showOnHomepage: false,
-    brandHostIndexable: false,
+    // W2 — temporarily open for brand host + invite landings (Yuun first, then Yuel).
+    visibility: 'live',
+    showOnHomepage: true,
+    brandHostIndexable: true,
     brandHost: 'https://yuel.hexastral.com',
     storeTarget: 'soulmatch',
     privacyPath: '/privacy/yuel',
@@ -53,6 +54,7 @@ export const APP_LAUNCH: Record<AppId, AppLaunchConfig> = {
     id: 'kanyu',
     displayName: 'Kanyu',
     role: 'flagship',
+    // Deferred: craft bar below “风水大师” product promise — do not wave-unlock yet.
     visibility: 'hidden',
     showOnHomepage: false,
     brandHostIndexable: false,
@@ -75,6 +77,7 @@ export const APP_LAUNCH: Record<AppId, AppLaunchConfig> = {
     id: 'yaul',
     displayName: 'Yaul',
     role: 'funnel',
+    // Deferred: hard GTM + physical-cast experience gap.
     visibility: 'hidden',
     showOnHomepage: false,
     brandHostIndexable: false,
@@ -86,6 +89,7 @@ export const APP_LAUNCH: Record<AppId, AppLaunchConfig> = {
     id: 'syel',
     displayName: 'Syel',
     role: 'flagship',
+    // Last: face/palm biometric sensitivity + App Review risk — after Yuun+Yuel.
     visibility: 'hidden',
     showOnHomepage: false,
     brandHostIndexable: false,

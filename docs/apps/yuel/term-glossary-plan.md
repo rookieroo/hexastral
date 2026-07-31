@@ -1,18 +1,19 @@
-# Plan — 命理 term meaning-first + a Settings glossary page
+# Plan — 命理 terms Route B + a Settings glossary page
 
-From the 2026-06 round-2 report review. The synastry prose is dense with 命理 jargon
-that's either raw ("寅午三合局") or literally mistranslated ("tiger-horse trinity",
-"Death Star") — opaque even to zh readers, and so frequent that "just open chat" would
-fire on half the report. Goal: **the meaning carries every sentence; the term is
-optional flavor; one Settings page is the canonical decoder.** This is a real
-differentiator vs other 命理 apps — worth doing rigorously.
+From the 2026-06 round-2 report review; **updated 2026-07** to align with Syel
+Route B (通俗白话 + 保留汉字术语). Synastry prose used to be either raw jargon
+or opaque coinages — the goal is: **plain prose carries every sentence; 汉字
+terms stay as load-bearing anchors; Settings glossary is the decoder.**
 
 ## Principles
-1. A reader who can't read Chinese never needs a glossary to follow the prose.
-2. Translate the EFFECT/meaning, never the characters (no coined literals).
-3. The Chinese term may appear once, parenthetically, as seasoning — never load-bearing.
-4. Terms render consistently across all six chapters (today they drift: "Day Master's
-   Wood" in one, "Jia's 乙木" in another).
+1. A reader who can't decode classical terms still follows the prose (meaning in
+   surrounding plain language).
+2. Keep load-bearing **汉字** terms (七杀、三合、日主、用神…); do not romanize or
+   invent English coinages. App tap-gloss / Settings page explains them.
+3. First mention: term + one short plain gloss; later mentions may be term-only.
+4. Terms render consistently across chapters (canonical `astro-i18n` table).
+5. Ban only fearmongering / ironclad labels (绝命、克妻…) — not classical craft
+   tokens themselves (`jargon-ban.ts`).
 
 ## Part A — canonical term data (the spine) — ✅ DONE (P1)
 A curated table is the single source of truth for BOTH the generation prompt and the
@@ -52,31 +53,14 @@ review. (Some already exist literal-ish in `svc-astro/lib/i18n-prompt.ts` SHISHE
 maps — migrate + rewrite those meaning-first, then have svc-astro import from astro-i18n
 so there's ONE table.)
 
-## Part B — generation uses the table (svc-astro) — ✅ DONE (P2)
-- ✅ **zh meaning-first directive.** The zh path of `buildLanguageBlock` had NO tone
-  guidance (only "output in 简体中文"); added a meaning-first block for the pair
-  domains (`hehun`/`shuangpan`) — rewrite 寅午三合局/亡神/建禄格 as their effect, ≤1-2
-  terms/chapter, gloss in parens on first use. (en was already meaning-first via
-  `TONE_GUIDES.en`.) A light cross-lingual meaning-first reminder also covers
-  ja/ko/de/es pair reports. ja/ko TONE_GUIDES intentionally KEEP 漢字 terms (those
-  are natively readable for that audience — the literal-translation problem was an
-  en problem), so they're not forced term-free.
-- ✅ **Person-reference fix.** Root cause: the two people enter the prompt as the
-  neutral tokens 甲方/乙方 (so the client swaps them per reader → 你 / the other's
-  name), but in non-zh output the model romanized them to "Jia"/"Yi" (or invented
-  "Person A" / "Day Master's Wood"), which the client's 甲方/乙方 replacement missed.
-  Fix = a hard rule in the non-zh path: keep 甲方/乙方 EXACTLY verbatim in every
-  language, never romanize/translate/rename, possessive = `甲方's`. This is what
-  lets onboarding keep the name OPTIONAL. Forward-looking — archived reports keep
-  their original text. **Needs `cd services/svc-astro && bun deploy` + a
-  generate-and-review pass.**
-- ⏭️ **Deferred: feeding the curated `short` table into the prompt.** svc-astro does
-  NOT currently depend on `@zhop/astro-i18n` (only astro-core), and adding a
-  workspace dep to a CF Worker risks the bundle/`bun install`. Since the en path is
-  already meaning-first via the tone guide, importing the table is marginal upside
-  for real risk — deferred. The curated table is still the canonical CONTENT source
-  (it feeds the glossary page, P3) and the prompt's example glosses were authored to
-  match it. Wire it in later behind a verified install if we want one literal source.
+## Part B — generation uses the table (svc-astro) — ✅ DONE (P2) + Route B refresh (2026-07)
+- ✅ **zh Route B directive** (replaces effect-only wipe): keep 汉字 terms + 白话
+  承接 in `buildLanguageBlock` pair domains; chapters/aha/flat prompts drop
+  「命理书面语」register.
+- ✅ **en/ja keep-汉字** pair override (unchanged).
+- ✅ **jargon-ban narrowed** to fearmongering labels only (绝命/克妻…); 七杀/八字 allowed.
+- ✅ **Person-reference fix** (甲方/乙方 verbatim) — still requires deploy + review pass.
+- ⏭️ **Deferred: feeding the curated `short` table into the prompt.**
 
 ## Part C — Settings glossary page
 A new screen, distinct from the existing `(settings)/glossary.tsx` (that one decodes the

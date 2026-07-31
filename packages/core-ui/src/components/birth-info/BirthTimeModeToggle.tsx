@@ -53,13 +53,15 @@ export function BirthTimeModeToggle({ value, onChange, accent, labels }: BirthTi
               borderRadius: 10,
               borderWidth: 0.5,
               borderColor: selected ? accent : colors.separator,
-              backgroundColor: selected ? accent : 'transparent',
+              // Tint fill + accent text — solid accent+#fff fails on light accents
+              // (Yuel moonlight #FBF8F2, Feng zinc).
+              backgroundColor: selected ? `${accent}1F` : 'transparent',
               alignItems: 'center',
             }}
           >
             <Text
               style={{
-                color: selected ? '#fff' : colors.text,
+                color: selected ? accent : colors.text,
                 fontSize: 14,
                 fontWeight: selected ? '600' : '400',
               }}

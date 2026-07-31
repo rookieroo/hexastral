@@ -35,6 +35,10 @@ export function GET(): NextResponse {
         {
           appID: `${TEAM_ID}.com.hexastral.yuel`,
           paths: [
+            '/resonate/*',
+            '/report/*',
+            '/invite/*',
+            '/hehun/*',
             '/lp/yuel/*',
             '/*/lp/yuel/*',
             '/lp/yuan/*',

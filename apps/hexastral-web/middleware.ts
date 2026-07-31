@@ -94,13 +94,23 @@ export default function middleware(request: NextRequest) {
   const surfaced = withSurfaceRequest(request)
 
   // ─── Launch gate: hidden brand hosts → apex ────────────────────────────────
+  // Marketing home is parked, but identity-bearing deep links (invite / report
+  // share) must keep their path — otherwise yuel.hexastral.com/resonate/{token}
+  // collapses to https://hexastral.com/ and the invite identity is lost.
   const brandId = brandIdFromHost(host)
   if (brandId && !appIsPublicSurface(brandId)) {
     const apex = apexOriginFromRequest({
       host,
       proto: request.headers.get('x-forwarded-proto'),
     })
-    return NextResponse.redirect(new URL('/', apex))
+    const path = pathname
+    const keepPath =
+      path.startsWith('/resonate/') ||
+      path.startsWith('/report/') ||
+      path.startsWith('/invite/') ||
+      path.startsWith('/hehun/')
+    const dest = keepPath ? `${path}${request.nextUrl.search}` : '/'
+    return NextResponse.redirect(new URL(dest, apex))
   }
 
   // ─── Launch gate: hidden /lp/* and /privacy/{app} ──────────────────────────

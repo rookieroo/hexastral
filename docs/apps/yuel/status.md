@@ -1,6 +1,6 @@
 # Kindred — Status & Task Board
 
-_Last updated: 2026-06-10. A living tracking layer over the detailed plans — it
+_Last updated: 2026-07-31. A living tracking layer over the detailed plans — it
 records **what's done** and **what's next**, and points to the ADRs / plan docs
 rather than restating them._
 
@@ -9,6 +9,17 @@ rather than restating them._
 timeline [ADR-0014](../../decisions/0014-bonds-timeline-architecture.md) · make-if
 insight layer [ADR-0023](../../decisions/0023-timeline-makeif-insight-layer.md).
 
+**Push / report fuel SSOT:** [push-fuel-contract.md](./push-fuel-contract.md) ·
+[push-retention-playbook.md](../../setup/push-retention-playbook.md).
+
+## 2026-07-31 — dark contrast + push product surface
+
+- ✅ BirthTimeModeToggle / PrimaryButton disabled contrast (moonlight-safe).
+- ✅ Voice Route B (白话 + 汉字术语); narrowed jargon-ban; Pass-2 push harvest.
+- ✅ Home Upcoming strip + `GET /api/kindred/push/fuel`; in-report fuel disclosure.
+- ✅ Server timeline node slot (`timeline-targets` + svc-notify 09:00).
+- ⏸ Layer-1 uncovered-day templates — proposed only (playbook silence remains).
+- ⏸ Kimi K3 — shadow-only; K2.6 stays production flagship.
 ## Strategy in one paragraph
 
 Ship **Auspice + Kindred** to the App Store (June 2026). **分轴 to dodge App
