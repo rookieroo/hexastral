@@ -970,7 +970,9 @@ export const dailySignals = sqliteTable(
  *   隐私: B 的精确生辰不暴露给 A（只返回合盘结论）
  *   增长: B 免费获得简报 → 转化为新用户（Viral Loop）
  *
- * Bond limits: Free ≤ 20, Pro/Premium = unlimited
+ * Bond create is uncapped. Full solo unlocks: 2 free lifetime, then invite or
+ * one-time SKU. Yuel Pro is the living layer (chat / timeline / what-if) — not
+ * unlimited 合盘 unlocks.
  */
 export const userBonds = sqliteTable(
   'user_bonds',
@@ -2047,8 +2049,8 @@ export const freeMonthlyQuotasRelations = relations(freeMonthlyQuotas, ({ one })
 /**
  * Yuel Pro 月度额度 (per-user, per-month metering for the LLM-cost 体验层 features).
  *
- * Pro 订阅不再是“无限”，而是“更宽裕的额度”：追问/假如/换视角 各有月度上限，按月重置
- * （新月 = 新行，懒初始化 + 原子自增；旧月行自然失效）。上限见 lib/pro-allowance.ts。
+ * Pro 订阅不再是“无限”，而是“更宽裕的额度”：追问/假如/换视角/合盘解锁 各有月度上限，按月重置
+ * （新月 = 新行，懒初始化 + 原子自增；旧月行自然失效）。上限见 services/pro-allowance.ts。
  * 这是订阅内的计量层（与 free_monthly_quotas 的免费计量分开，语义清晰）。
  */
 export const proMonthlyUsage = sqliteTable(
@@ -2068,6 +2070,8 @@ export const proMonthlyUsage = sqliteTable(
     explainUsed: integer('explain_used').default(0).notNull(),
     /** 当月已用 换视角/reroll 次数 */
     rerollUsed: integer('reroll_used').default(0).notNull(),
+    /** 当月已用 合盘全开 / 按新生辰重算 次数 */
+    synastryUnlockUsed: integer('synastry_unlock_used').default(0).notNull(),
     createdAt: text('created_at')
       .notNull()
       .$defaultFn(() => new Date().toISOString()),

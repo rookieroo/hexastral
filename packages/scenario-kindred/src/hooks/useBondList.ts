@@ -37,8 +37,8 @@ export interface UseBondListResult {
    *  back (re-inserting it) if the server call fails. */
   deleteBond: (id: string) => Promise<void>
   /** Re-run a bond's reading with the viewer's current birth (Pro, destructive).
-   *  Refetches on success. 'needs_pro' → route to the paywall. */
-  recompute: (id: string) => Promise<'recomputed' | 'needs_pro' | 'error'>
+   *  Refetches on success. 'needs_pro' → paywall. 'quota' → monthly unlocks exhausted. */
+  recompute: (id: string) => Promise<'recomputed' | 'needs_pro' | 'quota' | 'error'>
   /** Free-bond quota (Pro flag + used/limit). undefined until the first fetch
    *  resolves; surfaced for display only. */
   quota?: BondQuota
@@ -136,10 +136,11 @@ export function useBondList(options: UseBondListOptions = {}): UseBondListResult
   )
 
   const recompute = useCallback(
-    async (id: string): Promise<'recomputed' | 'needs_pro' | 'error'> => {
+    async (id: string): Promise<'recomputed' | 'needs_pro' | 'quota' | 'error'> => {
       try {
         const res = await kindredBonds(client)[':id'].recompute.$post({ param: { id } })
         if (res.status === 403) return 'needs_pro'
+        if (res.status === 402) return 'quota'
         if (!res.ok) return 'error'
         await refetch()
         return 'recomputed'

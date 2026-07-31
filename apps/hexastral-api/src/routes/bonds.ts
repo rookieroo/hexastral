@@ -502,9 +502,9 @@ interface BondQuota {
 }
 
 async function getBondQuota(db: AppDb, userId: string): Promise<BondQuota> {
-  // Count real solo unlocks for EVERYONE — Pro is the 体验层 and no longer grants
-  // free 合盘 unlocks, so a subscriber gets the same 2 free solo reads then buys
-  // per report. `isPro` stays in the payload for display only.
+  // Lifetime free solo full unlocks (2). Pro adds up to 3 monthly synastry
+  // unlocks/recomputes via PRO_MONTHLY_LIMITS.synastry_unlock — not unlimited
+  // at create time. Soft-deleted unlocked solos still count (no refund).
   const isPro = await userHasCapability(db, userId, 'kindred')
   const [row] = await db
     .select({ count: sql<number>`count(*)` })
@@ -1809,9 +1809,8 @@ bondRoutes.post('/invite/:token/respond', async (c) => {
 
 // ── GET / — 列出当前用户的关系 ───────────────────────────────
 
-// GET /pro/allowance — this month's Yuel Pro 额度 (chat / explain / reroll) for the
-// client to show remaining + the soft "下月重置" notice. Read-only, no consume.
-// Two-segment path so it never collides with GET /:id.
+// GET /pro/allowance — this month's Yuel Pro 额度 (chat / explain / reroll /
+// synastry_unlock) for the client to show remaining + soft "下月重置". Read-only.
 bondRoutes.get('/pro/allowance', async (c) => {
   const userId = requireUserId(c)
   const db = c.get('db')
@@ -3096,11 +3095,9 @@ bondRoutes.get('/:id', zValidator('query', bondGetQuerySchema), async (c) => {
   })
 })
 
-// ── POST /:id/unlock — buy-to-unlock the full six-chapter report for one bond ──
-// Free resonance bonds gate to SYNASTRY_FREE_CHAPTERS; this applies a single
-// purchase (hexastral_compatibility) to reveal all six for THIS bond. Solo bonds
-// are unlocked at creation and subscribers/invite-unlocked users never reach the
-// wall, so this is the resonance-bond buy path. Idempotent.
+// ── POST /:id/unlock — unlock the full six-chapter report for one bond ──
+// Paths: Pro monthly synastry_unlock (3/mo) → single purchase (hexastral_compatibility).
+// Invite-accept acquisition unlocks never hit this. Idempotent.
 bondRoutes.post('/:id/unlock', async (c) => {
   const bondId = c.req.param('id')
   const userId = requireUserId(c)
@@ -3119,19 +3116,35 @@ bondRoutes.post('/:id/unlock', async (c) => {
   if (!bond) return jsonErr(c, 404, ApiErrorCode.not_found, 'Bond not found')
   if (bond.chaptersUnlocked) return jsonOk(c, { unlocked: true, via: 'already' })
 
+  // Pro: consume one of 3 monthly synastry unlocks (not unlimited).
+  if (await userHasCapability(db, userId, 'kindred')) {
+    const allowance = await consumeProAllowance(db, userId, 'synastry_unlock')
+    if (allowance.granted) {
+      await db
+        .update(userBonds)
+        .set({ chaptersUnlocked: true, updatedAt: new Date().toISOString() })
+        .where(and(eq(userBonds.id, bondId), eq(userBonds.ownerId, userId)))
+      return jsonOk(c, {
+        unlocked: true,
+        via: 'pro_quota',
+        remaining: allowance.remaining,
+        resetsOn: allowance.resetsOn,
+      })
+    }
+  }
+
   const access = await checkReadingAccess(db, userId, 'compatibility', {
     readingId: bond.hehunReadingId ?? undefined,
+    allowSubscriptionBypass: false,
   })
 
   if (!access.granted) {
-    // No subscription / credit / available purchase — client must buy first.
     return jsonErr(c, 402, ApiErrorCode.paywall_required, 'Unlock requires purchase', {
       iapProductId: access.iapProductId,
       price: access.price,
     })
   }
 
-  // Spend the single purchase (subscribers / credits are granted without a row).
   if (access.via === 'single_purchase') {
     await db
       .update(singlePurchases)
@@ -3163,6 +3176,7 @@ bondRoutes.post('/:id/unlock', async (c) => {
 // viewer's slot is refreshed to their current birth; the counterpart's stored birth
 // — and the counterpart's OWN mirror reading — are untouched. Destructive: the old
 // reading is overwritten (the client confirms the irreversible action first).
+// Consumes one monthly synastry_unlock.
 bondRoutes.post('/:id/recompute', async (c) => {
   const bondId = c.req.param('id')
   const userId = requireUserId(c)
@@ -3170,6 +3184,15 @@ bondRoutes.post('/:id/recompute', async (c) => {
 
   if (!(await userHasCapability(db, userId, 'kindred'))) {
     return jsonErr(c, 403, ApiErrorCode.paywall_required, 'Recompute requires Kindred Pro')
+  }
+
+  const allowance = await consumeProAllowance(db, userId, 'synastry_unlock')
+  if (!allowance.granted) {
+    return jsonErr(c, 402, ApiErrorCode.paywall_required, 'Monthly synastry unlocks exhausted', {
+      remaining: 0,
+      limit: allowance.limit,
+      resetsOn: allowance.resetsOn,
+    })
   }
 
   const bond = await db

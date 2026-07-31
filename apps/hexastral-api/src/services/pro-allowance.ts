@@ -1,16 +1,10 @@
 /**
- * Yuel Pro 月度额度 — the subscription's metered LLM features.
+ * Yuel Pro 月度额度 — the subscription's metered features.
  *
- * Pro is "更宽裕的额度", not "无限": each LLM-cost feature (追问/chat · 假如/what-if ·
- * 换视角/reroll) has a monthly cap that bounds spend so a heavy user can't make the
- * subscription unprofitable. Resets monthly (new month = a fresh row; old rows fall
- * out of scope naturally). Mirrors services/quota.ts's free-tier pattern (lazy-init
- * + atomic increment), but on its own `pro_monthly_usage` table so the Pro metering
- * stays separate from the free-tier quotas.
- *
- * Enforcement is a SOFT cap: when exhausted the caller returns a graceful "本月额度
- * 已用完，下月重置" signal (no LLM call), never a hard error — the action is just
- * paused until the reset, presented gently.
+ * Pro is "更宽裕的额度", not "无限": LLM-cost features (追问/chat · 假如 explain ·
+ * 换视角/reroll) and 合盘 unlock/recompute each have a monthly cap. Resets monthly
+ * (new month = a fresh row). Soft cap: when exhausted the caller returns a graceful
+ * signal (no LLM / no unlock), never a hard crash.
  */
 
 import { and, eq, sql } from 'drizzle-orm'
@@ -18,7 +12,7 @@ import { nanoid } from 'nanoid'
 import { proMonthlyUsage } from '../db/schema'
 import type { AppDb } from '../infra-types'
 
-/** Monthly caps per Pro LLM feature. Tuned to bound cost while feeling generous. */
+/** Monthly caps per Pro feature. Tuned to bound cost while feeling generous. */
 export const PRO_MONTHLY_LIMITS = {
   /** 划词追问 (AI chat) */
   chat: 150,
@@ -26,6 +20,8 @@ export const PRO_MONTHLY_LIMITS = {
   explain: 30,
   /** 换视角 (chapter re-roll) */
   reroll: 5,
+  /** 合盘全开 unlock 或按新生辰 recompute */
+  synastry_unlock: 3,
 } as const
 
 export type ProFeature = keyof typeof PRO_MONTHLY_LIMITS
@@ -35,6 +31,7 @@ const FEATURE_COLUMN = {
   chat: proMonthlyUsage.chatUsed,
   explain: proMonthlyUsage.explainUsed,
   reroll: proMonthlyUsage.rerollUsed,
+  synastry_unlock: proMonthlyUsage.synastryUnlockUsed,
 } as const
 
 /** Type-safe `.set()` increment per feature (Drizzle keys are TS property names). */
@@ -47,6 +44,8 @@ function incrementSet(feature: ProFeature) {
       return { explainUsed: sql`${proMonthlyUsage.explainUsed} + 1`, updatedAt }
     case 'reroll':
       return { rerollUsed: sql`${proMonthlyUsage.rerollUsed} + 1`, updatedAt }
+    case 'synastry_unlock':
+      return { synastryUnlockUsed: sql`${proMonthlyUsage.synastryUnlockUsed} + 1`, updatedAt }
   }
 }
 
@@ -73,8 +72,7 @@ export interface ProAllowanceResult {
 
 /**
  * Atomically check + consume one unit of a Pro feature's monthly allowance.
- * `granted: false` means the cap is reached — the caller should soft-block (return
- * the graceful "resets next month" signal, no LLM call). Lazy-inits the month row.
+ * `granted: false` means the cap is reached — the caller should soft-block.
  */
 export async function consumeProAllowance(
   db: AppDb,
@@ -85,10 +83,8 @@ export async function consumeProAllowance(
   const limit = PRO_MONTHLY_LIMITS[feature]
   const column = FEATURE_COLUMN[feature]
 
-  // Lazy-init this month's row (idempotent).
   await db.insert(proMonthlyUsage).values({ id: nanoid(), userId, month }).onConflictDoNothing()
 
-  // Atomically increment only if still under the cap.
   const result = await db
     .update(proMonthlyUsage)
     .set(incrementSet(feature))
@@ -102,7 +98,6 @@ export async function consumeProAllowance(
 
   const changed = (result as unknown as { meta: { changes: number } }).meta.changes
   const granted = changed > 0
-  // Re-read the (possibly just-incremented) count for an accurate remaining.
   const row = await db
     .select({ used: column })
     .from(proMonthlyUsage)
@@ -125,6 +120,7 @@ export async function getProAllowanceStatus(
       chat: proMonthlyUsage.chatUsed,
       explain: proMonthlyUsage.explainUsed,
       reroll: proMonthlyUsage.rerollUsed,
+      synastryUnlock: proMonthlyUsage.synastryUnlockUsed,
     })
     .from(proMonthlyUsage)
     .where(and(eq(proMonthlyUsage.userId, userId), eq(proMonthlyUsage.month, month)))
@@ -139,6 +135,7 @@ export async function getProAllowanceStatus(
     chat: mk('chat', row?.chat ?? 0),
     explain: mk('explain', row?.explain ?? 0),
     reroll: mk('reroll', row?.reroll ?? 0),
+    synastry_unlock: mk('synastry_unlock', row?.synastryUnlock ?? 0),
     resetsOn: resetsOn(month),
   }
 }

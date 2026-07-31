@@ -29,6 +29,7 @@ export function ReportBloom({
   origin: originProp,
   surroundColor,
   closing,
+  onOpened,
   onClosed,
 }: {
   children: ReactNode
@@ -42,6 +43,9 @@ export function ReportBloom({
   /** Flip true to play the REVERSE bloom — the ink collapses back to the origin,
    *  for the in-place overlay close (mirrors the solo reading overlay). */
   closing?: boolean
+  /** Fires once the open bloom finishes (mask full). Use for progressive chrome
+   *  like the living-layer FAB — keep those outside the mask so they don't clip. */
+  onOpened?: () => void
   /** Fires once the reverse bloom finishes collapsing (unmount the overlay here). */
   onClosed?: () => void
 }) {
@@ -83,7 +87,10 @@ export function ReportBloom({
             width={width}
             height={height}
             duration={closing ? CLOSE_DURATION : OPEN_DURATION}
-            onOpened={() => setPhase('done')}
+            onOpened={() => {
+              setPhase('done')
+              onOpened?.()
+            }}
             onCollapsed={onClosed}
           />
         }

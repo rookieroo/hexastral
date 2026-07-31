@@ -80,12 +80,22 @@ export async function checkReadingAccess(
   db: AppDb,
   userId: string,
   skuId: SingleSkuId,
-  opts: { allowBondInviteCredit?: boolean; readingId?: string } = {}
+  opts: {
+    allowBondInviteCredit?: boolean
+    readingId?: string
+    /** When false, skip the any-subscription bypass (compatibility unlock meters Pro
+     *  via synastry_unlock instead of unlimited pro_quota). Default true. */
+    allowSubscriptionBypass?: boolean
+  } = {}
 ): Promise<AccessResult> {
-  const { allowBondInviteCredit = false, readingId } = opts
+  const { allowBondInviteCredit = false, readingId, allowSubscriptionBypass = true } = opts
   const { productId, price } = SKU_IAP_META[skuId]
 
-  if (!FENG_SINGLE_SKUS.has(skuId) && (await userHasAnySubscription(db, userId))) {
+  if (
+    allowSubscriptionBypass &&
+    !FENG_SINGLE_SKUS.has(skuId) &&
+    (await userHasAnySubscription(db, userId))
+  ) {
     return { granted: true, via: 'pro_quota' }
   }
 

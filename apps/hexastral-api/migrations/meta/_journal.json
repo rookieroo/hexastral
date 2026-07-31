@@ -267,6 +267,13 @@
       "when": 1785391947922,
       "tag": "0037_broad_thor_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "6",
+      "when": 1785539137123,
+      "tag": "0038_parallel_red_wolf",
+      "breakpoints": true
     }
   ]
 }

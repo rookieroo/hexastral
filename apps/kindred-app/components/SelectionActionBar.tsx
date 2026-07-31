@@ -1,38 +1,30 @@
 /**
  * SelectionActionBar — the 划词 "冒泡任务栏" for the report.
  *
- * The report has no native text-range selection (RN doesn't expose selection
- * geometry to position an at-cursor popover reliably). Instead — matching the
- * solo reader's established 划词 pattern — long-pressing a report SENTENCE
- * "picks" it as the quote (ChapterCard splits each paragraph into long-pressable
- * sentences), and this bar slides up from the bottom with a minimal one-row of
- * SENTENCE-scoped icons: copy / chat / highlight. (Make-if + timeline used to
- * live here too, but they're BOND-level — already on the thread-row swipe — so
- * in a sentence bar they were redundant + off-concept; 2026-06 they're dropped,
- * leaving the clean loop: copy/highlight to keep, chat to ask = the engagement →
- * free-taste cap → paywall path.) The meanings are taught once in the reading
- * primer + Symbol Glossary, so the bar stays icon-only with a11y labels.
+ * Long-pressing a report SENTENCE picks it as the quote; this bar slides up with
+ * sentence-scoped icons: copy / chat / highlight / make-if. Chat + make-if are
+ * Pro depth surfaces — hosts navigate into free taste first; paywall after
+ * server exhaustion. Copy + highlight stay free.
  *
- * Presentational only — the host (bond detail) owns the quote state + wires the
- * handlers (clipboard, chat route, highlight persistence).
+ * Presentational only — the host owns quote state + handlers.
  */
 
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
-import { Copy, Highlighter, type LucideIcon, MessageCircle } from 'lucide-react-native'
+import { Copy, GitBranch, Highlighter, type LucideIcon, MessageCircle } from 'lucide-react-native'
 import { Pressable, Text, View } from 'react-native'
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
 
 export interface SelectionActionBarProps {
   /** The picked sentence; null hides the bar. */
   quote: string | null
-  labels: { copy: string; chat: string; highlight: string }
+  labels: { copy: string; chat: string; highlight: string; makeif?: string }
   /** Whether the picked quote is already highlighted (toggles the icon tone). */
   highlighted?: boolean
-  /** Each action renders only when its handler is provided (e.g. chat is omitted
-   *  until a pair reading exists). */
-  onCopy?: () => void
-  onChat?: () => void
-  onHighlight?: () => void
+  onCopy: () => void
+  onChat: () => void
+  onHighlight: () => void
+  /** Optional — bond reports only (personal 命书 routes make-if to Yuun). */
+  onMakeIf?: () => void
   onClose: () => void
 }
 
@@ -43,11 +35,18 @@ export function SelectionActionBar({
   onCopy,
   onChat,
   onHighlight,
+  onMakeIf,
   onClose,
 }: SelectionActionBarProps) {
   if (!quote) return null
 
-  const actions = [
+  const actions: Array<{
+    key: string
+    label: string
+    Icon: LucideIcon
+    onPress: () => void
+    active?: boolean
+  }> = [
     { key: 'copy', label: labels.copy, Icon: Copy, onPress: onCopy },
     { key: 'chat', label: labels.chat, Icon: MessageCircle, onPress: onChat },
     {
@@ -57,17 +56,17 @@ export function SelectionActionBar({
       onPress: onHighlight,
       active: highlighted,
     },
-  ].filter(
-    (
-      a
-    ): a is {
-      key: string
-      label: string
-      Icon: LucideIcon
-      onPress: () => void
-      active?: boolean
-    } => Boolean(a.onPress)
-  )
+    ...(onMakeIf && labels.makeif
+      ? [
+          {
+            key: 'makeif',
+            label: labels.makeif,
+            Icon: GitBranch,
+            onPress: onMakeIf,
+          },
+        ]
+      : []),
+  ]
 
   return (
     <Animated.View
@@ -86,14 +85,12 @@ export function SelectionActionBar({
         paddingTop: kindredSpacing.sm,
         paddingBottom: kindredSpacing.sm,
         gap: kindredSpacing.sm,
-        // Lift it off the page.
         shadowColor: '#000',
         shadowOpacity: 0.35,
         shadowRadius: 16,
         shadowOffset: { width: 0, height: 6 },
       }}
     >
-      {/* Picked snippet — one line, so the user sees what the action applies to. */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: kindredSpacing.sm }}>
         <View style={{ width: 2, alignSelf: 'stretch', backgroundColor: kindredDark.accent }} />
         <Text
@@ -107,7 +104,6 @@ export function SelectionActionBar({
         </Pressable>
       </View>
 
-      {/* Action row — a minimal row of icons (meanings live in the primer/glossary). */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
         {actions.map((a) => (
           <Pressable

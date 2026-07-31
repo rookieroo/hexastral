@@ -360,8 +360,7 @@ export default function ReadingHomeScreen() {
   )
 
   // Recompute a stale bond's reading with the user's current birth (Pro). In-place
-  // + irreversible (overwrites the existing reading), so confirm before firing;
-  // non-Pro is routed to the paywall by the server's 403 → 'needs_pro'.
+  // + irreversible; uses one monthly synastry unlock. Confirm before firing.
   const confirmRecompute = useCallback(
     (bond: BondData) => {
       Alert.alert(t(locale, 'bond.recomputeConfirmTitle'), t(locale, 'bond.recomputeConfirmBody'), [
@@ -373,15 +372,14 @@ export default function ReadingHomeScreen() {
             void (async () => {
               const outcome = await recompute(bond.id)
               if (outcome === 'needs_pro') {
-                // MVP: recompute is a Pro living-layer affordance — don't open the
-                // subscription paywall until Phase 2.
                 if (!MVP_LIVING_LAYER_ENABLED) {
                   Alert.alert(t(locale, 'bond.recomputeFailed'))
                   return
                 }
                 router.push('/(commerce)/paywall')
-              }
-              else if (outcome === 'error') Alert.alert(t(locale, 'bond.recomputeFailed'))
+              } else if (outcome === 'quota') {
+                Alert.alert(t(locale, 'bond.recomputeQuotaExhausted'))
+              } else if (outcome === 'error') Alert.alert(t(locale, 'bond.recomputeFailed'))
             })()
           },
         },

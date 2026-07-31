@@ -48,11 +48,27 @@ function maskEmail(email: string): string {
   return `${local.slice(0, 2)}***@${domain}`
 }
 
-const BIRTH_COPY: Record<Locale, { section: string; row: string }> = {
-  en: { section: 'Birth info', row: 'Edit birth info' },
-  zh: { section: '出生信息', row: '修改出生信息' },
-  'zh-Hant': { section: '出生資訊', row: '修改出生資訊' },
-  ja: { section: '出生情報', row: '出生情報を編集' },
+const BIRTH_COPY: Record<Locale, { section: string; row: string; hint: string }> = {
+  en: {
+    section: 'Birth info',
+    row: 'Edit birth info',
+    hint: 'Free: one correction. Yuel Pro: edit anytime.',
+  },
+  zh: {
+    section: '出生信息',
+    row: '修改出生信息',
+    hint: '免费可更正 1 次；Yuel Pro 不限次。',
+  },
+  'zh-Hant': {
+    section: '出生資訊',
+    row: '修改出生資訊',
+    hint: '免費可更正 1 次；Yuel Pro 不限次。',
+  },
+  ja: {
+    section: '出生情報',
+    row: '出生情報を編集',
+    hint: '無料は1回まで修正。Yuel Pro は回数無制限。',
+  },
 }
 
 function SectionLabel({ children }: { children: string }) {
@@ -74,10 +90,12 @@ function RowDivider() {
 
 function SettingsRow({
   label,
+  caption,
   onPress,
   trailing,
 }: {
   label: string
+  caption?: string
   onPress?: () => void
   trailing?: ReactNode
 }) {
@@ -92,7 +110,12 @@ function SettingsRow({
         paddingHorizontal: kindredSpacing.md,
       }}
     >
-      <Text style={[kindredType.body, { color: kindredDark.text, flex: 1 }]}>{label}</Text>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={[kindredType.body, { color: kindredDark.text }]}>{label}</Text>
+        {caption ? (
+          <Text style={[kindredType.caption, { color: kindredDark.textMuted }]}>{caption}</Text>
+        ) : null}
+      </View>
       {trailing}
     </View>
   )
@@ -334,6 +357,7 @@ export default function SettingsScreen() {
           >
             <SettingsRow
               label={BIRTH_COPY[locale].row}
+              caption={BIRTH_COPY[locale].hint}
               onPress={() =>
                 router.push({ pathname: '/(onboarding)/self', params: { mode: 'edit' } })
               }

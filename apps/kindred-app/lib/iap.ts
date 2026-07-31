@@ -1,11 +1,14 @@
 /**
  * Kindred IAP — RevenueCat wrapper.
  *
- * Two products gate "unlimited bonds". Flagship pricing (2026-06, founder-agreed —
- * Yuel is the premium tier vs Yuun's mass-market almanac); actual price is set in App
- * Store Connect / RevenueCat (authoritative). Product + entitlement ids match the
- * server catalog (apps/hexastral-api/src/config/products.ts — the single source of
- * truth; see docs/setup/revenuecat-entitlements.md):
+ * Subscription grants `kindred_pro`: living layer (chat / timeline / what-if) plus
+ * up to 3 synastry unlocks or birth recomputes per month — not unlimited 合盘.
+ * Free lifetime: 2 solo full unlocks; invites create uncapped. Flagship pricing
+ * (2026-06, founder-agreed — Yuel is the premium tier vs Yuun's mass-market
+ * almanac); actual price is set in App Store Connect / RevenueCat (authoritative).
+ * Product + entitlement ids match the server catalog
+ * (apps/hexastral-api/src/config/products.ts — the single source of truth; see
+ * docs/setup/revenuecat-entitlements.md):
  *   - `kindred_pro_monthly`  — $7.99 / mo
  *   - `kindred_pro_annual`   — $47.99 / yr
  *

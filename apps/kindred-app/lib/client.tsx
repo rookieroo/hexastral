@@ -5,10 +5,10 @@
  * scenario-yuan hooks (via KindredClientProvider) can issue signed requests
  * without re-implementing auth.
  *
- * IMPORTANT: once a userId exists, always keep the expo-router <Stack> mounted.
- * Replacing the tree with only a BootSplash (old behaviour) left NavigationContainer
- * with no screens → DEV LogBox "action … was not handled by any navigator" on
- * Universal Links / early router.push (invite accept, timeline taps, Redirect).
+ * IMPORTANT: once AuthProvider mounts, always keep the expo-router <Stack>
+ * mounted (boot splash is an overlay). Replacing the tree with only a BootSplash
+ * left NavigationContainer with no screens → DEV LogBox "action … was not
+ * handled by any navigator" on Universal Links / early router.push.
  */
 
 import { createHexastralClient, type HexastralClient } from '@zhop/hexastral-client'
@@ -40,10 +40,27 @@ export interface KindredClientGateProps {
 /**
  * Gate — wraps children in <KindredClientProvider> once userId exists.
  * Route tree stays mounted; boot UI is an overlay so deep links can resolve.
+ *
+ * CRITICAL: never unmount the expo-router <Stack> while provisioning. Returning
+ * only `fallback` left NavigationContainer with no screens → queued
+ * router.push / Universal Links blew up as "action was not handled by any
+ * navigator" when the container later flushed routingQueue (ExpoRoot).
  */
 export function KindredClientGate({ children, fallback = null }: KindredClientGateProps) {
   const { userId, isLoading, resyncCredentials } = useAuth()
   const client = useMemo(() => (userId ? buildClient(userId) : null), [userId])
+
+  // Placeholder so scenario hooks don't throw while the boot overlay is up.
+  // Requests in this window should be rare (overlay steals pointer events).
+  const bootClient = useMemo(
+    () =>
+      client ??
+      createHexastralClient(config.apiUrl, {
+        signRequest: async () => ({}),
+        headers: {},
+      }),
+    [client]
+  )
 
   const onError = useCallback(
     (err: Error) => {
@@ -56,14 +73,13 @@ export function KindredClientGate({ children, fallback = null }: KindredClientGa
     [resyncCredentials]
   )
 
-  // Cold first launch (no cached userId yet): no client → splash only until provision.
-  if (!client) return <>{fallback}</>
+  const showBoot = !userId || isLoading
 
   return (
-    <KindredClientProvider client={client} onError={onError}>
+    <KindredClientProvider client={bootClient} onError={onError}>
       <View style={styles.root}>
         {children}
-        {isLoading ? (
+        {showBoot ? (
           <View style={styles.bootOverlay} pointerEvents='auto'>
             {fallback}
           </View>

@@ -70,7 +70,6 @@ import { type Locale, localeFromTag, relativeSentLabel, resolveLocale, useI18n }
 import { getKindredSinglePrice, purchaseKindredSingle } from '@/lib/iap'
 import { useImageShare } from '@/lib/imageShare'
 import { KINDRED_BRAND_URL, KINDRED_INSTALL_URL, kindredShareCaption } from '@/lib/kindredShare'
-import { MVP_LIVING_LAYER_ENABLED } from '@/lib/mvp-flags'
 import { hasSeenReadingPrimer, markReadingPrimerSeen } from '@/lib/primer-seen'
 
 type ClipboardModule = typeof import('expo-clipboard')
@@ -271,6 +270,12 @@ export default function BondDetailScreen({
   // AsyncStorage (lib/highlights.ts): loaded on mount, saved on every toggle.
   const [pickedQuote, setPickedQuote] = useState<string | null>(null)
   const [highlights, setHighlights] = useState<string[]>([])
+  // Living-layer FAB waits for ReportBloom to finish so chrome doesn't sit over
+  // the still-masked report.
+  const [bloomReady, setBloomReady] = useState(false)
+  useEffect(() => {
+    setBloomReady(false)
+  }, [id])
   useEffect(() => {
     if (!id) return
     let cancelled = false
@@ -643,8 +648,6 @@ export default function BondDetailScreen({
       chaptersPending && !reportLocked
         ? Math.max(0, SYNASTRY_TOTAL_CHAPTERS - viewedChapters.length)
         : 0
-    // Same subscription paywall the timeline / what-if screens raise (Phase 2).
-    const openPaywall = () => router.push('/(commerce)/paywall')
     const unlockWall =
       lockedChapters.length > 0 ? (
         <ChapterUnlockWall
@@ -680,6 +683,7 @@ export default function BondDetailScreen({
           origin={bloomOrigin}
           surroundColor={bloomOverLiveHome ? 'transparent' : undefined}
           closing={closing}
+          onOpened={() => setBloomReady(true)}
           onClosed={handleClose}
         >
           <SafeAreaView style={{ flex: 1, backgroundColor: kindredPaper.bg }}>
@@ -792,9 +796,13 @@ export default function BondDetailScreen({
           </SafeAreaView>
         </ReportBloom>
 
-        {/* Living layer FAB — MVP keeps share only; Timeline / What-if / Chat are
-            Kindred Pro Phase 2 (subscription). Unlock wall sells one-time chapters. */}
-        {detail.status === 'active' && !pickedQuote && !closing ? (
+        {/* Living-layer FAB — after bloom + primer. PRO badge = deeper layer is
+            Pro; free taste is consumed first (navigate), IAP only after exhaustion. */}
+        {detail.status === 'active' &&
+        !pickedQuote &&
+        !closing &&
+        bloomReady &&
+        !showPrimer ? (
           <LivingLayerFab
             labels={{
               timeline: t('timeline.title'),
@@ -807,37 +815,25 @@ export default function BondDetailScreen({
                   : 'Share',
             }}
             onShare={() => void handleShare()}
-            onTimeline={
-              MVP_LIVING_LAYER_ENABLED
-                ? () =>
-                    reportLocked
-                      ? openPaywall()
-                      : router.push({
-                          pathname: '/(timeline)',
-                          params: { bondId: detail.id, bondName: displayName },
-                        })
-                : undefined
+            onTimeline={() =>
+              router.push({
+                pathname: '/(timeline)',
+                params: { bondId: detail.id, bondName: displayName },
+              })
             }
-            onWhatIf={
-              MVP_LIVING_LAYER_ENABLED
-                ? () =>
-                    reportLocked
-                      ? openPaywall()
-                      : router.push({
-                          pathname: '/(bonds)/makeif',
-                          params: { id: detail.id, title: displayName },
-                        })
-                : undefined
+            onWhatIf={() =>
+              router.push({
+                pathname: '/(bonds)/makeif',
+                params: { id: detail.id, title: displayName },
+              })
             }
-            onChat={
-              MVP_LIVING_LAYER_ENABLED && pairReadingId != null
-                ? () =>
-                    router.push({
-                      pathname: '/(bonds)/chat',
-                      params: { id: pairReadingId, title: displayName },
-                    })
-                : undefined
-            }
+            onChat={() => {
+              if (pairReadingId == null) return
+              router.push({
+                pathname: '/(bonds)/chat',
+                params: { id: pairReadingId, title: displayName },
+              })
+            }}
             insetBottom={insets.bottom}
           />
         ) : null}
@@ -871,9 +867,8 @@ export default function BondDetailScreen({
             across devices (links Apple to the same userId; non-blocking). */}
         <SignInSheet visible={showSaveSheet} onClose={() => setShowSaveSheet(false)} />
 
-        {/* 划词 action bar — slides up when a sentence is long-pressed. Houses
-            the actions that used to clutter the header: copy (expo-clipboard),
-            chat, highlight (persisted per-bond), make-if. */}
+        {/* 划词 action bar — copy / chat / highlight / make-if. Free taste first;
+            paywall after server exhaustion. */}
         <SelectionActionBar
           quote={pickedQuote}
           highlighted={pickedQuote ? highlights.includes(pickedQuote) : false}
@@ -881,24 +876,22 @@ export default function BondDetailScreen({
             copy: t('reading.copy'),
             chat: t('chat.cta'),
             highlight: t('reading.highlight'),
+            makeif: t('makeif.title'),
           }}
           onCopy={() => {
             const Clipboard = getClipboard()
             if (pickedQuote && Clipboard) void Clipboard.setStringAsync(pickedQuote)
             setPickedQuote(null)
           }}
-          onChat={
-            MVP_LIVING_LAYER_ENABLED && pairReadingId != null
-              ? () => {
-                  const q = pickedQuote
-                  setPickedQuote(null)
-                  router.push({
-                    pathname: '/(bonds)/chat',
-                    params: { id: pairReadingId, title: detail.targetName, quote: q ?? '' },
-                  })
-                }
-              : undefined
-          }
+          onChat={() => {
+            const q = pickedQuote
+            setPickedQuote(null)
+            if (pairReadingId == null) return
+            router.push({
+              pathname: '/(bonds)/chat',
+              params: { id: pairReadingId, title: detail.targetName, quote: q ?? '' },
+            })
+          }}
           onHighlight={() => {
             const q = pickedQuote
             if (!q) return
@@ -908,6 +901,14 @@ export default function BondDetailScreen({
             setHighlights(next)
             if (id) void saveHighlights(id, next)
             setPickedQuote(null)
+          }}
+          onMakeIf={() => {
+            const q = pickedQuote
+            setPickedQuote(null)
+            router.push({
+              pathname: '/(bonds)/makeif',
+              params: { id: detail.id, title: detail.targetName, quote: q ?? '' },
+            })
           }}
           onClose={() => setPickedQuote(null)}
         />

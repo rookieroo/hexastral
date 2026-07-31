@@ -797,14 +797,14 @@ export default function FullReadingScreen() {
         </View>
       ) : null}
 
-      {/* 划词 action bar — slides up when a sentence is long-pressed (copy / chat /
-          highlight). */}
+      {/* 划词 action bar — copy / chat / highlight. PRO badge = Pro depth;
+          free taste first (navigate); paywall after server exhaustion. */}
       <SelectionActionBar
         quote={pickedQuote}
         highlighted={pickedQuote ? highlights.includes(pickedQuote) : false}
         labels={{
           copy: t('reading.copy'),
-          chat: t('reading.chat'),
+          chat: t('chat.cta'),
           highlight: t('reading.highlight'),
         }}
         onCopy={() => {

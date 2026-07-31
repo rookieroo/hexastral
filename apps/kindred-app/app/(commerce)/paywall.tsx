@@ -1,5 +1,6 @@
 /**
- * Kindred paywall — modal triggered when bond quota is exhausted (≥4 bonds on free).
+ * Kindred paywall — modal for Yuel Pro (`kindred_pro`): living-layer depth after
+ * free taste (chat / timeline / what-if), and related upsells.
  *
  * Two SKUs: monthly + annual (default highlight = annual). Both grant the
  * `kindred_pro` RevenueCat entitlement.
@@ -17,7 +18,7 @@
  *
  * Reached via:
  *   router.push({ pathname: '/(commerce)/paywall', params: { reason } })
- * from any quota-blocked screen (invite-email, reveal, future settings upgrade button).
+ * from chat exhaustion, living-layer upsells, settings, etc.
  */
 
 import { PaywallView } from '@zhop/core-ui'
@@ -63,8 +64,7 @@ export default function PaywallScreen() {
     []
   )
 
-  // Reason-aware subtitle: chat gate / chapter unlock / bond quota each get apt
-  // copy instead of the bond-quota default.
+  // Reason-aware subtitle: chat free-taste exhaustion vs default living-layer pitch.
   const subtitleKey =
     reason === 'chat'
       ? 'paywall.subtitleChat'

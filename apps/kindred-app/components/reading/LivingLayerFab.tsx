@@ -1,22 +1,11 @@
 /**
  * LivingLayerFab — the report's bottom-right entry into the per-bond LIVING LAYER:
- * Timeline (key 合盘 time nodes) + What-if (the timing of real decisions —
- * marriage, a child, going long-distance…) + Chat (ask about this bond). These are
- * the subscription surfaces (2026-06: chapters open free via invite, so the paywall
- * lives here + chat), so they get a prominent floating entry instead of a buried
- * row-swipe.
+ * Timeline + What-if + Chat (+ optional Share). Hosts navigate into free taste
+ * first; paywall only after server exhaustion.
  *
- * Icon-only, equal-size circular discs — text labels read as clutter and made the
- * rows uneven widths; the name now rides `accessibilityLabel`. They stay in the
- * git-graph family the Timeline spine uses: Timeline = the Timeline glyph (the axis
- * of nodes), What-if = GitBranch (the branching futures), Chat = MessageCircle.
- *
- * One shared `progress` (0 closed … 1 open) drives BOTH the FAB glyph morph and the
- * discs, so they read as a single gesture: on open the discs fan out one by one
- * along a quarter-ring around the cinnabar toggle (translate along the radius +
- * scale + fade, starting from behind it); on close they retract back into it. The
- * arc opens up-and-left so nothing leaves the screen at the bottom-right. Sits well
- * above the bottom edge so the 划词 selection bar never crowds it. Paper-styled.
+ * Icon-only circular discs; names ride `accessibilityLabel`. Git-graph family:
+ * Timeline / GitBranch / MessageCircle. Shared `progress` fans discs on a
+ * quarter-ring up-and-left from the cinnabar toggle.
  */
 
 import { kindredPaper, kindredSpacing } from '@zhop/hexastral-tokens/kindred'
@@ -34,6 +23,7 @@ import { Pressable, View } from 'react-native'
 import Animated, {
   Easing,
   Extrapolation,
+  FadeIn,
   interpolate,
   type SharedValue,
   useAnimatedStyle,
@@ -43,29 +33,15 @@ import Animated, {
 
 const FAB_SIZE = 52
 const DISC_SIZE = 46
-// Distance from the FAB centre to each disc centre. Sized so the full set of
-// discs (up to 4: timeline · what-if · chat · share) seats on the quarter-ring
-// without overlapping — the tighter 74 collided once share was added.
 const ARC_RADIUS = 104
-// Square that fully contains the FAB + the up-and-left arc, so every disc stays
-// inside the wrapper's bounds (touches outside an ancestor's frame aren't reliably
-// delivered). FAB anchors bottom-right; the arc fills up + left from there.
 const WRAP = ARC_RADIUS + DISC_SIZE / 2 + FAB_SIZE / 2 + 8
 
 export interface LivingLayerFabProps {
   labels: { timeline: string; whatif: string; chat: string; share: string }
-  /** Optional — the Timeline disc only appears where the surface exists (the 合盘 report
-   *  passes it; the personal report's 流年 moved to 运/Yuun per ADR-0026). */
-  onTimeline?: () => void
-  /** Optional — the What-if disc only appears where the surface exists (the 合盘 report
-   *  passes it; the personal report's 假如 moved to 运/Yuun per ADR-0026). */
-  onWhatIf?: () => void
-  /** Optional — the chat disc only appears once the bond has a pair reading. */
-  onChat?: () => void
-  /** Optional — share the current chapter as a card (the viral export). Trails the
-   *  living-layer trio so it never crowds the subscription surfaces. */
+  onTimeline: () => void
+  onWhatIf: () => void
+  onChat: () => void
   onShare?: () => void
-  /** Safe-area bottom inset so the button clears the home indicator. */
   insetBottom: number
 }
 
@@ -86,20 +62,21 @@ export function LivingLayerFab({
     })
   }, [open, progress])
 
-  // First disc nearest "up", last nearest "left". Each disc only when routable.
-  const actions: Array<{ key: string; Icon: LucideIcon; label: string; onPress: () => void }> = [
-    ...(onTimeline
-      ? [{ key: 'timeline', Icon: Timeline, label: labels.timeline, onPress: onTimeline }]
-      : []),
-    ...(onWhatIf
-      ? [{ key: 'whatif', Icon: GitBranch, label: labels.whatif, onPress: onWhatIf }]
-      : []),
-    ...(onChat ? [{ key: 'chat', Icon: MessageCircle, label: labels.chat, onPress: onChat }] : []),
+  const actions: Array<{
+    key: string
+    Icon: LucideIcon
+    label: string
+    onPress: () => void
+  }> = [
+    { key: 'timeline', Icon: Timeline, label: labels.timeline, onPress: onTimeline },
+    { key: 'whatif', Icon: GitBranch, label: labels.whatif, onPress: onWhatIf },
+    { key: 'chat', Icon: MessageCircle, label: labels.chat, onPress: onChat },
     ...(onShare ? [{ key: 'share', Icon: Share, label: labels.share, onPress: onShare }] : []),
   ]
 
   return (
-    <View
+    <Animated.View
+      entering={FadeIn.duration(280)}
       pointerEvents='box-none'
       style={{
         position: 'absolute',
@@ -147,21 +124,11 @@ export function LivingLayerFab({
       >
         <FabToggleIcon progress={progress} />
       </Pressable>
-    </View>
+    </Animated.View>
   )
 }
 
-/**
- * The FAB glyph morphs between two git-family icons instead of swapping them:
- * GitCommitHorizontal (collapsed — a node resting on the line) pivots a quarter
- * turn and crossfades into GitCommitVertical (expanded — the same node turned up
- * onto the spine, i.e. "tap to collapse"). Driven by the shared progress so it
- * pivots in lockstep with the discs fanning out.
- */
 function FabToggleIcon({ progress }: { progress: SharedValue<number> }) {
-  // The two glyphs are 90° rotations of each other, so a continuous quarter-turn
-  // (crossfading at the midpoint) reads as the node pivoting from the line onto the
-  // spine rather than a cut. Horizontal turns away as Vertical turns in.
   const horizontalStyle = useAnimatedStyle(() => ({
     position: 'absolute',
     opacity: interpolate(progress.value, [0, 0.5, 1], [1, 0, 0]),
@@ -185,13 +152,6 @@ function FabToggleIcon({ progress }: { progress: SharedValue<number> }) {
   )
 }
 
-/**
- * One action disc. It rests centred on the FAB and, when open, slides out to its
- * seat on the arc (angle by index, spread across the up→left quarter); closed it
- * collapses back onto the FAB (scale + fade) so opening looks like it pops from
- * behind the cinnabar disc. A per-index stagger window makes them emerge one by
- * one. `pointerEvents` follows `open` so the hidden discs never eat taps.
- */
 function FabDisc({
   progress,
   index,
@@ -209,11 +169,10 @@ function FabDisc({
   label: string
   onPress: () => void
 }) {
-  // Seat angle: 90° (straight up) → 180° (straight left); a lone disc sits up-left.
   const deg = total > 1 ? 90 + (index / (total - 1)) * 90 : 135
   const rad = (deg * Math.PI) / 180
-  const dx = ARC_RADIUS * Math.cos(rad) // 90°→0, 180°→−R (left)
-  const dy = -ARC_RADIUS * Math.sin(rad) // 90°→−R (up), 180°→0
+  const dx = ARC_RADIUS * Math.cos(rad)
+  const dy = -ARC_RADIUS * Math.sin(rad)
   const start = index * 0.12
   const style = useAnimatedStyle(() => {
     const p = interpolate(progress.value, [start, start + 0.55], [0, 1], Extrapolation.CLAMP)

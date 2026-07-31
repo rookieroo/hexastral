@@ -1,9 +1,10 @@
 /**
  * Kindred reading chat — HMAC-signed adapter over POST/GET /api/chat.
  *
- * Thin API layer for the shared core-ui `<ReadingChatScreen>`. Chat is Pro-only
- * server-side (402 `pro_required`); errors are surfaced by re-throwing the
- * envelope's `error.message` so the screen can route to the paywall.
+ * Thin API layer for the shared core-ui `<ReadingChatScreen>`. Free taste is
+ * 3 messages per reading; further sends need `kindred_pro` (402
+ * `upgrade_required`). Errors re-throw the envelope's `error.message` so the
+ * screen can route to the paywall.
  *
  * Conversations are scoped server-side by `X-Target-App: kindred`.
  */

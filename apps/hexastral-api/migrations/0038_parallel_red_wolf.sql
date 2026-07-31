@@ -1,0 +1,1 @@
+ALTER TABLE `pro_monthly_usage` ADD `synastry_unlock_used` integer DEFAULT 0 NOT NULL;
