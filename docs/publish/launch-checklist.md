@@ -1,306 +1,487 @@
-# Launch checklist — Yuun + Yuel（MVP 总控）
+# Yuun + Yuel — 上架总清单（按顺序勾选）
 
-> **一份按顺序勾选即可。** 外链只给控制台 / 官网入口；不再跳到其它内部文档。  
-> **提审顺序**：先 **Yuun** → Approved 当天再提 **Yuel**。  
-> **发行主体**：UseONE, LLC · Apple Team ID `L9Z47DW56X`（全部用 LLC 组织账号，不用个人发行方）。
+> **只读这一份。** 外链 = 控制台网页；仓库路径仅作「从哪复制文案」的提示，不再跳其它文档。  
+> **发行**：UseONE, LLC · Team ID `L9Z47DW56X`（证书 / ASC / IAP / TestFlight / 提审全用 LLC，不用个人发行方）。  
+> **提审顺序**：先 **Yuun** → **Approved 当天**再提 **Yuel**（勿同日同时塞进审核队列）。  
+> **版本**：商店 `1.0`（见各 app `aso-metadata.json` / `app.json`）。
 
 Last updated: 2026-08-02.
 
-### 控制台入口（全书共用）
+---
 
-| 用途 | URL |
+## 控制台入口
+
+| 用途 | 打开 |
 |---|---|
 | App Store Connect | https://appstoreconnect.apple.com |
 | 协议 / 税 / 银行 | https://appstoreconnect.apple.com/agreements |
-| ASC 用户与沙盒 | https://appstoreconnect.apple.com/access/users |
+| 用户 / 角色 / 沙盒测试员 | https://appstoreconnect.apple.com/access/users |
+| Apps 列表 | https://appstoreconnect.apple.com/apps |
 | Apple Developer Identifiers | https://developer.apple.com/account/resources/identifiers/list |
+| Apple Developer Keys（Push 等） | https://developer.apple.com/account/resources/authkeys/list |
 | RevenueCat | https://app.revenuecat.com |
 | Expo / EAS | https://expo.dev |
-| Cloudflare Dashboard（Worker secrets 可用 CLI） | https://dash.cloudflare.com |
+| Cloudflare Dashboard | https://dash.cloudflare.com |
 
-### MVP 商业意图（与代码一致）
+---
 
-| | Yuun（`apps/auspice-app`） | Yuel（`apps/kindred-app`） |
+## MVP 对照（与代码一致，填表时别跑偏）
+
+| | Yuun · `apps/auspice-app` · Bundle `com.hexastral.yuun` | Yuel · `apps/kindred-app` · Bundle `com.hexastral.yuel` |
 |---|---|---|
-| 定位 | 中华黄历工具；登录主要在 **订阅** 步骤 | 八字合盘 / 关系类型；记录 bonds 需登录 |
+| 商店类目 | Primary **Reference** · Secondary **Lifestyle** | Primary **Lifestyle** · Secondary **Education** |
+| 分级 | **12+** | **12+** |
 | 订阅 Product ID | `auspice_pro_monthly` · `auspice_pro_annual` | `kindred_pro_monthly` · `kindred_pro_annual` |
 | RC Entitlement | `auspice_pro` | `kindred_pro` |
-| 一次性 IAP | 无 | `hexastral_compatibility`（合盘解锁；**不**挂 entitlement） |
-| 客户端 | `AuspicePaywallSheet` + `SatellitePaywall`；查 `auspice_pro` | `paywall.tsx` + `lib/iap.ts`；`offerings.current`；合盘用 `purchaseProduct` |
-| 服务端目录 | `apps/hexastral-api/src/config/products.ts` | 同上 |
-| **不要做（MVP）** | `universe_pro_*`、跨 App 全家桶、家庭席位 SKU、App 内广告 SDK | 无限 AI、`hexastral_personal`、把 Product ID 改成 `yuel_*` |
+| 消耗型 Product ID | 无 | `hexastral_compatibility`（**不**挂 entitlement） |
+| RC Offering（设为 Current） | `auspice_default` | `yuan_default` |
+| 参考价 | $4.99/mo · $39.99/yr | $7.99/mo · $47.99/yr · 合盘 $6.99 |
+| 登录 | 黄历可匿名；**订阅时** Sign in with Apple/Google | 记 bond 需登录；Paywall 同 |
+| Support / Marketing | `https://useone.tech` · `https://yuun.hexastral.com` | `https://useone.tech` · `https://yuel.hexastral.com` |
+| Privacy（en） | `https://yuun.hexastral.com/privacy/yuun` | `https://yuel.hexastral.com/privacy/yuel` |
+| Terms（en） | `https://yuun.hexastral.com/terms` | `https://yuel.hexastral.com/terms` |
+| Copyright | `© 2026 UseONE, LLC` | 同左 |
+| iPad / App Clip / iMessage | **无**（`supportsTablet: false`） | **无** |
+| 加密问卷 | `ITSAppUsesNonExemptEncryption: false` → 选 **No** | 同左 |
 
-商店显示名可以写 **Yuun Pro / Yuel Pro**；**Product ID 必须保持上表工程名**（与客户端 / webhook 字面一致）。
-
----
-
-## 0. 开干前
-
-- [ ] [Agreements](https://appstoreconnect.apple.com/agreements) → **Paid Applications Agreement = Active**（+ 税 / 银行）。未 Active → 订阅会卡 Missing Metadata。
-- [ ] [Users and Access](https://appstoreconnect.apple.com/access/users) → 角色至少 **App Manager**（改隐私 / IAP / 提审）；Portal 侧能改 Identifiers。
-
----
-
-## 1. Apple Developer — App ID
-
-入口：https://developer.apple.com/account/resources/identifiers/list → **+** → App IDs
-
-- [ ] **Yuun** `com.hexastral.yuun`  
-  勾选：Sign In with Apple · App Groups（`group.com.hexastral.yuun`）· Push Notifications  
-  Description 示例：`Yuun (HexAstral almanac)`
-- [ ] **Yuel** `com.hexastral.yuel`  
-  勾选：Sign In with Apple · Push  
-  Associated Domains 在 Expo `app.json` / EAS 声明即可（Portal 无单独勾选项）：含 `yuel.hexastral.com` 等
-- [ ] Capability 变更后重新拉 provisioning（或交给 EAS 托管签名）
-- [ ] [Sandbox Testers](https://appstoreconnect.apple.com/access/users) 建至少一个沙盒账号（真机：**设置 → App Store → 沙盒账户**，勿用正式 Apple ID 测买）
+**商店显示名**可用 Yuun Pro / Yuel Pro；**Product ID 必须用上表工程名**（客户端与 webhook 字面匹配）。  
+**MVP 禁止创建**：`universe_pro_*`、`hexastral_personal`、把 ID 改成 `yuel_*` / `yuun_*`、App 内广告 SDK、自建家庭席位 SKU。
 
 ---
 
-## 2. App Store Connect — 应用记录与商店页
+## 0. 开干前（一次）
 
-入口：https://appstoreconnect.apple.com/apps → **+** → New App
+1. 打开 https://appstoreconnect.apple.com/agreements  
+   - [ ] **Paid Applications Agreement** = Active  
+   - [ ] 税务 / 银行信息完整（否则订阅卡 Missing Metadata）
+2. 打开 https://appstoreconnect.apple.com/access/users  
+   - [ ] 本人角色 ≥ **App Manager**（隐私 / IAP / 提审）  
+   - [ ] 需要内测的同事已邀请进 LLC 团队（Internal Testing 只能加 ASC Users）
+3. 确认登录的是 **LLC 组织**，不是个人 Team。
 
-| | Yuun | Yuel |
+---
+
+## 1. Apple Developer — App ID 与能力
+
+入口：https://developer.apple.com/account/resources/identifiers/list → **+** → App IDs → App
+
+### 1.1 Yuun
+
+- [ ] Bundle ID：`com.hexastral.yuun`（Explicit）  
+- [ ] Description：如 `Yuun (HexAstral almanac)`  
+- [ ] Capabilities 勾选并配置：  
+  - [ ] **Sign In with Apple** → Enable as Primary App ID  
+  - [ ] **Push Notifications**  
+  - [ ] **App Groups** → `group.com.hexastral.yuun`（Widget / 扩展共用；没有组先 Create）  
+  - [ ]（若用）Associated Domains — 也可仅在 Expo `app.json` 声明，与 Portal 一致即可  
+
+### 1.2 Yuel
+
+- [ ] Bundle ID：`com.hexastral.yuel`  
+- [ ] Description：如 `Yuel (HexAstral synastry)`  
+- [ ] Capabilities：  
+  - [ ] **Sign In with Apple** → Primary  
+  - [ ] **Push Notifications**  
+  - [ ] Associated Domains 与 `app.json` 一致（含 `yuel.hexastral.com` 等 applinks）
+
+### 1.3 签名与沙盒
+
+- [ ] Capability 变更后：EAS 托管签名再拉一次 profile，或本机重新生成 provisioning  
+- [ ] https://appstoreconnect.apple.com/access/users → **Sandbox** → 至少一个 Tester  
+  真机测买：**设置 → App Store → 沙盒账户**（勿用正式 Apple ID）
+
+Push 若走 APNs Key：https://developer.apple.com/account/resources/authkeys/list（按现有推送方案配置；与 Expo / 服务端一致即可）。
+
+---
+
+## 2. ASC — 新建两个 App 记录
+
+入口：https://appstoreconnect.apple.com/apps → **+** → **New App**（各做一次）
+
+| 字段 | Yuun | Yuel |
 |---|---|---|
+| Platforms | ☑ **iOS** | ☑ **iOS** |
+| Name（Connect 内部名） | `Yuun` | `Yuel` |
+| Primary Language | **English (U.S.)** | **English (U.S.)** |
 | Bundle ID | `com.hexastral.yuun` | `com.hexastral.yuel` |
-| 商店名 | Yuun | Yuel |
-| Primary Language | English (U.S.) | English (U.S.) |
-| Primary / Secondary | Reference / Lifestyle | Lifestyle / Education |
-| SKU（内部） | 如 `yuun-ios` | 如 `yuel-ios` |
-| Support URL | `https://useone.tech` | `https://useone.tech` |
-| Marketing URL | `https://yuun.hexastral.com` | `https://yuel.hexastral.com` |
-| Copyright | `© 2026 UseONE, LLC` | `© 2026 UseONE, LLC` |
+| SKU（创建后不可改） | 如 `yuun-ios-2026` | 如 `yuel-ios-2026` |
+| User Access | Full Access（或按团队） | 同左 |
 
-- [ ] 创建两 App；定价 **Free + 含 IAP**
-- [ ] Content Rating **12+**
-- [ ] 记下数字 **Apple ID** → 写入各 app `eas.json` → `submit.production.ios.ascAppId`
+- [ ] Yuun 创建成功  
+- [ ] Yuel 创建成功  
+- [ ] 各 App → **App Information** → 记下数字 **Apple ID**  
+  → 写入 `apps/auspice-app/eas.json` / `apps/kindred-app/eas.json` 的 `submit.production.ios.ascAppId`（替换 `REPLACE_WITH_ASC_APP_ID`）  
+  → 确认同文件 `appleTeamId` = `L9Z47DW56X`
 
-### 2.1 四语商店文案
+---
 
-入口：各 App → 语言本地化（en-US / zh-Hans / zh-Hant / ja）
+## 3. ASC — App Information（每个 App）
 
-| ASC 字段 | 仓库来源 |
+路径：App → **General → App Information**
+
+| 字段 | Yuun | Yuel |
+|---|---|---|
+| Primary Category | **Reference** | **Lifestyle** |
+| Secondary Category | **Lifestyle** | **Education** |
+| Content Rights | 不含未授权第三方内容（按实际） | 同左 |
+| License Agreement | Apple 标准 EULA（除非自备） | 同左 |
+| Age Ratings | 见下一节 → 目标 **12+** | **12+** |
+
+- [ ] Yuun App Information 保存  
+- [ ] Yuel App Information 保存  
+
+Subtitle / 商店 Name **不在**此页全局填 → 在各语言本地化填。
+
+---
+
+## 4. 年龄分级问卷
+
+路径：App Information → **Age Ratings** → Edit  
+
+按 Connect **实时题目**填写；共性建议：
+
+| 类型 | 建议 |
 |---|---|
-| Name / Subtitle / Keywords / Description / Promotional Text | Yuun：`apps/auspice-app/aso-metadata.json` → `locales` · Yuel：`apps/kindred-app/aso-metadata.json` |
+| 暴力 / 色情 / 脏话 / 烟酒毒 / 赌博 | **None** |
+| 恐怖 | None 或 Infrequent（无恐怖素材则 None） |
+| 医疗 / 治疗宣称 | **None**（非医疗建议） |
+| 未受管制的网页内容 / 命理类（题目以当时文案为准） | 如实；目标算出 **12+** |
 
-粘贴 Description / Keywords：**用 TextEdit 打开** `apps/*/aso-paste/<locale>-*.txt` 再复制（不要从 JSON 直接拷，否则 `\n` 变字面量；ASC 拒 `<` `>` `\`）。
+- [ ] Yuun 保存后显示约 **12+**  
+- [ ] Yuel 保存后显示约 **12+**  
 
-- [ ] Yuun 四语五字段贴齐  
-- [ ] Yuel 四语五字段贴齐  
+---
 
-### 2.2 隐私 URL
+## 5. 定价与销售范围
 
-| App | Privacy Policy URL（ASC 全局） | User Privacy Choices | Terms（版本页 / 描述可链） |
+路径：App → **Pricing and Availability**（或 Monetization / Pricing）
+
+- [ ] 价格：**Free (0)**  
+- [ ] 含 App 内购买：是（有订阅 / IAP）  
+- [ ] Availability：默认 **全部地区**，或至少 US · CN · JP · TW · HK · SG · MY · TH  
+- [ ] Pre-order：**关**  
+- [ ] Yuun / Yuel 各保存一次  
+
+说明：Primary Language = en-US 只影响**未本地化商店的文案回退**；可售地区与有没有本地化语言无关。
+
+---
+
+## 6. 商店本地化文案（4 语言 × 2 App）
+
+路径：App → **iOS App 版本（如 1.0）** → App Store → 语言旁 **+**
+
+添加并填齐：
+
+1. English (U.S.)  
+2. Chinese (Simplified)  
+3. Chinese (Traditional)  
+4. Japanese  
+
+| ASC 字段 | 复制来源 | 限制 |
+|---|---|---|
+| Name | `aso-metadata.json` → `locales.*.title` | ≤30 |
+| Subtitle | `subtitle` | ≤30 |
+| Keywords | `keywords` | ≤100；逗号分隔、**逗号后无空格** |
+| Description | `description` | ≤4000 |
+| Promotional Text | `promotionalText` | ≤170（可随时改） |
+| What’s New | 首发可写简短「Initial release」/ 对应语言 | — |
+
+仓库文件：
+
+- Yuun：`apps/auspice-app/aso-metadata.json` · 粘贴用 `apps/auspice-app/aso-paste/<locale>-*.txt`  
+- Yuel：`apps/kindred-app/aso-metadata.json` · `apps/kindred-app/aso-paste/...`  
+
+**粘贴规则**：用 TextEdit 打开 `.txt` 再复制；禁止从 JSON 直接拷（会把 `\n` 粘成字面量）。Description **禁止** `<` `>` `\`（含 `->`）。
+
+版本页 / App Information 另填：
+
+- [ ] **Support URL**：`https://useone.tech`  
+- [ ] **Marketing URL**：Yuun `https://yuun.hexastral.com` · Yuel `https://yuel.hexastral.com`  
+- [ ] **Copyright**：`© 2026 UseONE, LLC`  
+
+- [ ] Yuun：四语 Name/Subtitle/Keywords/Description/Promo + What’s New  
+- [ ] Yuel：同上  
+
+---
+
+## 7. 隐私 Policy URL + App Privacy 营养标签
+
+### 7.1 URL
+
+路径：App → **App Privacy**（顶部）及版本页法务链接  
+
+| | Privacy Policy URL | User Privacy Choices URL | Terms（描述/设置可链） |
 |---|---|---|---|
 | Yuun | `https://yuun.hexastral.com/privacy/yuun` | **留空** | `https://yuun.hexastral.com/terms` |
 | Yuel | `https://yuel.hexastral.com/privacy/yuel` | **留空** | `https://yuel.hexastral.com/terms` |
 
-- [ ] URL 返回 200（需已部署 hexastral-web）  
-- [ ] 勿填 `http://example.com`
+- [ ] 浏览器打开上述 Privacy / Terms 均为 **200**（hexastral-web 已部署）  
+- [ ] 勿填 `http://example.com`  
+- [ ] Yuun / Yuel ASC 字段已保存  
 
-### 2.3 App Privacy（营养标签）
+其它语言页若单独有隐私链：zh → `/zh/` · tw → `/tw/` · ja → `/ja/`（与 aso 描述内链接一致）。
 
-入口：App → **App Privacy** → Get Started / Edit → 填完 **Publish**
+### 7.2 营养标签（两 App 相同）
 
-两 App 相同：
+路径：App → **App Privacy** → Get Started / Edit → 全部答完 → **Publish**
 
-| 勾选 | Linked | Tracking | Purposes |
+总问：
+
+- [ ] Do you or third parties collect data from this app? → **Yes**  
+- [ ] Do you use data for tracking? → **No**  
+
+对每个已勾数据类型：
+
+| 数据类型 | Linked to identity? | Tracking? | Purposes（意图） |
 |---|---|---|---|
-| Name | Yes | No | App Functionality |
-| Email Address | Yes | No | App Functionality |
-| Other User Content | Yes | No | App Functionality |
-| User ID | Yes | No | App Functionality + Analytics + Developer’s Advertising or Marketing |
-| Purchases | Yes | No | App Functionality + Analytics |
-| Product Interaction | Yes | No | Analytics + App Functionality + Developer’s Advertising or Marketing |
+| **Name** | **Yes** | No | **仅** App Functionality |
+| **Email Address** | Yes | No | **仅** App Functionality |
+| **Other User Content**（生辰 / 亲友 / 伴侣手输） | Yes | No | **仅** App Functionality |
+| **User ID** | Yes | No | App Functionality + Analytics + Developer’s Advertising or Marketing |
+| **Purchases** | Yes | No | App Functionality + Analytics |
+| **Product Interaction** | Yes | No | Analytics + App Functionality + Developer’s Advertising or Marketing |
 
-**不要勾 / 不要 Set Up**：Advertising Data · Diagnostics（Crash / Performance / Other）· Device ID · Third-Party Advertising · Tracking = Yes  
-（客户端尚未接广告 SDK / Sentry；服务端 admin-notify ≠ Diagnostics。）
+**不要添加 / 不要 Set Up**：
 
-- [ ] Yuun Publish  
-- [ ] Yuel Publish  
+- Advertising Data  
+- Other Usage Data  
+- Crash Data / Performance Data / Other Diagnostic Data  
+- Phone / Contacts / Photos / Location / Device ID / Health / Sensitive Info  
+- Third-Party Advertising（意图里也不要勾）  
+- Data Used to Track You  
+
+说明：无 App 内广告 SDK；无 Sentry；服务端运维告警不是客户端 Diagnostics。
+
+- [ ] Yuun **Publish**  
+- [ ] Yuel **Publish**  
 
 ---
 
-## 3. 订阅与 IAP（ASC → RevenueCat → 密钥）
+## 8. 订阅与 IAP（ASC → RevenueCat → 密钥）
 
-按 **3.1 → 3.5** 顺序做；中途不要跳。
+严格按 **8.1 → 8.5**。订阅组 = **每个 App 各自一份**（不能跨 App 共用同一组）；两边 Reference Name 都可叫 `hexastral_universe`。
 
-### 3.0 三层模型（与代码对齐）
+### 8.0 三层（与 Paywall 对齐）
 
 ```
-ASC Product ID（用户付钱的 SKU）
-    → RevenueCat Product（同名导入）
-        → Entitlement（App 里 hasEntitlement 查的开关）
-            → Offering「Current」里的 Monthly / Annual Package
-                → Paywall 调 purchasePackage / purchaseProduct
+ASC Product ID
+  → RC Product（同名）
+    → Entitlement（App 查询）
+      → Offering「Current」的 Monthly / Annual
+        → 客户端 purchasePackage / purchaseProduct
 ```
 
-| | Yuun | Yuel |
-|---|---|---|
-| Product ID | `auspice_pro_monthly` · `auspice_pro_annual` | `kindred_pro_monthly` · `kindred_pro_annual` · `hexastral_compatibility` |
-| Entitlement | `auspice_pro` | `kindred_pro`（合盘消耗型 **不挂**） |
-| Offering Identifier（建议） | `auspice_default` 并设为 **Current** | `yuan_default` 并设为 **Current** |
-| 参考价 | $4.99 / mo · $39.99 / yr | $7.99 / mo · $47.99 / yr · 合盘 $6.99 |
-| 代码核对 | `AuspicePaywallSheet`：`auspice_pro_*` + entitlement `auspice_pro` | `lib/iap.ts`：`YUAN_PRODUCT_IDS` + `KINDRED_SINGLE_PRODUCT_IDS.compatibility`；购买走 `offerings.current` |
+Yuun 代码：`AuspicePaywallSheet` → `auspice_pro_*` + `auspice_pro`。  
+Yuel 代码：`lib/iap.ts` → `kindred_pro_*` + `offerings.current`；合盘 `hexastral_compatibility` → `purchaseProduct`。
 
-**订阅组**：每个 App **各自**建一组（Apple 不能跨 App 共用）。Reference Name 两边都可写 `hexastral_universe`（仅内部方便认）。消耗型不进组。
+### 8.1 前置
 
-**MVP 禁止创建**：`universe_pro_monthly` / `universe_pro_annual`、`hexastral_personal`。
+- [ ] Paid Apps Agreement 仍为 Active（§0）
 
----
-
-### 3.1 前置
-
-- [ ] [Agreements](https://appstoreconnect.apple.com/agreements) Paid Apps = Active
-
----
-
-### 3.2 ASC — Yuun 订阅
+### 8.2 ASC — Yuun 订阅
 
 入口：https://appstoreconnect.apple.com/apps → **Yuun** → **Monetization** → **Subscriptions**
 
-1. Create **Subscription Group** · Reference Name：`hexastral_universe` · 组显示名可写 `Yuun Pro`
+1. Create **Subscription Group**  
+   - Reference Name：`hexastral_universe`  
+   - 组本地化显示名：如 `Yuun Pro`  
 2. 组内 Create Subscription ×2：
 
-| Product ID（照抄，创建后基本不可改） | Duration | 参考价 | Display Name 示例 |
+| Product ID（创建后基本不可改） | Duration | 参考价 | Display Name |
 |---|---|---|---|
 | `auspice_pro_monthly` | 1 Month | $4.99 | Yuun Pro Monthly |
 | `auspice_pro_annual` | 1 Year | $39.99 | Yuun Pro Annual |
 
-3. 每条必须：价格（Base + 各国）· 至少 en-US 本地化 Description ·（建议）Paywall Review 截图  
-4. 状态 → **Ready to Submit**（首发须随 App 版本一起审）
+每条勾完：
 
-权益口径（与 Free vs Pro 文案一致）：对你而言完整原因、时间轴 / 假如、八字紫微深读、亲友提醒上限放开等 — **文化参考，非预测**。
+- [ ] Subscription Duration  
+- [ ] **Subscription Prices**（Base + 各国；可用 Apple 建议价）  
+- [ ] **App Store Localization**（至少 en-US Display Name + Description；建议四语）  
+- [ ]（可选）Tax category / 可用性默认即可  
+- [ ]（可选）**Family Sharing**：开 = 同 Apple 家庭可共享订阅；MVP 可开可关，不挡上架  
+- [ ]（建议）Review Screenshot：Paywall  
+- [ ] 状态 **Ready to Submit**  
 
-- [ ] Yuun 月 + 年 Ready  
+权益文案：对你而言完整原因、时间轴/假如、八字紫微深读、亲友提醒上限等 — **文化参考，非预测**。
 
-**Family Sharing**：MVP 可选开（同住家人共享订阅资格）；不挡上架。不配 Sandbox Test Family 也可先过审。
+- [ ] Yuun 月 + 年均为 Ready to Submit  
 
----
+首发订阅必须随 **App 版本** 一起提交审核。
 
-### 3.3 ASC — Yuel 订阅 + 合盘消耗型
+### 8.3 ASC — Yuel 订阅 + 合盘消耗型
 
-入口：https://appstoreconnect.apple.com/apps → **Yuel** → **Monetization**
+入口：同一 Apps 列表 → **Yuel** → **Monetization**
 
 **A. Subscriptions**（新建本组，Reference Name 仍可用 `hexastral_universe`）
 
-| Product ID | Duration | 参考价 | Display Name 示例 |
+| Product ID | Duration | 参考价 | Display Name |
 |---|---|---|---|
 | `kindred_pro_monthly` | 1 Month | $7.99 | Yuel Pro Monthly |
 | `kindred_pro_annual` | 1 Year | $47.99 | Yuel Pro Annual |
 
-权益口径（对齐 `lib/iap.ts`）：个人命书、每月关系层、活层（timeline / what-if / **月额度** AI）、每月最多 **3** 次合盘解锁或生辰重算。**不要写无限 AI / 无限合盘。**
+- [ ] 价格 + 本地化（四语更好）+ Ready  
+- [ ]（可选）Family Sharing  
+- [ ] 描述：**月额度** AI · 每月最多 **3** 次合盘/重算 — **禁止写无限 AI / 无限合盘**  
 
-**B. In-App Purchases → Consumable**（不在订阅组）
+**B. In-App Purchases → + → Consumable**（不进订阅组）
 
-| Product ID | 参考价 | Display Name 示例 |
+| Product ID | 参考价 | Display Name 例 |
 |---|---|---|
 | `hexastral_compatibility` | $6.99 | Compatibility unlock / 合盘解锁 |
 
-服务端：RevenueCat `NON_RENEWING_PURCHASE` → 记购买 → 客户端再 `POST /bonds/:id/unlock` 落到具体 bond。无 entitlement 开关。
+- [ ] 价格 + 本地化 + Ready to Submit  
 
-- [ ] Yuel 月 + 年 Ready  
-- [ ] `hexastral_compatibility` Ready  
+**不要创建**：`universe_pro_*`、`hexastral_personal`、未开 Family Sharing 时不必建 Sandbox Test Family。
 
----
+### 8.4 RevenueCat
 
-### 3.4 RevenueCat
+入口：https://app.revenuecat.com
 
-入口：https://app.revenuecat.com → 对应 Project（Yuun / Yuel 各挂一个 iOS App，Bundle ID 对齐）
+- [ ] Project 下添加 / 核对 iOS Apps：Bundle `com.hexastral.yuun` · `com.hexastral.yuel`  
+- [ ] 按提示填 ASC **App-Specific Shared Secret**（App → App Information / Monetization 可生成）  
+- [ ] **Entitlements**：`auspice_pro` · `kindred_pro`（不要 `universe_pro`）  
+- [ ] **Products**：Import 5 个 ID（与 ASC 一字不差）  
+- [ ] **Attach**：  
+  - `auspice_pro` ← monthly + annual  
+  - `kindred_pro` ← monthly + annual  
+  - `hexastral_compatibility` → **不挂** entitlement  
+- [ ] **Offerings**：  
+  - `auspice_default`：Monthly / Annual → `auspice_pro_*` → 对该 App 设 **Current**  
+  - `yuan_default`：Monthly / Annual → `kindred_pro_*` → **Current**  
+- [ ] **Webhooks**：  
+  - URL：`https://api.hexastral.com/webhooks/revenuecat`  
+  - Authorization：`Bearer <REVENUECAT_WEBHOOK_SECRET>`  
+  - 事件：`INITIAL_PURCHASE` · `RENEWAL` · `CANCELLATION` · `EXPIRATION` · `NON_RENEWING_PURCHASE`  
+- [ ] 复制各 App **iOS 公开钥** `appl_…` → EAS  
+- [ ] 复制 **Secret** REST API key → Worker（不是 `appl_`）
 
-1. **Apps**：`com.hexastral.yuun` · `com.hexastral.yuel`；按 RC 提示填 ASC App-Specific Shared Secret  
-2. **Entitlements**：创建 `auspice_pro`、`kindred_pro`（**不要** `universe_pro`）  
-3. **Products**：从 App Store Import（或手建），ID 与 ASC **一字不差**（共 5 个）  
-4. **Attach**：  
-   - `auspice_pro` ← `auspice_pro_monthly` + `auspice_pro_annual`  
-   - `kindred_pro` ← `kindred_pro_monthly` + `kindred_pro_annual`  
-   - `hexastral_compatibility` → **不挂** entitlement  
-5. **Offerings**：  
-   - 建 `auspice_default`：Monthly / Annual package → 两个 `auspice_pro_*` → 设为 Yuun App 的 **Current**  
-   - 建 `yuan_default`：Monthly / Annual → 两个 `kindred_pro_*` → 设为 Yuel App 的 **Current**  
-   （客户端读 `offerings.current`，Current 设错则 Paywall 无价 / 买不了）  
-6. **Integrations → Webhooks**：  
-   - URL：`https://api.hexastral.com/webhooks/revenuecat`  
-   - Auth：`Bearer <与 Worker 相同的 REVENUECAT_WEBHOOK_SECRET>`  
-   - 事件：`INITIAL_PURCHASE` · `RENEWAL` · `CANCELLATION` · `EXPIRATION` · `NON_RENEWING_PURCHASE`  
-7. **API keys**：各 App iOS 公开钥 `appl_…` → 下一步 EAS；另复制 **Secret** REST key 给 Worker（不是 `appl_`）
+### 8.5 Worker + EAS Secrets
 
-- [ ] 5 products + 2 entitlements + 2 offerings（Current）  
-- [ ] Webhook 接通  
-
----
-
-### 3.5 Worker + EAS 密钥
-
-在本机仓库（需已登录 Cloudflare / Expo）：
+Cloudflare（本机已 wrangler 登录；或 Dashboard Workers → Settings → Variables）：
 
 ```bash
 cd apps/hexastral-api
-bunx wrangler secret put REVENUECAT_WEBHOOK_SECRET   # = RC webhook Bearer
-bunx wrangler secret put REVENUECAT_API_KEY            # RC Secret REST key
-# Yuun Pro 个人日历若启用：
-bunx wrangler secret put CYCLE_CALENDAR_SECRET
+bunx wrangler secret put REVENUECAT_WEBHOOK_SECRET
+bunx wrangler secret put REVENUECAT_API_KEY
+bunx wrangler secret put CYCLE_CALENDAR_SECRET   # Yuun Pro 个人日历若启用
 ```
 
-确认 production：**`ALLOW_DEV_PRO=0`**。
+- [ ] production **`ALLOW_DEV_PRO=0`**  
 
-EAS（https://expo.dev → 各项目 Secrets，或 `eas secret:create`）：
+Expo：https://expo.dev → 各项目 Secrets（或 `eas secret:create`）
 
-- [ ] Yuun / Yuel production 注入真实 `EXPO_PUBLIC_REVENUECAT_IOS_KEY=appl_…`（禁止 `REPLACE_WITH_*` 进生产包）  
-- [ ] `eas.json` → `submit.production.ios.ascAppId` = ASC 数字 Apple ID；`appleTeamId` = `L9Z47DW56X`
+- [ ] Yuun production：`EXPO_PUBLIC_REVENUECAT_IOS_KEY=appl_…`（禁止 `REPLACE_WITH_*`）  
+- [ ] Yuel production：同上（各自 App 的 `appl_`）  
+- [ ] `eas.json` 的 `ascAppId` 已是真实数字  
 
-**沙盒自测**：Sandbox 账号 → TestFlight / 生产包 Paywall → RC Customers 出现 `auspice_pro` / `kindred_pro`；Yuel 再测一次合盘消耗型购买。
+**沙盒自测**
 
----
-
-## 4. 截图
-
-入口：ASC → 版本页 → App Store 预览和截图  
-
-尺寸（至少）：**6.9"** ≈ 1320×2868 · **6.5"** ≈ 1242×2688（按 ASC 当前档位上传）。`supportsTablet: false` → **不传 iPad**。四语都要。
-
-**Yuun 建议镜位**：今日干支宜忌 → 月历 → 文化 →「对你而言」Pro 钩子 → 设置 / 提醒。Widget/Watch 未在包内验证前 **不要** 在截图或 ASO 宣称。
-
-**Yuel 建议镜位**：Bonds 首页 → 双盘合盘 → 时间轴 → 邀请流 → Paywall（Pro + 合盘解锁入口）。
-
-- [ ] Yuun 四语上传完  
-- [ ] Yuel 四语上传完  
+- [ ] Yuun：Paywall 出月/年价 → 购买 → RC Customers 有 `auspice_pro` → Restore  
+- [ ] Yuel：订阅同上 → 合盘墙购买 `hexastral_compatibility` → bond 解锁  
 
 ---
 
-## 5. EAS 生产包 → TestFlight → 提审
+## 9. 截图与预览
 
-栈：Expo 54 · EAS Build / Submit（云打包上架；本机 `expo run:ios` 只做开发）。
+路径：版本页 → **App Store 预览和截图**
+
+| 项 | 选择 |
+|---|---|
+| iPhone 尺寸 | 至少填 ASC 要求的 **6.9"**（约 1320×2868）与 **6.5"**（约 1242×2688）档；以页面当前标签为准 |
+| iPad | **不上传**（无 iPad） |
+| App Preview 视频 | 可选，MVP 可空 |
+| 语言 | en-US · zh-Hans · zh-Hant · ja **各传一套** |
+
+**Yuun 镜位建议**：今日干支宜忌 → 月历 → 文化 →「对你而言」→ 设置/提醒。未验证 Widget/Watch 前 **勿** 在截图或文案宣称。  
+
+**Yuel 镜位建议**：Bonds 首页 → 双盘合盘 → 时间轴 → 邀请 → Paywall（Pro + 合盘解锁）。
+
+- [ ] Yuun 四语截图齐  
+- [ ] Yuel 四语截图齐  
+
+---
+
+## 10. 版本页其它选项（Prepare for Submission）
+
+路径：App → **iOS App** → 版本（1.0）
+
+逐项确认（两 App）：
+
+- [ ] **Build**：先空着，等 §11 上传后再选  
+- [ ] **App Clip**：留空（无）  
+- [ ] **iMessage App / 贴纸**：留空（无）  
+- [ ] **Copyright**：`© 2026 UseONE, LLC`  
+- [ ] **Routing App Coverage**：无则空  
+- [ ] **Sign-in required**：可说明 anonymous-first；Pro 需登录（见审核备注）  
+- [ ] **Advertising Identifier**：未用广告追踪 → 按问卷选 **No** / 未使用  
+- [ ] **Export Compliance**：Uses encryption? → **No**（仅标准 HTTPS；与 `ITSAppUsesNonExemptEncryption: false` 一致）  
+- [ ] 版本页勾选本次要审的 **IAP / 订阅**（Ready to Submit 的产品）  
+
+**App Review Information**
+
+- [ ] First / Last name · Phone · Email（可联到审核的人）  
+- [ ] Demo account：无强制账号可写 none / anonymous-first  
+- [ ] Notes：粘贴 §12.2 模板（按 App 删减）  
+
+---
+
+## 11. EAS 生产包 → 上传 → TestFlight
+
+栈：Expo 54 · **EAS 云构建**上架（本机 `expo run:ios` 只做开发）。
+
+前置：§8.5 密钥与 `ascAppId` 已实装。
 
 ```bash
-# Yuun 先
+# —— Yuun ——
 cd apps/auspice-app
 bunx eas-cli login
+bunx eas-cli credentials   # 首次：确认 Team L9Z47DW56X，建议 EAS 托管发行证书
 bunx eas-cli build --profile production --platform ios
 bunx eas-cli submit --platform ios --profile production --latest
 
-# Yuel（可先打好包；Submit for Review 等 Yuun Approved）
+# —— Yuel（可先打好包；Submit for Review 等 Yuun Approved）——
 cd apps/kindred-app
 bunx eas-cli build --profile production --platform ios
 bunx eas-cli submit --platform ios --profile production --latest
 ```
 
-- [ ] 生产密钥与 `ascAppId` 已实装（§3.5）后再打 production  
-- [ ] ASC TestFlight：Processing → Ready to Test；Export Compliance 选 **No**（仅标准 HTTPS）  
-- [ ] [Users](https://appstoreconnect.apple.com/access/users) 加人 → TestFlight **Internal Testing** 绑 build → 真机安装  
+- [ ] Yuun build **Finished**（https://expo.dev）  
+- [ ] Yuel build **Finished**  
+- [ ] ASC → TestFlight：Processing（约 10–30 min）→ **Ready to Test**  
+- [ ] Export Compliance 在 TestFlight/版本按提示选 **No**  
 
-### 5.1 冒烟（Submit 前）
+### 11.1 Internal Testing
 
-**Yuun**：今日宜忌可读 → 订阅入口 Sign in with Apple → 沙盒买月/年 → `auspice_pro` 生效 → Restore →（若开）删号路径。
+1. https://appstoreconnect.apple.com/access/users → 测试员已在 People  
+2. App → **TestFlight** → **Internal Testing** → 组内加 Tester + 绑当前 build  
+3. 设备用同一 Apple ID 打开 **TestFlight** → Install  
 
-**Yuel**：建 / 看 bond → Paywall 月年价可见 → `kindred_pro` → 合盘墙可买 `hexastral_compatibility` → 邀请链接 Copy 含 URL → Delete Account。
+- [ ] 至少一台真机装上 Yuun  
+- [ ] 至少一台真机装上 Yuel  
 
-- [ ] Yuun 冒烟过  
-- [ ] Yuel 冒烟过  
+---
 
-### 5.2 Submit for Review
+## 12. 冒烟 → 提审
 
-入口：ASC → 版本页 → 选 Build → 填 App Review Information → **Submit**
+### 12.1 冒烟（用 TestFlight 生产包）
+
+**Yuun**
+
+- [ ] 今日宜忌 / 月历可读（可匿名）  
+- [ ] 订阅入口 → Sign in with Apple → 沙盒购买月或年 → Pro 能力生效  
+- [ ] Restore purchases  
+- [ ] 设置内 Privacy / Terms 链接可开  
+- [ ]（若启用）删除账号流程可用  
+
+**Yuel**
+
+- [ ] 登录后可建 / 查看 bond  
+- [ ] Paywall 月年价格可见 → 购买 → `kindred_pro`  
+- [ ] 合盘墙可买 `hexastral_compatibility` 并解锁  
+- [ ] 分享邀请：Copy 内容含邀请 URL  
+- [ ] Delete Account  
+
+### 12.2 审核备注模板
 
 ```
 Test account: (none required — anonymous-first)
@@ -309,41 +490,50 @@ Publisher: UseONE, LLC.
 
 Yuun: Chinese almanac (stem-branch / yi-ji / solar terms) — cultural reference, not fortune-telling or medical advice. Sign-in primarily at subscribe.
 
-Yuel: BaZi couples typology — entertainment / cultural reference, not matchmaking. Sign-in to store bonds. Pro: monthly AI allowance + up to 3 synastry unlocks/recomputes per month; one-time product hexastral_compatibility remains available.
+Yuel: BaZi couples typology — entertainment / cultural reference, not matchmaking. Sign-in to store bonds. Pro: monthly AI chat allowance and up to 3 synastry unlocks or birth recomputes per month; one-time product hexastral_compatibility remains available.
 ```
 
-- [ ] **Yuun** Submit  
-- [ ] 等 **Yuun Approved**  
-- [ ] 同日 **Yuel** Submit（勿与 Yuun 同时塞进审核队列）
+### 12.3 Submit
+
+路径：版本页 → **Build +** 选包 → 核对 IAP 勾选 → **Add for Review** / **Submit for Review**
+
+- [ ] **Yuun** Submit for Review  
+- [ ] 等 **Yuun → Approved**（可先 Ready for Sale / 手动发售按策略）  
+- [ ] **同日**再 **Yuel** Submit for Review  
 
 ---
 
-## 6. 提审后
+## 13. 提审后
 
-- [ ] 盯 Crash / TestFlight feedback  
-- [ ] RC Webhook deliveries + Worker 日志  
-- [ ] **不要** 开 `universe_pro`，直到多 App 稳定  
+- [ ] 盯 ASC Resolution Center / 拒信  
+- [ ] TestFlight / 崩溃反馈  
+- [ ] RevenueCat → Integrations → Webhooks → deliveries  
+- [ ] Worker 日志（Cloudflare）  
+- [ ] **不要**上线 `universe_pro`，直到多 App 稳定  
 
 ---
 
-## 7. 故障速查
+## 14. 故障速查
 
-| 症状 | 先查 |
+| 症状 | 处理 |
 |---|---|
-| 订阅 Missing Metadata | Paid Apps 协议 / 缺价格 / 缺本地化 |
-| Paywall 无价 / 买不了 | RC Offering 是否 **Current**；Product ID 是否与代码一字不差；EAS 是否仍是 `REPLACE_WITH_*` |
-| `eas submit` 找不到 App | `ascAppId`；是否登录 LLC 团队 |
-| 证书失败 | `bunx eas-cli credentials`；Team `L9Z47DW56X` |
-| TestFlight 无邀请 | Internal 测试员须先在 ASC People |
-| 隐私链接 404 | hexastral-web 未部署或 path 写错 |
-| 合盘买了仍锁 | webhook `NON_RENEWING_PURCHASE`；是否调用了 bond unlock API |
+| 订阅 Missing Metadata | 协议未 Active / 缺价格 / 缺本地化 |
+| Paywall 无价或买不了 | RC Offering 未设 **Current**；Product ID 不一致；EAS 仍是 `REPLACE_WITH_*` |
+| `eas submit` 找不到 App | `ascAppId`；是否 LLC 团队 |
+| 签名失败 | `bunx eas-cli credentials`；Team `L9Z47DW56X` |
+| TestFlight 无邀请 | 人未进 ASC People（Internal 不能只填外部邮箱） |
+| Build 一直 Processing | 等 10–30min；查 Compliance 邮件 |
+| 隐私 404 | hexastral-web 未部署或 path 错 |
+| Description 被拒字符 | 去掉 `<` `>` `\`，从 aso-paste 重贴 |
+| 合盘买了仍锁 | webhook `NON_RENEWING_PURCHASE`；是否调用 bond unlock |
+| 营养标签改不了 | 角色须 App Manager+；未完成的 Set Up 项先删掉或填完再 Publish |
 
 ---
 
-## 8. MVP 之后（短建议，本清单不做）
+## 15. MVP 之后（本清单不做，短备忘）
 
-1. **TK / Meta / Google 广告**：再在 iOS 接 SDK；ASC 补 Advertising Data / Device ID、Tracking 与 ATT；接好后再改隐私标签。  
-2. **转化分析**：强化 push / DDL / 广告 click id → 订阅转化看板；现有 growth + `svc-ad-convert`（Web）可延伸，不必与首发绑死。  
-3. **Apple Family Sharing**：订阅产品可开「与家人共享」；用 Sandbox Test Family 验证。适合同住/夫妻；**不能**替代 Yuel 邀请与跨 Apple ID 合盘。自建「家庭席位 SKU」另立项目。  
-4. **`universe_pro`**：跨 App 全家桶，等 Yuun + Yuel（+ 更多卫星）稳定后再开。  
-5. **客户端 Diagnostics**：接 Sentry / `initCrashReporting` 后再勾 Crash Data。
+1. **TK / Meta / Google 广告 SDK** → 再勾 Advertising Data / Device ID、Tracking、ATT，并更新隐私标签。  
+2. **转化分析** → 强化广告 / push / DDL → 订阅归因看板。  
+3. **Apple Family Sharing** → 订阅开启共享 + Sandbox Test Family；不能替代 Yuel 跨 Apple ID 邀请。  
+4. **`universe_pro`** → 跨 App 全家桶，多 App 稳定后再开。  
+5. **Sentry / Crash** → 接客户端上报后再勾 Diagnostics。
