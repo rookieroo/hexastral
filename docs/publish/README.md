@@ -24,7 +24,7 @@ Last updated: 2026-07-31.
 | Brand | Directory | Code for Submit | Still human |
 |---|---|---|---|
 | **Yuun** | `auspice-app` | ✅ Server Pro for LLM routes; `ALLOW_DEV_PRO=0`; Delete Account; Paywall 3.1.2; leap birthday + morning push budget | RC `appl_*`, `ascAppId`, `CYCLE_CALENDAR_SECRET`, Widget evidence / strip ASO, [pre-submit-smoke.md](../apps/yuun/pre-submit-smoke.md) → Submit |
-| **Yuel** | `kindred-app` | ✅ Invite UL harden (`resonate`→`accept` + route fallback); Delete Account; Paywall disclosures; push allowlist; [pre-submit-audit.md](../apps/yuel/pre-submit-audit.md) | ASC one-time `hexastral_compatibility` (sub deferred), carry-over smoke, [pre-submit-smoke.md](../apps/yuel/pre-submit-smoke.md) → Submit after Yuun Approved |
+| **Yuel** | `kindred-app` | ✅ Invite UL harden; Delete Account; Paywall; Pro + one-time unlock; [pre-submit-audit.md](../apps/yuel/pre-submit-audit.md) | ASC/RC three products (`kindred_pro_*` + `hexastral_compatibility`), carry-over smoke, [pre-submit-smoke.md](../apps/yuel/pre-submit-smoke.md) → Submit after Yuun Approved |
 | **Syel** | `xingqi-app` | ✅ `faceoracle_pro` chat/capability + VLM gate; production reading-job copy; ja push + rest-theme 3d; 五章文案; iCloud empty toggle removed | EAS `projectId` still `REPLACE_*`; RC/ASC; [regression-checklist.md](../apps/xingqi/regression-checklist.md) |
 | **Kanyu** | `feng-app` | ⚠️ Engine + queue OK; **LLM prose quality not submit-blocking for V1 wave order but not Review-grade yet** — see [feng/report-quality-plan.md](../apps/feng/report-quality-plan.md) | Vision/synthesis P0 + ASC/RC |
 | **Yaul** | `coin-cast-app` | ❌ **Not App Store ready** — casting/physics largely coded, but ASO claims 五帝钱 skins that are not shipped; privacy URL gated while `visibility: hidden`; production RC/ASC placeholders | Product sign-off + ASO fix + legal URL + ASC/RC — [coincast/README.md](../apps/coincast/README.md) § Readiness |
@@ -50,7 +50,7 @@ Last updated: 2026-07-31.
 | Brand domain (live) | `yuel.hexastral.com` | `yuun.hexastral.com` |
 | Apple Team ID | `L9Z47DW56X` | `L9Z47DW56X` |
 | Version / build | 0.1.0 / EAS auto-increment | 1.0.0 / EAS auto-increment |
-| **IAP model (MVP)** | **One-time** 合盘 unlock `hexastral_compatibility`（`kindred_pro` 订阅延后到留存循环产品化） | **Subscription only** (`auspice_pro`) |
+| **IAP model (MVP)** | **3 keys:** `kindred_pro_monthly` / `kindred_pro_annual` + one-time `hexastral_compatibility` | **2 keys:** `auspice_pro_monthly` / `auspice_pro_annual` |
 
 **Yaul** (coin-cast, pre-launch — same worker pattern as Yuel/Yuun):
 
@@ -126,35 +126,36 @@ For **each** app (Yuel, then Yuun):
 Follow [docs/setup/revenuecat-entitlements.md](../setup/revenuecat-entitlements.md).
 **MVP scope (decided 2026-06): ship per-app Pro only.** See §7.
 
-> ✅ **UPDATED 2026-07-31:** Yuel MVP ships **one-time** `hexastral_compatibility` only.
-> `kindred_pro` monthly/annual are **Phase 2** (after monthly quota + evening relationship
-> push retention is product-clear). Yuun remains `auspice_pro` subscription. Do **not**
-> create `universe_pro` at MVP. `products.ts` remains the engineering catalog SSOT;
-> ASC/RC create only what this section marks for MVP.
+> ✅ **UPDATED 2026-08-01:** Yuel MVP ships **all three** products: `kindred_pro_monthly`,
+> `kindred_pro_annual`, and one-time `hexastral_compatibility`. Yuun ships **two**
+> subscription products only. Do **not** create `universe_pro` at MVP.
+> `products.ts` remains the engineering catalog SSOT.
+>
+> **Yuel Pro grants:** personal 命书 + monthly relationship layer + living layer
+> (timeline / what-if / AI chat with **monthly allowance**, not unlimited) + **3**
+> synastry unlocks (or birth recomputes) per month. No daily almanac (Yuun owns that).
+> 合盘 remains separately purchasable when monthly unlocks are exhausted.
 
 ### 3.1 Entitlements (MVP create)
+- [ ] `kindred_pro` (Yuel) — display name "Yuel Pro"
 - [ ] `auspice_pro` (Yuun) — display name "Yuun Pro"
-- [ ] **Defer** `kindred_pro` until Phase 2 subscription relaunch
 - [ ] **Do NOT create** `universe_pro` at MVP (see §7)
 
 ### 3.2 Products (create in ASC + register in RevenueCat with the *exact* IDs)
 | App | Product ID | Type | Grants entitlement | Price (confirm in ASC) | MVP? |
 |---|---|---|---|---|---|
+| Yuel | `kindred_pro_monthly` | auto-renew sub | `kindred_pro` | $7.99/mo | **Yes** |
+| Yuel | `kindred_pro_annual` | auto-renew sub | `kindred_pro` | $47.99/yr | **Yes** |
 | Yuel | `hexastral_compatibility` | consumable (server-applied, per-bond) | — | $6.99 | **Yes** |
-| Yuel | `kindred_pro_monthly` | auto-renew sub | `kindred_pro` | $7.99/mo | **Phase 2** |
-| Yuel | `kindred_pro_annual` | auto-renew sub | `kindred_pro` | $47.99/yr | **Phase 2** |
 | Yuun | `auspice_pro_monthly` | auto-renew sub | `auspice_pro` | TBD — confirm | **Yes** |
 | Yuun | `auspice_pro_annual` | auto-renew sub | `auspice_pro` | TBD — confirm | **Yes** |
 
+- [ ] Yuel: put `kindred_pro_*` in Subscription Group; offering `yuan_default`; also register `hexastral_compatibility` (NON_RENEWING_PURCHASE webhook)
 - [ ] Yuun: put subscription products in Subscription Group; offering `auspice_default`
-- [ ] Yuel MVP: register **only** `hexastral_compatibility` (NON_RENEWING_PURCHASE webhook)
 - [ ] **Webhook**: `https://api.hexastral.com/webhooks/revenuecat`, `Authorization: Bearer <secret>`
       (same value as the Worker's `REVENUECAT_WEBHOOK_SECRET`). Events: `INITIAL_PURCHASE`,
       `RENEWAL`, `CANCELLATION`, `EXPIRATION`, `NON_RENEWING_PURCHASE`.
 - [ ] Copy the public SDK keys (`appl_*` iOS, `goog_*` Android, `test_*` sandbox) → §6
-
-> Phase 2: create `kindred_pro` entitlement + monthly/annual + offering `yuan_default`
-> when the retention loop (monthly quota + evening relationship push) is product-clear.
 
 ---
 

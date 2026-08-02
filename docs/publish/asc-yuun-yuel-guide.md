@@ -355,8 +355,7 @@ node scripts/aso-charcount.mjs apps/auspice-app/aso-metadata.json apps/kindred-a
 
 - Yuun：建议 **7** 张/语言（日历主导，S6 披露命书）
 - Yuel：建议 **5** 张/语言（双盘对比、邀请流程优先）
-- **Yuel 无 iPad 构建**（`supportsTablet: false`）→ **不要** 勾 iPad 截图要求或声明 iPad 支持
-- Yuun `supportsTablet: true` → 若不上 iPad 截图，确保 Connect 未强制 iPad（仅 iPhone 上架即可）
+- **Yuun / Yuel 均无 iPad 构建**（`app.json` → `ios.supportsTablet: false`）→ **不要** 上传 iPad 截图，也不要在商店声明 iPad 支持；仅填 iPhone 尺寸即可
 
 ### 10.3 版本信息字段
 

@@ -90,16 +90,23 @@ enum WatchAPIClient {
   }
 
   /// Bootstrap when credentialed; otherwise merge a single public day into cache.
+  /// Stale/invalid Keychain tokens must not block refresh — fall back to public `/day`.
   static func refreshNetwork(locale: String, anchorDate: String) async throws -> WidgetEnvelope {
     let prefs = WatchPayloadStore.shared.loadPreferences()
     if WatchKeychain.hasCredential {
-      return try await bootstrap(
-        anchorDate: anchorDate,
-        locale: locale,
-        days: 7,
-        birthDate: prefs?.birthDate,
-        yijiMode: prefs?.yijiMode
-      )
+      do {
+        return try await bootstrap(
+          anchorDate: anchorDate,
+          locale: locale,
+          days: 7,
+          birthDate: prefs?.birthDate,
+          yijiMode: prefs?.yijiMode
+        )
+      } catch {
+        NSLog(
+          "[YuunWatch] bootstrap failed (\(error.localizedDescription)) — falling back to public /day"
+        )
+      }
     }
     let single = try await fetchPublicDay(date: anchorDate, locale: locale)
     if var existing = WatchPayloadStore.shared.envelope {

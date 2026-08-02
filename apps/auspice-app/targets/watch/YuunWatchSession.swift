@@ -244,7 +244,10 @@ final class WatchRefreshController: ObservableObject {
 
     if includePhone {
       YuunWatchSession.shared.requestSyncFromPhone()
-      try? await Task.sleep(nanoseconds: 600_000_000)
+      // Allow WCSession applicationContext / prefs to land before we pick locale
+      // for the network refresh (otherwise watchOS-en wins and rewrites envelope).
+      try? await Task.sleep(nanoseconds: 1_200_000_000)
+      WatchPayloadStore.shared.reloadFromDefaults()
     }
 
     let locale = WatchPayloadStore.shared.resolvedLocale.rawValue

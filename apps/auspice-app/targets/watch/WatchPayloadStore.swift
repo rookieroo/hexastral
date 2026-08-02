@@ -9,16 +9,22 @@ final class WatchPayloadStore: ObservableObject {
   @Published private(set) var envelope: WidgetEnvelope?
   @Published private(set) var lastUpdatedAt: Date?
   @Published private(set) var isStale = false
+  /// Bumped when prefs / plain locale key change so SwiftUI re-reads `resolvedLocale`.
+  @Published private(set) var localeEpoch: Int = 0
 
+  /// Phone App locale (incl. Me → Language · DEV), never watchOS language first.
+  /// Order matters: a stale English `envelope.locale` used to beat a fresh
+  /// `yuun_widget_locale` / prefs write from the phone — that is why DEV 繁体
+  /// could still show English when the Watch system language is en.
   var resolvedLocale: WatchLocale {
-    if let loc = envelope?.locale, !loc.isEmpty {
-      return WatchLocale.normalize(loc)
-    }
     if let prefs = loadPreferences()?.locale, !prefs.isEmpty {
       return WatchLocale.normalize(prefs)
     }
     if let defaults = UserDefaults(suiteName: WatchStoreKeys.appGroup),
        let loc = defaults.string(forKey: WatchStoreKeys.locale), !loc.isEmpty {
+      return WatchLocale.normalize(loc)
+    }
+    if let loc = envelope?.locale, !loc.isEmpty {
       return WatchLocale.normalize(loc)
     }
     let preferred = Locale.preferredLanguages.first ?? "en"
@@ -34,6 +40,9 @@ final class WatchPayloadStore: ObservableObject {
   }
 
   func reloadFromDefaults() {
+    let prevEpochLocale = localeEpoch
+    let prevRaw = defaults?.string(forKey: WatchStoreKeys.locale)
+    let prevPrefs = defaults?.string(forKey: WatchStoreKeys.preferences)
     envelope = readEnvelope()
     if let iso = envelope?.updatedAt {
       lastUpdatedAt = ISO8601DateFormatter().date(from: iso)
@@ -41,6 +50,12 @@ final class WatchPayloadStore: ObservableObject {
       lastUpdatedAt = nil
     }
     isStale = computeStale()
+    let nextRaw = defaults?.string(forKey: WatchStoreKeys.locale)
+    let nextPrefs = defaults?.string(forKey: WatchStoreKeys.preferences)
+    if prevRaw != nextRaw || prevPrefs != nextPrefs {
+      localeEpoch = prevEpochLocale + 1
+      NSLog("[YuunWatch] resolvedLocale → \(resolvedLocale.rawValue)")
+    }
   }
 
   private func computeStale() -> Bool {
@@ -168,11 +183,27 @@ final class WatchPayloadStore: ObservableObject {
   }
 
   func loadPreferences() -> WatchPreferences? {
-    guard let suite = defaults,
-          let raw = suite.string(forKey: WatchStoreKeys.preferences),
-          let data = raw.data(using: .utf8)
-    else { return nil }
-    return try? JSONDecoder().decode(WatchPreferences.self, from: data)
+    guard let suite = defaults else { return nil }
+    let data: Data?
+    if let raw = suite.string(forKey: WatchStoreKeys.preferences) {
+      data = raw.data(using: .utf8)
+    } else if let d = suite.data(forKey: WatchStoreKeys.preferences) {
+      data = d
+    } else {
+      data = nil
+    }
+    guard let data else { return nil }
+    if let prefs = try? JSONDecoder().decode(WatchPreferences.self, from: data) {
+      return prefs
+    }
+    // SharedGroup / WCSession sometimes delivers a JSON *string* as Data of a
+    // quoted string — unwrap one layer.
+    if let quoted = try? JSONDecoder().decode(String.self, from: data),
+       let inner = quoted.data(using: .utf8),
+       let prefs = try? JSONDecoder().decode(WatchPreferences.self, from: inner) {
+      return prefs
+    }
+    return nil
   }
 
   func savePreferences(_ prefs: WatchPreferences) {

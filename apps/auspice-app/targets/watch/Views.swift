@@ -16,6 +16,8 @@ struct ContentView: View {
       SettingsView()
         .tabItem { Label(t.settings, systemImage: "gearshape") }
     }
+    // Re-evaluate tab titles when phone pushes a new locale.
+    .id(store.localeEpoch)
     .onAppear {
       YuunWatchSession.shared.activate()
       YuunWatchSession.shared.refreshStatusFromDefaults()

@@ -37,7 +37,7 @@ The catalog defines five entitlement keys
 
 | Key | Unlocks | Sold at MVP? |
 |---|---|---|
-| `kindred_pro` | Yuel Pro: relationship timeline, deep synastry, BaZi-pair LLM, unlimited AI chat, full personal 命书 | **Yes** |
+| `kindred_pro` | Yuel Pro: personal 命书, monthly relationship layer, living layer (timeline / what-if / AI chat with **monthly allowance**), 3 synastry unlocks or birth recomputes per month | **Yes** |
 | `auspice_pro` | Yuun Pro: BaZi life timeline & what-if, personal BaZi/ZiWei deep-read, family unlimited, 农历 birthday push, full 黄历, widgets ×3, Apple Watch, cross-device sync | **Yes** |
 | `coincast_pro` | Yaul Pro: unlimited casts + AI on each cast + coin skins | **Yes** (Yaul launch) |
 | `fate_pro` | Pro experience inside the `fate` funnel app (all chapters + daily LLM) | **No** — universe-only, no standalone product (fate is a funnel app) |
@@ -50,16 +50,13 @@ the client was reconciled away from the old `hexastral_kindred_pro`.)
 
 ### MVP: create these
 
-**2026-07-31 decision:** Yuel ships **one-time** `hexastral_compatibility` at MVP;
-`kindred_pro` subscription is **Phase 2**. Create:
+**2026-08-01 decision:** Yuel ships **three** products at MVP (`kindred_pro_*` +
+`hexastral_compatibility`); Yuun ships **two** subscription products. Create:
 
-- `auspice_pro` (Yuun subscription)
+- `kindred_pro` (Yuel subscription entitlement)
+- `auspice_pro` (Yuun subscription entitlement)
 - Do **not** create `universe_pro` (or any `universe_pro_*` product / `universe_default`
   offering) at MVP.
-
-Defer creating the `kindred_pro` entitlement until Phase 2 (monthly quota + evening
-relationship-push retention is product-clear). Engineering catalog in `products.ts`
-may still list `kindred_pro_*` for code that remains in-repo.
 
 ---
 
@@ -69,10 +66,10 @@ Create these in App Store Connect, then register the same IDs in RevenueCat:
 
 | Product ID | App | Plan | Grants | Price (confirm in ASC) | MVP? |
 |---|---|---|---|---|---|
+| `kindred_pro_monthly` | Yuel | Monthly | `kindred_pro` | $7.99/mo | **Yes** |
+| `kindred_pro_annual` | Yuel | Annual | `kindred_pro` | $47.99/yr | **Yes** |
 | `auspice_pro_monthly` | Yuun | Monthly | `auspice_pro` | $4.99/mo (per aso-metadata; confirm) | **Yes** |
 | `auspice_pro_annual` | Yuun | Annual | `auspice_pro` | $39.99/yr (per aso-metadata; confirm) | **Yes** |
-| `kindred_pro_monthly` | Yuel | Monthly | `kindred_pro` | $7.99/mo | **Phase 2** |
-| `kindred_pro_annual` | Yuel | Annual | `kindred_pro` | $47.99/yr | **Phase 2** |
 | `coincast_pro_monthly` | Yaul | Monthly | `coincast_pro` | Confirm in ASC | Post-wave |
 | `coincast_pro_annual` | Yaul | Annual | `coincast_pro` | Confirm in ASC | Post-wave |
 
@@ -84,7 +81,7 @@ Create these in App Store Connect, then register the same IDs in RevenueCat:
 | `coincast_cast_pack_5` | Yaul | Consumable | +5 credits | |
 | `coincast_cast_pack_10` | Yaul | Consumable | +10 credits | |
 
-Plus Yuel's **one-time 合盘 unlock** (MVP primary monetization — not a subscription):
+Plus Yuel's **one-time 合盘 unlock** (alongside Pro — used when monthly unlock quota is exhausted, or by Free users):
 
 | Product ID | App | Type | Grants | Price | MVP? |
 |---|---|---|---|---|---|

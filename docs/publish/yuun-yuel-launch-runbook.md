@@ -376,7 +376,7 @@ eas submit --platform ios
 
 ## 8. 截图与合规（人工）
 
-- 尺寸：6.7" 必做；5.5" 仍要求；iPad 仅当声明 iPad 支持
+- 尺寸：6.7"/6.9" + 6.5" 必做；Yuun/Yuel 均为 `supportsTablet: false` → **不上 iPad 截图**
 - 脚本：`docs/publish/screenshot-direction.md` + 各 app `aso-metadata.json` 内 `_screenshotDirection`
 - 提审前：`docs/publish/app-review-qa-checklist.md`
 

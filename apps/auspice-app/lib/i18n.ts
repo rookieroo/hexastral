@@ -216,6 +216,10 @@ export interface Strings {
   solarTermsSection: string
   /** Section label above the 8 festivals card list. */
   festivalsSection: string
+  /** Eyebrow on `/festival/[id]` for festival entries (short; not the hub section title). */
+  cultureKindFestival: string
+  /** Eyebrow on `/festival/[id]` for topic explainers (干支 / 八字…). */
+  cultureKindTopic: string
   /** Section label above the family-events placeholder. */
   familyEventsSection: string
   /** Placeholder copy in the family-events section. Family-events backend ships Sprint 4. */
@@ -768,6 +772,8 @@ const zhHans: Strings = {
   seasonWinter: '冬',
   solarTermsSection: '二十四节气',
   festivalsSection: '八大节日',
+  cultureKindFestival: '节日',
+  cultureKindTopic: '专题',
   familyEventsSection: '家庭事件',
   familyEventsComingSoon: '即将开放',
   contentComingSoon: '内容编辑中',
@@ -1225,6 +1231,8 @@ const zhHant: Strings = {
   seasonWinter: '冬',
   solarTermsSection: '二十四節氣',
   festivalsSection: '八大節日',
+  cultureKindFestival: '節日',
+  cultureKindTopic: '專題',
   familyEventsSection: '家庭事件',
   familyEventsComingSoon: '即將開放',
   contentComingSoon: '內容編輯中',
@@ -1698,6 +1706,8 @@ const ja: Strings = {
   seasonWinter: '冬',
   solarTermsSection: '二十四節気',
   festivalsSection: '八大節句',
+  cultureKindFestival: '祝日',
+  cultureKindTopic: '解説',
   familyEventsSection: '家族イベント',
   familyEventsComingSoon: '近日公開',
   contentComingSoon: 'コンテンツ準備中',
@@ -2162,6 +2172,8 @@ const en: Strings = {
   seasonWinter: 'Winter',
   solarTermsSection: 'Solar terms',
   festivalsSection: '8 Festivals',
+  cultureKindFestival: 'Festival',
+  cultureKindTopic: 'Topic',
   familyEventsSection: 'Family events',
   familyEventsComingSoon: 'Coming soon',
   contentComingSoon: 'Content coming soon',

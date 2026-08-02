@@ -2,7 +2,7 @@
 
 Run on a **production-profile** (or current dev-client with latest JS) before App Store submit.
 
-**MVP monetization (2026-07-31):** one-time `hexastral_compatibility` (per-bond unlock). `kindred_pro` subscription is **deferred** — do not treat subscription paywall as the primary purchase path in screenshots / ASO.
+**MVP monetization (2026-08-01):** three products — `kindred_pro_monthly` / `kindred_pro_annual` (entitlement `kindred_pro`) + one-time `hexastral_compatibility` (per-bond unlock). Pro includes personal 命书, monthly layer, living layer, and **3** synastry unlocks/mo; AI chat is a **monthly allowance**, not unlimited.
 
 **Prereqs:** latest JS with invite UL harden (`+native-intent` + `app/resonate/[token]`); notifications allowed for push steps.
 
@@ -26,11 +26,12 @@ Run on a **production-profile** (or current dev-client with latest JS) before Ap
 
 ---
 
-## 3. Bond unlock (one-time path)
+## 3. Bond unlock + Pro quota
 
 1. Create / open a locked synastry report.
-2. Purchase path surfaces **per-bond unlock** (`hexastral_compatibility`) when wired; if only sub paywall still appears in DEV, note as Phase-2 debt — **do not** screenshot sub as MVP primary.
-3. After unlock: chapters readable; PushFuelDisclosure bond-scoped (not user-wide remaining).
+2. With **Pro**: unlock (or birth recompute) consumes 1 of **3** monthly synastry unlocks; after exhaustion, fall through to one-time `hexastral_compatibility`.
+3. Without Pro: purchase path offers one-time unlock and/or Pro paywall (both are MVP-valid).
+4. After unlock: chapters readable; PushFuelDisclosure bond-scoped (not user-wide remaining).
 
 ---
 

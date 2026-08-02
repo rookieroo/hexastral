@@ -34,6 +34,7 @@ type SharedGroupApi = {
 }
 
 type WidgetKitIosNative = {
+  flushAppGroup?: (suiteName: string) => void
   syncWatchAppGroup?: (suiteName: string) => void
 }
 
@@ -65,7 +66,10 @@ function loadWidgetKitNative(): WidgetKitIosNative | null {
 
 function pushWatchAppGroup(): void {
   try {
-    loadWidgetKitNative()?.syncWatchAppGroup?.(APP_GROUP)
+    const native = loadWidgetKitNative()
+    // Flush App Group before WCSession snapshot (RN setItem is async to disk).
+    native?.flushAppGroup?.(APP_GROUP)
+    native?.syncWatchAppGroup?.(APP_GROUP)
   } catch (err) {
     console.warn('[watch-provision] syncWatchAppGroup failed', err)
   }

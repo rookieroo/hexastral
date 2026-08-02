@@ -32,10 +32,14 @@ public class WidgetKitIosModule: Module {
 
     Function("syncWatchAppGroup") { (suiteName: String) in
       DispatchQueue.main.async {
+        // RN SharedGroup setItem does not synchronize; flush before snapshot/push
+        // or Watch may receive a payload missing yuun_widget_locale / prefs.
+        UserDefaults(suiteName: suiteName)?.synchronize()
         WatchConnectivityBridge.shared.pushAppGroup(suiteName: suiteName, reason: "rn-write")
       }
       // Second push shortly after — UserDefaults / WCSession activation races.
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+        UserDefaults(suiteName: suiteName)?.synchronize()
         WatchConnectivityBridge.shared.pushAppGroup(suiteName: suiteName, reason: "rn-write-retry")
       }
     }
@@ -78,16 +82,22 @@ private final class WatchConnectivityBridge: NSObject, WCSessionDelegate {
 
   func snapshotPayload(suiteName: String) -> [String: String] {
     guard let defaults = UserDefaults(suiteName: suiteName) else { return [:] }
+    defaults.synchronize()
     var payload: [String: String] = [:]
     for key in keys {
       if let value = defaults.string(forKey: key), !value.isEmpty {
         payload[key] = value
+      } else if let data = defaults.data(forKey: key),
+                let s = String(data: data, encoding: .utf8), !s.isEmpty {
+        payload[key] = s
       } else if let any = defaults.object(forKey: key) {
         // SharedGroup may store non-string; coerce.
         if let n = any as? NSNumber {
           payload[key] = n.stringValue
         } else if let s = any as? String, !s.isEmpty {
           payload[key] = s
+        } else if let s = any as? NSString, s.length > 0 {
+          payload[key] = s as String
         }
       }
     }
