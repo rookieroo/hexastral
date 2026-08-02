@@ -78,7 +78,10 @@ async function pressApple(
 ): Promise<void> {
   try {
     const cred = await AppleAuthentication.signInAsync({
-      requestedScopes: [AppleAuthentication.AppleAuthenticationScope.EMAIL],
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
     })
 
     await emitPortfolioAppleLinkedGrowth({

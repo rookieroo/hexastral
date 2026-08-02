@@ -48,25 +48,22 @@ export function isPaywall(err: unknown): boolean {
  * the bond link through any channel (Messages, WhatsApp, WeChat, Mail, AirDrop…).
  * The bond is already pending server-side; the link is all B needs.
  *
- * The server composes the link INTO the body. On iOS we lift it out into Share's
- * `url` item so AirDrop / social treat it as a LINK: AirDrop opens the resonate
- * webpage (and deep-links into the app via the hexastral.com Universal Link
- * on `/resonate/{token}`)
- * instead of dropping text into Pages, and the page's opengraph-image renders a
- * rich card. SMS / Mail still get the text + a tappable link (unchanged). Android
- * Share has no `url` field, so keep the link inline there.
+ * The server composes the link INTO the body. On iOS we still pass Share's `url`
+ * so AirDrop / rich targets treat it as a LINK (Universal Link on
+ * `/resonate/{token}`), but we **keep the URL in `message` too** — Share Sheet
+ * "Copy" only copies `message`, so stripping the link made simulator/device
+ * handoff impossible. Duplicate link in Messages is acceptable.
  */
 export async function shareInvite(
   mailto: ResonanceInviteMailto,
   resonateUrl: string
 ): Promise<void> {
+  const body = mailto.body.includes(resonateUrl)
+    ? mailto.body
+    : `${mailto.body.trim()}\n\n${resonateUrl}`
   if (Platform.OS === 'ios') {
-    const text = mailto.body
-      .replace(resonateUrl, '')
-      .replace(/\n{2,}/g, '\n')
-      .trim()
-    await Share.share({ message: text, url: resonateUrl }).catch(() => undefined)
+    await Share.share({ message: body, url: resonateUrl }).catch(() => undefined)
     return
   }
-  await Share.share({ message: mailto.body }).catch(() => undefined)
+  await Share.share({ message: body }).catch(() => undefined)
 }

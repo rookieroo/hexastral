@@ -1,0 +1,11 @@
+Yuel is a BaZi (Four Pillars) two-chart relationship typology tool - cultural/educational framing, not horoscope or matchmaking.
+
+Sign-in is required to save bonds under the user identity.
+Invite flow: create bond, then share a private link; partner adds their own birth.
+Full chapters for both when the accepter is new to Yuel. Existing users may need a purchase unlock.
+
+To test Pro: Sign in with Apple, then Sandbox subscribe.
+One-time synastry unlock product: hexastral_compatibility.
+
+No ads. No tracking.
+Privacy: https://yuel.hexastral.com/privacy/yuel

@@ -469,7 +469,7 @@ export const translations: Translations = {
     'unlock.heading': '{n} more chapters locked',
     'unlock.invite': 'Share Yuel with a friend',
     'unlock.inviteHint':
-      'Invite anytime — when a friend starts from your link, chapters can open for you both. You also get 2 free full solo readings.',
+      'Works when they are new to Yuel: they join from your link, add birth, and chapters can open for you both — including unlocking this report. Existing users still need a purchase.',
     'unlock.purchase': 'Unlock this report · {price}',
     'unlock.subscribe': 'Subscribe — unlock every bond',
     'unlock.processing': 'Processing…',
@@ -905,7 +905,7 @@ export const translations: Translations = {
     'unlock.heading': '还有 {n} 章未解锁',
     'unlock.invite': '把 Yuel 分享给朋友',
     'unlock.inviteHint':
-      '邀请不限次；朋友从你的链接开始时，双方报告可一起打开。另有 2 次免费完整 solo 合盘。',
+      '仅当对方是 Yuel 新用户时生效：从你的链接加入并填生辰后，双方可开全章，本篇也可为你解锁。已是用户则仍需购买。',
     'unlock.purchase': '单次解锁本篇 · {price}',
     'unlock.subscribe': '订阅 · 解锁所有关系',
     'unlock.processing': '处理中…',
@@ -1339,7 +1339,7 @@ export const translations: Translations = {
     'unlock.heading': '還有 {n} 章未解鎖',
     'unlock.invite': '把 Yuel 分享給朋友',
     'unlock.inviteHint':
-      '邀請不限次；朋友從你的連結開始時，雙方報告可一起打開。另有 2 次免費完整 solo 合盤。',
+      '僅當對方是 Yuel 新用戶時生效：從你的連結加入並填生辰後，雙方可開全章，本篇也可為你解鎖。已是用戶則仍需購買。',
     'unlock.purchase': '單次解鎖本篇 · {price}',
     'unlock.subscribe': '訂閱 · 解鎖所有關係',
     'unlock.processing': '處理中…',
@@ -1785,7 +1785,7 @@ export const translations: Translations = {
     'unlock.heading': 'あと {n} 章ロック中',
     'unlock.invite': 'Yuel を友達にシェア',
     'unlock.inviteHint':
-      '招待は回数無制限。リンクから友達が始めると、二人のレポートが開きやすくなります。無料の完全ソロ合盤は2回。',
+      '相手が Yuel の新規のときだけ：リンクから参加して生年月日を入れると、双方フル解放＋このレポートも開きます。既存ユーザーの場合は購入が必要です。',
     'unlock.purchase': 'この診断を解放 · {price}',
     'unlock.subscribe': '購読 — すべての縁を解放',
     'unlock.processing': '処理中…',

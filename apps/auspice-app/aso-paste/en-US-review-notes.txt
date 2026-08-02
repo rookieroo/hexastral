@@ -1,0 +1,18 @@
+Yuun is a Chinese almanac (stem-branch / yi-ji / solar terms) for cultural reference. Not fortune-telling. Not medical advice.
+
+Sign-in is NOT required for the daily public almanac, widgets, or calendar.
+Sign-in is only needed at the subscription / Pro step (Sign in with Apple).
+
+How to test Free:
+1. Launch the app. Browse Today, calendar, culture library without an account.
+2. Optional: add on-device birth info to see For you summary.
+
+How to test Pro (Sandbox):
+1. Open any Pro feature or the paywall.
+2. Sign in with Apple.
+3. Purchase with an App Store Sandbox tester account (device: Settings - App Store - Sandbox Account).
+4. Restore Purchases works if needed.
+
+No ads. No tracking.
+Privacy: https://yuun.hexastral.com/privacy/yuun
+Terms: https://yuun.hexastral.com/terms

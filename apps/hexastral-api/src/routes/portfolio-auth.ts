@@ -35,6 +35,8 @@ function googleAudiences(env: CloudflareBindings): string[] {
 const portfolioAuthBodySchema = z.object({
   identityToken: z.string().min(20),
   authorizationCode: z.string().optional(),
+  /** Apple display name from expo-apple-authentication (first auth only). */
+  fullName: z.string().max(120).optional(),
   target_app: z.string().max(64),
 })
 
@@ -55,8 +57,12 @@ export const portfolioAuthRoutes = new Hono<{
       throw new HTTPException(422, { message: 'Invalid payload' })
     }
 
-    const { identityToken, target_app } = parsed.data
+    const { identityToken, target_app, fullName: fullNameRaw } = parsed.data
     const audience = audienceForTarget(target_app)
+    const fullName =
+      typeof fullNameRaw === 'string' && fullNameRaw.trim().length > 0
+        ? fullNameRaw.trim()
+        : null
 
     let sub: string
     // Apple ships the `email` claim ONLY on first authorization — subsequent
@@ -87,7 +93,12 @@ export const portfolioAuthRoutes = new Hono<{
     const existing = await db.select().from(users).where(eq(users.appleUserId, sub)).get()
 
     if (existing) {
-      const patch: { deviceSecret?: string; email?: string; updatedAt: string } = {
+      const patch: {
+        deviceSecret?: string
+        email?: string
+        name?: string
+        updatedAt: string
+      } = {
         updatedAt: new Date().toISOString(),
       }
       if (!existing.deviceSecret) patch.deviceSecret = crypto.randomUUID()
@@ -96,7 +107,13 @@ export const portfolioAuthRoutes = new Hono<{
       // email, and the more common case of an account created before the email
       // capture fix was deployed.
       if (!existing.email && emailFromToken) patch.email = emailFromToken
-      if (patch.deviceSecret !== undefined || patch.email !== undefined) {
+      // Same backfill for display name (Apple only sends fullName on first auth).
+      if (!existing.name && fullName) patch.name = fullName
+      if (
+        patch.deviceSecret !== undefined ||
+        patch.email !== undefined ||
+        patch.name !== undefined
+      ) {
         await db.update(users).set(patch).where(eq(users.id, existing.id))
       }
       return c.json({
@@ -113,6 +130,7 @@ export const portfolioAuthRoutes = new Hono<{
       deviceSecret,
       unlockedChapterCount: CHAPTER_UNLOCK_DEFAULT,
       ...(emailFromToken ? { email: emailFromToken } : {}),
+      ...(fullName ? { name: fullName } : {}),
     })
 
     return c.json({ userId: id, deviceSecret }, 201)

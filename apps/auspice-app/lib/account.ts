@@ -67,7 +67,10 @@ export async function signInWithApple(): Promise<string | null> {
   let credential: AppleAuthentication.AppleAuthenticationCredential
   try {
     credential = await AppleAuthentication.signInAsync({
-      requestedScopes: [AppleAuthentication.AppleAuthenticationScope.FULL_NAME],
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
     })
   } catch (err) {
     if ((err as { code?: string }).code === 'ERR_REQUEST_CANCELED') return null
@@ -75,9 +78,15 @@ export async function signInWithApple(): Promise<string | null> {
   }
   if (!credential.identityToken) throw new Error('Apple returned no identity token')
 
+  const fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
+    .filter(Boolean)
+    .join(' ')
+    .trim()
+
   const { userId } = await exchangeAppleCredentialForPortfolio({
     identityToken: credential.identityToken,
     authorizationCode: credential.authorizationCode,
+    fullName: fullName || undefined,
     targetApp: PORTFOLIO_TARGET_APP,
     storagePrefix: PORTFOLIO_STORAGE_PREFIX,
   })

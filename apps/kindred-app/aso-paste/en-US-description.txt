@@ -1,0 +1,30 @@
+Yuel is a BaZi (Four Pillars) couples-chart tool - a relationship typology grounded in classical Chinese cosmology and modern AI. Not Western horoscope. Not predictive matchmaking. Not a compatibility score.
+
+WHAT IT IS
+
+- Two birth charts side by side: Day Masters, Five Elements balance, and classical interaction patterns (combination, clash, harm, penalty)
+- A cultural overlay - like an MBTI-pair study: tendencies and friction themes, not a verdict or prediction
+- AI chat that references classical BaZi concepts when you ask about your pair
+- Private invite link: they add their own birth; you never see their raw details from the link alone
+
+WHAT IT IS NOT
+
+- Not Western astrology, horoscopes, or zodiac signs
+- Not fortune-telling or a pass/fail match score
+- Not a generic compatibility quiz
+
+FREE vs PAID
+
+Invite path: share a link; when someone new to Yuel joins and adds birth, this pair can open full chapters for you both. Entering someone else's birth yourself may unlock a full six-chapter report as a one-time purchase (about USD 6.99; store price may vary).
+
+Yuel Pro (about USD 7.99/month or 47.99/year; store price may vary): personal natal reading, monthly relationship layers, living-layer tools (timeline / what-if / AI chat with a monthly allowance), and up to 3 synastry unlocks or birth-chart recomputes per month. Couples reports stay available as one-time purchases when monthly unlocks are used up.
+
+Languages: English, Simplified Chinese, Traditional Chinese, Japanese
+
+PRIVACY
+
+Birth details stay on device and sync to your account for Threads and pair readings. Partner sharing uses a private invite link. Delete a thread or your account anytime. Purchases via RevenueCat. No tracking ads.
+
+ABOUT
+
+Yuel is published by UseONE, LLC. Privacy: https://yuel.hexastral.com/privacy/yuel / Terms: https://yuel.hexastral.com/terms

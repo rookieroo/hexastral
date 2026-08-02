@@ -21,6 +21,7 @@ import {
   birthTimeModeFromClock,
   clearedPreciseBirthFields,
 } from './birthTimeMode'
+import { shichenInlineLabel } from '../shichen-i18n'
 import { ShichenWheel } from './ShichenWheel'
 import type { BirthStepProps } from './types'
 
@@ -36,10 +37,11 @@ function pad2(n: number): string {
   return String(n).padStart(2, '0')
 }
 
-/**排盘小时 → 时辰 label (e.g. 14 → 未时). */
-function shichenLabelForHour(hour: number): string {
+/** 排盘小时 → 时辰 label (e.g. 14 → 未时 / 未時). */
+function shichenLabelForHour(hour: number, locale?: string): string {
   const idx = hour === 23 ? 0 : Math.floor((hour + 1) / 2) % 12
-  return `${SHICHEN_BRANCHES[idx]}时`
+  const branch = SHICHEN_BRANCHES[idx] ?? '子'
+  return shichenInlineLabel(idx, branch, locale)
 }
 
 export function BirthTimeStep({
@@ -138,7 +140,7 @@ export function BirthTimeStep({
       if (resolved.calibrated) {
         const from = `${pad2(Math.floor(value.clockMinutes / 60))}:${pad2(value.clockMinutes % 60)}`
         const to = `${pad2(resolved.hour)}:${pad2(resolved.minute)}`
-        calibrationPreview = `${from} → ${copy.trueSolarLabel ?? '真太阳时'} ${to} · ${shichenLabelForHour(resolved.hour)}`
+        calibrationPreview = `${from} → ${copy.trueSolarLabel ?? '真太阳时'} ${to} · ${shichenLabelForHour(resolved.hour, locale)}`
       }
     }
   }
@@ -189,13 +191,19 @@ export function BirthTimeStep({
         {mode === 'shichen' || !allowPreciseTime ? (
           <View style={{ marginTop: spacing.xl }}>
             {isWheel ? (
-              <ShichenWheel value={picked ?? 0} onChange={setPicked} accent={accent} />
+              <ShichenWheel
+                value={picked ?? 0}
+                onChange={setPicked}
+                accent={accent}
+                locale={locale}
+              />
             ) : (
               <ShichenPicker
                 value={picked}
                 onChange={setPicked}
                 onSelect={() => Haptics.selectionAsync()}
                 accentColor={accent}
+                locale={locale}
               />
             )}
           </View>

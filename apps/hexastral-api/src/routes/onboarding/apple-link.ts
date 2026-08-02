@@ -100,8 +100,17 @@ export const onboardingAppleLinkRoutes = new Hono<AppEnv>().post('/', async (c) 
     return jsonErr(c, 404, ApiErrorCode.not_found, 'Current user not found')
   }
 
-  // Already linked to the same Apple ID — no-op.
+  // Already linked to the same Apple ID — still backfill name/email if Apple
+  // sent them this session and the row is missing them (first-auth fields are
+  // easy to miss on older clients).
   if (currentUser.appleUserId === sub) {
+    const alreadyUpdates: Partial<typeof users.$inferInsert> = {}
+    if (fullName && !currentUser.name) alreadyUpdates.name = fullName
+    if (appleEmail && !currentUser.email) alreadyUpdates.email = appleEmail
+    if (Object.keys(alreadyUpdates).length > 0) {
+      alreadyUpdates.updatedAt = new Date().toISOString()
+      await db.update(users).set(alreadyUpdates).where(eq(users.id, currentUser.id))
+    }
     return jsonOk(c, { outcome: 'already_linked', userId: currentUser.id })
   }
 
@@ -133,6 +142,9 @@ export const onboardingAppleLinkRoutes = new Hono<AppEnv>().post('/', async (c) 
     // Backfill email if the recovered user has none and Apple gave us one.
     if (appleEmail && !existing.email) {
       recoveryUpdates.email = appleEmail
+    }
+    if (fullName && !existing.name) {
+      recoveryUpdates.name = fullName
     }
     if (Object.keys(recoveryUpdates).length > 0) {
       recoveryUpdates.updatedAt = new Date().toISOString()

@@ -553,12 +553,10 @@ export default function BondDetailScreen({
       ]
         .filter(Boolean)
         .join('\n')
-      // iOS: the link goes in Share's `url` item (not buried in text) so AirDrop
-      // opens the webpage / deep-links into the app, not Pages; SMS & Mail still
-      // get the text + a tappable link. Android Share has no `url` → keep inline.
-      void Share.share(
-        Platform.OS === 'ios' ? { message: lead, url } : { message: `${lead}\n${url}` }
-      )
+      // Keep URL in message so Share Sheet "Copy" includes it; also pass `url`
+      // on iOS for AirDrop / rich link targets.
+      const message = `${lead}\n\n${url}`
+      void Share.share(Platform.OS === 'ios' ? { message, url } : { message })
     } else {
       router.push('/(onboarding)/invite')
     }
@@ -944,14 +942,21 @@ export default function BondDetailScreen({
           <Pressable onPress={handleClose} hitSlop={12}>
             <ChevronLeft color={kindredDark.text} size={24} strokeWidth={1.2} />
           </Pressable>
-          <Pressable
-            onPress={() => router.push('/(onboarding)/mode')}
-            hitSlop={8}
-            accessibilityRole='button'
-            accessibilityLabel={t('bondList.add')}
-          >
-            <Text style={{ color: kindredDark.accent, fontSize: 22, lineHeight: 22 }}>+</Text>
-          </Pressable>
+          {/* Waiting on invite: only Resend matters — home already has add. */}
+          {detail.status === 'pending_invite' ||
+          detail.status === 'declined' ||
+          detail.status === 'expired' ? (
+            <View style={{ width: 24 }} />
+          ) : (
+            <Pressable
+              onPress={() => router.push('/(onboarding)/mode')}
+              hitSlop={8}
+              accessibilityRole='button'
+              accessibilityLabel={t('bondList.add')}
+            >
+              <Text style={{ color: kindredDark.accent, fontSize: 22, lineHeight: 22 }}>+</Text>
+            </Pressable>
+          )}
         </View>
 
         <View

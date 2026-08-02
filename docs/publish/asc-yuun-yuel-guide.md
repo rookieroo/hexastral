@@ -199,6 +199,15 @@
 node scripts/aso-charcount.mjs apps/auspice-app/aso-metadata.json apps/kindred-app/aso-metadata.json
 ```
 
+**粘贴方式**：不要从 `.json` 源文件直接复制 `description`（会把字面量 `\n` 粘进 ASC）。用解析后的纯文本：
+
+```bash
+# Yuun（已生成）
+open apps/auspice-app/aso-paste/en-US-description.txt
+# 或临时打印
+python3 -c "import json;print(json.load(open('apps/auspice-app/aso-metadata.json'))['locales']['en-US']['description'])"
+```
+
 每个语言页字段对应 `aso-metadata.json` → `locales`：
 
 | ASC 字段 | JSON 键 | 限制 |
@@ -255,22 +264,26 @@ node scripts/aso-charcount.mjs apps/auspice-app/aso-metadata.json apps/kindred-a
 
 ### 8.1 建议声明的数据类型
 
-按 Connect 分类逐项添加（**Collected** + 用途 + 是否关联用户 + 是否用于追踪）：
+按 Connect 分类逐项添加（**Collected** + 用途 + 是否关联用户 + 是否用于追踪）。
+下列勾选与代码一致：SIWA 写入 `users.name` / `users.email`；growth ingest / attribution 支撑 Product Interaction。
 
 | Data type | Yuun | Yuel | Linked to user? | Tracking? | Purposes |
 |---|---|---|---|---|---|
-| **Email Address** | ✅ 登录时 | ✅ 登录时 | Yes | No | App Functionality, Account Management |
-| **Purchases** | ✅ | ✅ | Yes | No | App Functionality |
+| **Name** | ✅ SIWA `FULL_NAME` → portfolio auth | ✅ SIWA → `/onboarding/apple-link` | Yes | No | App Functionality, Account Management |
+| **Email Address** | ✅ SIWA `EMAIL`（JWT）→ portfolio auth | ✅ SIWA / 邮箱 OTP | Yes | No | App Functionality, Account Management |
+| **Purchases** | ✅ RevenueCat | ✅ | Yes | No | App Functionality |
 | **Other User Content**（手输生辰、家人姓名生日） | ✅ | ✅（含伴侣生辰） | Yes | No | App Functionality |
-| **User ID**（匿名 device / portfolio id） | ✅ | ✅ | Yes | No | App Functionality |
-| **Product Interaction**（可选） | 若未来有分析再开 | 同上 | — | No | Analytics（仅当你真的收集） |
+| **User ID**（匿名 install / portfolio id） | ✅ | ✅ | Yes | No | App Functionality |
+| **Product Interaction** | ✅ satellite bootstrap（`app_open` / DDL / attribution） | ✅ unlock funnel + DDL attribution | Yes | No | Analytics, App Functionality |
 
-**不要声明**（当前 MVP 无）：
+**不要声明**（当前 MVP 无 / 未接客户端采集）：
 
 - Contacts（不读系统通讯录）
-- Location（不持续定位；若有城市级生辰地理，仍属用户手选/输入，放 Other User Content 即可）
+- Location（不持续定位；城市级生辰地理属用户手选/输入 → Other User Content）
 - Health & Fitness
 - Browsing History
+- **Advertising Data**（无第三方广告 SDK 曝光上报）
+- **Diagnostics**（Crash / Performance / Other）— `svc-admin-notify` 是服务端 Telegram 运维告警，不是 App 端诊断采集；Yuun/Yuel 尚未 `initCrashReporting` / Sentry。接上后再勾 Crash Data
 - **Data Used to Track You** — 全关
 
 **Yuel 额外注意**：伴侣生辰是用户**手输**，不是从通讯录导入——不要勾 Contacts。
@@ -283,14 +296,24 @@ node scripts/aso-charcount.mjs apps/auspice-app/aso-metadata.json apps/kindred-a
 
 ## 9. In-App Purchases（Monetization）
 
+**入口（任选其一）**：
+
+1. 左侧栏：**Monetization** → **Subscriptions**（自动续订） / **In-App Purchases**（消耗型等）
+2. 版本页顶部黄条 *In-App Purchases and Subscriptions* → 点进去同属 Monetization
+3. 直链：`https://appstoreconnect.apple.com` → 选 App → 左侧 **Monetization**
+
+首个 IAP **必须**随某个 App 版本一起 Submit（版本页勾选要审的订阅产品，或提交版本时带上 Ready to Submit 的 IAP）。
+
 路径：**App → Monetization → Subscriptions** 或 **In-App Purchases**
 
-### 9.1 订阅组（两 App 共用一组名）
+### 9.1 订阅组（每个 App 各自建一组）
 
-首次在 **任一 App** 下创建 Subscription Group：
+在 **Yuun** 与 **Yuel** 各自的 Monetization → Subscriptions 下各建一个 Subscription Group（Apple **不能**跨 App 共用同一组）：
 
-- **Reference Name**：`hexastral_universe`（内部名，用户不可见）
-- 之后 **Yuun / Yuel 的订阅产品都放进这一组**（方便将来升级换档；消耗型不进组）
+- **Reference Name**（内部）：两边都可用 `hexastral_universe`，仅方便认
+- **消耗型**（如 `hexastral_compatibility`）**不进**订阅组 → 走 In-App Purchases → Consumable
+
+逐步点击顺序见 [launch-checklist.md](./launch-checklist.md) §3。
 
 ### 9.2 Yuun 订阅
 
@@ -336,13 +359,25 @@ node scripts/aso-charcount.mjs apps/auspice-app/aso-metadata.json apps/kindred-a
 
 ### 10.1 构建版本（Build）
 
-1. 本地/EAS：`eas build --profile production --platform ios`
-2. 上传后等 Processing 完成（10–30 分钟）
-3. 版本页 **Build** 区 **+** 选择刚处理的 build
+**不需要**在 ASC 页用 Transporter / Xcode Organizer 手动拖包（除非你刻意不用 EAS）。正常流程：
+
+```bash
+cd apps/auspice-app   # 或 kindred-app
+eas build --profile production --platform ios
+eas submit --profile production --platform ios   # 或 build 时加 --auto-submit
+```
+
+1. EAS 云构建 → `eas submit` 自动上传到该 App 的 ASC
+2. ASC 出现 **Processing**（约 10–30 分钟）→ 变为可选
+3. 版本页 **Build** 区点 **+**，勾选该 build（这步仍要人手选一次）
+
+版本页上的 “Upload your builds using one of several tools” 只是说明可选上传方式；**有 EAS submit 后忽略手动上传即可**。
 
 **Export Compliance**（与 `app.json` 一致）：
 
 - `ITSAppUsesNonExemptEncryption: false` → 问卷选 **No**（仅标准 HTTPS / Apple 加密）
+
+**App Clip / iMessage App**：Yuun / Yuel **都没有** → 两栏留空，不要创建 App Clip 或 iMessage 扩展。
 
 ### 10.2 截图
 
@@ -361,10 +396,15 @@ node scripts/aso-charcount.mjs apps/auspice-app/aso-metadata.json apps/kindred-a
 
 | 字段 | 填写 |
 |---|---|
+| **Support URL** | `https://useone.tech` |
+| **Marketing URL** | Yuun `https://yuun.hexastral.com` · Yuel `https://yuel.hexastral.com` |
 | **What's New** | 首版：`Initial release.` 或各语言一句 |
 | **Copyright** | `© 2026 UseONE, LLC` |
-| **Routing App Coverage File** | 无 |
-| **Version** | `0.1.0`（与 `app.json` `version` 对齐；build number 由 EAS autoIncrement） |
+| **Routing App Coverage File** | 无（不上传） |
+| **Version** | 与 `app.json` / EAS marketing version 对齐（首发常用 `1.0`）；**Build** 号由 EAS `autoIncrement` |
+| **App Clip / iMessage App** | 无 — 留空 |
+
+**Description 非法字符**：ASC 报 *invalid characters* 时，常见元凶是 **`<` / `>`**（含 `->` 箭头），不是换行。换行（纯 `\n`）可以。请从 `apps/*/aso-paste/{locale}-description.txt` 用 **TextEdit** 全选复制再贴 ASC；**不要**从 JSON 拷（会粘出字面量 `\n`）。仓库文案已去掉 `<>`。
 
 ### 10.4 App Review Information
 
@@ -380,10 +420,12 @@ node scripts/aso-charcount.mjs apps/auspice-app/aso-metadata.json apps/kindred-a
 **Notes 模板（Yuun）**：
 
 ```
-Yuun is a Chinese almanac (干支 / 宜忌 / 节气) for cultural reference — not fortune-telling, not medical advice.
-Sign-in is only required at the subscription step (not for daily almanac).
-To test Pro: open any Pro feature → Sign in with Apple → purchase with Sandbox account (Restore works).
-No ads. No tracking. Privacy: yuun.hexastral.com/en/privacy/yuun
+Yuun is a Chinese almanac (stem-branch / yi-ji / solar terms) for cultural reference. Not fortune-telling. Not medical advice.
+Sign-in is NOT required for daily public almanac / widgets / calendar.
+Sign-in only at subscription / Pro (Sign in with Apple).
+To test Pro: open Pro feature or paywall, Sign in with Apple, purchase with Sandbox tester (Settings - App Store - Sandbox Account). Restore works.
+No ads. No tracking.
+Privacy: https://yuun.hexastral.com/privacy/yuun
 ```
 
 **Notes 模板（Yuel）**：
@@ -393,7 +435,7 @@ Yuel is a Ba Zi (Four Pillars) two-chart relationship typology tool — cultural
 Sign-in is required to save bonds under the user identity.
 Invite flow: create bond → optional partner invite link.
 To test Pro: Sign in with Apple → Sandbox subscribe. One-time synastry unlock: hexastral_compatibility consumable.
-Privacy: yuel.hexastral.com/en/privacy/yuel
+Privacy: yuel.hexastral.com/privacy/yuel
 ```
 
 ### 10.5 提交前勾选

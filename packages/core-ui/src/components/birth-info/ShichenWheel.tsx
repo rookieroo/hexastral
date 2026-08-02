@@ -34,6 +34,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useTheme } from '../../theme'
 import type { ShichenIndex } from '../ShichenPicker'
+import { shichenDisplay, shichenRange } from '../shichen-i18n'
 
 export interface ShichenOption {
   readonly index: ShichenIndex
@@ -82,10 +83,12 @@ export interface ShichenWheelProps {
   onChange: (index: ShichenIndex) => void
   /** Brand accent for the centre selection band. */
   accent: string
+  /** BCP-47 locale — drives 「子时」vs「子時」and Latin animal labels. */
+  locale?: string
 }
 
 /** Single-column looping 时辰 wheel — branch glyph (big) + clock range. */
-export function ShichenWheel({ value, onChange, accent }: ShichenWheelProps) {
+export function ShichenWheel({ value, onChange, accent, locale }: ShichenWheelProps) {
   const { colors } = useTheme()
   const aref = useAnimatedRef<Animated.ScrollView>()
   const initialRow = MIDDLE * N + value
@@ -156,6 +159,7 @@ export function ShichenWheel({ value, onChange, accent }: ShichenWheelProps) {
             scrollY={scrollY}
             textColor={colors.text}
             rangeColor={colors.secondary}
+            locale={locale}
           />
         ))}
       </Animated.ScrollView>
@@ -169,12 +173,14 @@ function WheelRow({
   scrollY,
   textColor,
   rangeColor,
+  locale,
 }: {
   row: number
   item: ShichenOption
   scrollY: SharedValue<number>
   textColor: string
   rangeColor: string
+  locale?: string
 }) {
   const animStyle = useAnimatedStyle(() => {
     const d = Math.abs(scrollY.value / ITEM_H - row)
@@ -183,6 +189,9 @@ function WheelRow({
       transform: [{ scale: interpolate(d, [0, 1, 2], [1, 0.86, 0.74], Extrapolation.CLAMP) }],
     }
   })
+  const disp = shichenDisplay(item.index, item.branch, locale)
+  // Wheel matches grid: bare branch for CJK, animal for Latin (no 时/時 suffix).
+  const label = disp.cjk ? item.branch : disp.animal
 
   return (
     <Animated.View
@@ -197,10 +206,10 @@ function WheelRow({
         animStyle,
       ]}
     >
-      <Text
-        style={{ fontSize: 28, color: textColor, fontWeight: '400' }}
-      >{`${item.branch}时`}</Text>
-      <Text style={{ fontSize: 13, color: rangeColor, fontWeight: '300' }}>{item.range}</Text>
+      <Text style={{ fontSize: 28, color: textColor, fontWeight: '400' }}>{label}</Text>
+      <Text style={{ fontSize: 13, color: rangeColor, fontWeight: '300' }}>
+        {shichenRange(item.range, locale)}
+      </Text>
     </Animated.View>
   )
 }

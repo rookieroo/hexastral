@@ -180,8 +180,8 @@ node scripts/aso-charcount.mjs apps/auspice-app/aso-metadata.json apps/kindred-a
 
 | App | Privacy | Terms |
 |---|---|---|
-| Yuun | `https://yuun.hexastral.com/en/privacy/yuun`（zh→`/zh/...`，tw→`/tw/...`，ja→`/ja/...`） | `https://yuun.hexastral.com/en/terms` |
-| Yuel | `https://yuel.hexastral.com/en/privacy/yuel` | `https://yuel.hexastral.com/en/terms` |
+| Yuun | `https://yuun.hexastral.com/privacy/yuun`（zh→`/zh/...`，tw→`/tw/...`，ja→`/ja/...`） | `https://yuun.hexastral.com/terms` |
+| Yuel | `https://yuel.hexastral.com/privacy/yuel`（同 locale 段规则） | `https://yuel.hexastral.com/terms` |
 
 App 内 Settings 链接与 ASC 字段保持一致。
 
@@ -328,9 +328,9 @@ cd apps/hexastral-web && bun deploy
 # Webhook 可达（应 401/405 而非 5xx）
 curl -sI https://api.hexastral.com/webhooks/revenuecat | head -5
 
-# 法律页 200
-curl -sI https://yuun.hexastral.com/en/privacy/yuun | head -3
-curl -sI https://yuel.hexastral.com/en/privacy/yuel | head -3
+# 法律页 200（en 无 /en 前缀）
+curl -sI https://yuun.hexastral.com/privacy/yuun | head -3
+curl -sI https://yuel.hexastral.com/privacy/yuel | head -3
 ```
 
 ---

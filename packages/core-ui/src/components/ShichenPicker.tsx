@@ -90,9 +90,8 @@ export function ShichenPicker({
       {SHICHEN.map((s) => {
         const active = value === s.index
         const disp = shichenDisplay(s.index, s.branch, locale)
-        // CJK leads with the 「子」glyph (big); Latin leads with the zodiac animal
-        // (readable). The clock range is localised (24h for CJK, AM/PM for Latin);
-        // the grid stays clean (the branch seal lives in the field summary).
+        // Grid: bare branch 「午」for CJK (suffix clutter); zodiac animal for Latin.
+        // Collapsed field / a11y still use 「午时」/「午時」via cjkLabel.
         const lead = disp.cjk ? s.branch : disp.animal
         const sub = shichenRange(s.range, locale)
         return (
@@ -114,8 +113,8 @@ export function ShichenPicker({
             accessibilityState={{ selected: active }}
             accessibilityLabel={
               disp.cjk
-                ? `${s.branch} ${s.range}`
-                : `${disp.animal}, ${shichenRange(s.range, locale)}`
+                ? `${disp.cjkLabel} ${sub}`
+                : `${disp.animal}, ${sub}`
             }
           >
             <Text

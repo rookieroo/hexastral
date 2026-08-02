@@ -14,18 +14,25 @@ export type PortfolioAppleAuthSurface = 'apple_auth' | 'apple_banner'
 export async function exchangeAppleCredentialForPortfolio(opts: {
   identityToken: string
   authorizationCode?: string | null
+  /** Apple `fullName` — only present on first authorization; persisted as users.name. */
+  fullName?: string | null
   targetApp: string
   /** AsyncStorage prefix used by bootstrap/DDL cache — required to re-key attribution */
   storagePrefix?: string
   apiBaseOverride?: string
 }): Promise<{ userId: string; deviceSecret: string }> {
   const apiBase = opts.apiBaseOverride?.replace(/\/+$/, '') ?? resolvePortfolioApiUrl()
+  const fullName =
+    typeof opts.fullName === 'string' && opts.fullName.trim().length > 0
+      ? opts.fullName.trim().slice(0, 120)
+      : undefined
   const res = await fetch(`${apiBase}/api/portfolio/auth/apple`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       identityToken: opts.identityToken,
       authorizationCode: opts.authorizationCode ?? undefined,
+      ...(fullName ? { fullName } : {}),
       target_app: opts.targetApp,
     }),
   })

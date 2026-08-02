@@ -1,0 +1,46 @@
+Yuun is a Chinese almanac (huangli) for everyday life - daily Good / Avoid (activities traditionally advised or avoided), solar terms, lunisolar dates, and culture from classical sources.
+
+TODAY
+
+- Today home with week strip, daily stem-branch, Good / Avoid, and optional For you from your birth chart
+- Free Home Screen widgets (small / medium / large), Lock Screen, and Apple Watch complications - same public almanac for everyone
+- Swipe right for the month calendar - solar + lunar + solar terms + festivals, any year
+- Swipe left for Settings - profile, notifications, widget look, Apple Calendar almanac feed
+- Culture library - 24 solar terms, major festivals, glossary (Settings / Library)
+
+FOR YOU (OPTIONAL)
+
+- Add one birth profile for daily For you (summary on Free; full per-reason detail on Pro)
+- For you shows in the app and on widgets after birth info - not locked behind Pro
+- Personal Ba Zi & Zi Wei deep-read, life timeline, and what-if reflection - Pro; contemplation, not prediction
+
+FAMILY & REMINDERS
+
+- Family lunar / solar birthdays with yearly reminders
+- Morning push + optional evening heads-up
+- Free: up to 3 family birthday reminders / Pro: unlimited + timeline node reminders
+
+WHAT IT IS NOT
+
+- Not Western astrology, horoscopes, or zodiac signs
+- Not predictive - cultural reference and personal reflection only
+
+FREE vs PRO
+
+Free: Today Good / Avoid + week strip; month calendar; Home / Lock / Watch (public almanac); 1 birth profile; For you summary; daily + evening push; up to 3 family birthday reminders; Apple Calendar almanac feed; glossary
+
+Pro $4.99/mo / $39.99/yr: For you full reasons + favorable element/color/hours; Ba Zi timeline & what-if; personal Ba Zi & Zi Wei deep-read + chart Q&A; unlimited family reminders + personal calendar feed; custom date-picker range; timeline node reminders
+
+Three access modes: anonymous Free (on-device birth preview, public morning push) / signed-in Free (optional account sync, Watch credential) / Pro (full reasons, timeline, deep-read). AI deep-read only when you open it - never in push.
+
+REQUIREMENTS / iPhone iOS 15.1+ / Home / Lock widgets iOS 17.0+ / Apple Watch watchOS 10+
+
+Languages: English, Simplified Chinese, Traditional Chinese, Japanese
+
+PRIVACY
+
+Birth can stay on-device for preview, or sync when you enable multi-device. Push uses an Expo token + timezone when reminders are on. Purchases via RevenueCat. Delete account in Settings. No tracking ads.
+
+ABOUT
+
+Yuun is published by UseONE, LLC. Privacy: yuun.hexastral.com/privacy/yuun / Terms: yuun.hexastral.com/terms

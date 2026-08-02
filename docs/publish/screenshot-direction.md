@@ -99,6 +99,27 @@ the paper surface — see `kindred-theme-and-threads` memory). Register: a
 relationship **study** (MBTI-pair analogue), never "soulmate / love fortune"
 (those are in Kindred's `_doNotUse`).
 
+### Demo births (verified via `astro-core` day-master 五行)
+
+Do **not** make both bonds 相克 — one clash + one generate reads as a study tool, not doom.
+
+| Role | Solar date | 时辰 | Gender | Day master | vs Self |
+| --- | --- | --- | --- | --- | --- |
+| **Self** | 1992-08-15 | 午 | 女 | 癸水 | — |
+| **Partner** (主报告 / 划词 AI) | 1988-03-22 | 巳 | 男 | 丙火 | **相克**（水克火） |
+| **Friend** (首页第二条 / Invite) | 1991-03-15 | 卯 | 男 | 甲木 | **相生**（水生木） |
+
+Locale display names only (same births):
+
+| Locale | Self | Partner · romantic | Friend · friend |
+| --- | --- | --- | --- |
+| en-US | Maya | Jordan · Partner | Sam · Friend |
+| zh-Hans | 小林 | 阿哲 · 恋人 | 阿南 · 朋友 |
+| zh-Hant | 小琳 | 阿哲 · 戀人 | 阿南 · 朋友 |
+| ja | みお | れん · 恋人 | ゆう · 友人 |
+
+If a friend bond was already created on 1990-11-08 (丁火 = also 相克), delete it and recreate with **1991-03-15**.
+
 | # | Screen | Visual notes |
 | --- | --- | --- |
 | S1 | Bonds list | The thread list (flat, swipe-delete), a few named bonds. |

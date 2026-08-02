@@ -1,0 +1,9 @@
+Yuel ASO demo births (astro-core verified)
+========================================
+Self     1992-08-15  午  女  癸水
+Partner  1988-03-22  巳  男  丙火   vs self = 相克 (水克火)  — main report
+Friend   1991-03-15  卯  男  甲木   vs self = 相生 (水生木)  — home #2 / invite
+
+Names: en Maya/Jordan/Sam · zh 小林/阿哲/阿南 · tw 小琳/阿哲/阿南 · ja みお/れん/ゆう
+
+If friend was 1990-11-08 (丁火/相克), delete and recreate with 1991-03-15.
