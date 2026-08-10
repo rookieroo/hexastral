@@ -4,7 +4,9 @@ Status: **iPhone WidgetKit + Watch companion in repo — v1 launch capability, e
 
 **Launch boundary:** ASO may claim Home Screen / Lock Screen / Watch **only after** a production archive embeds `widget` + `watch` + `watch-widget` and the TestFlight device matrix in [widget-build-runbook.md](./widget-build-runbook.md) + [widget-watch-evidence.md](./widget-watch-evidence.md) passes. If evidence is missing, strip store copy and screenshots before submit ([launch.md](./launch.md)).
 
-**System requirements (disclose in ASO):** App iOS 15.1+ · widgets iOS 17.0+ · watchOS 10+.
+**Android:** Home Glance widgets (small / medium / large ≈ iOS three families) via [`@zhop/widget-kit-android`](../../packages/widget-kit-android). Same JSON envelope as iOS; empty until first app sync. **No** Lock Screen / Wear. Evidence: [android-widget-runbook.md](./android-widget-runbook.md). Play listing may claim home widgets only after device matrix passes.
+
+**System requirements (disclose in ASO):** App iOS 15.1+ · widgets iOS 17.0+ · watchOS 10+ · Android home widgets require a production / dev-client build (not Expo Go).
 
 ## SSOT
 
@@ -14,8 +16,9 @@ Status: **iPhone WidgetKit + Watch companion in repo — v1 launch capability, e
 | App-level sync (not Home-only) | `apps/auspice-app/hooks/useYuunWidgetSync.ts` → RootLayout |
 | RN write + N-day window | `apps/auspice-app/lib/widget-bridge.ts` → `@zhop/widget-kit-ios` |
 | Watch credential provision | `apps/auspice-app/lib/watch-provision.ts` |
-| Shared types | `packages/widget-kit-ios/src/types.ts` (`YuunWidgetData`, prefs / credential keys) |
+| Shared types | `packages/widget-kit-ios/src/types.ts` (`YuunWidgetData`, prefs / credential keys) — Android reads the same JSON |
 | Home + Lock Screen Swift | `apps/auspice-app/targets/widget/` |
+| Android Home Glance | `packages/widget-kit-android` (2×2 / 4×2 / 4×4) |
 | Watch companion (Today / Browse / Settings) | `apps/auspice-app/targets/watch/` |
 | Watch complications | `apps/auspice-app/targets/watch-widget/` |
 | Public 黄历 fallback | `targets/widget/AlmanacEngine.swift` (+ Watch copy) |

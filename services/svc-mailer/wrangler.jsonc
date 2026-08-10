@@ -5,12 +5,15 @@
   "compatibility_date": "2025-09-03",
   "compatibility_flags": ["nodejs_compat"],
 
-  // No public routes – accessed only via Service Binding from hexastral-api
+  // No public routes – accessed only via Service Binding
+  // Callers: hexastral-api, notionflare (binding SVC_MAILER → hexastral-svc-mailer)
   // Caller adds: { "binding": "SVC_MAILER", "service": "hexastral-svc-mailer" }
 
   "vars": {
     "AWS_REGION": "us-east-1",
-    "AWS_SES_FROM": "noreply@hexastral.com"
+    "AWS_SES_FROM": "noreply@hexastral.com",
+    "ALLOWED_FROM_EMAILS": "noreply@hexastral.com,noreply@notionflare.com",
+    "ALLOWED_CALLERS": "hexastral-api,notionflare-newsletter"
   },
 
   // Secrets (via `wrangler secret put`):

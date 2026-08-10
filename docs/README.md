@@ -71,6 +71,7 @@ Brand assets: [brand/](./brand/) · Yuel design: [design/](./design/)
 | [apps/feng/pro-grade-plan.md](./apps/feng/pro-grade-plan.md) | Pro-tier depth |
 | [apps/feng/optimization-progress.md](./apps/feng/optimization-progress.md) | Shipped fixes + Mapillary diligence + backlog |
 | [apps/feng/report-v2-plan.md](./apps/feng/report-v2-plan.md) | Report v2 structure |
+| [apps/feng/v11-parity-plan.md](./apps/feng/v11-parity-plan.md) | V1.1 scope: 扬长避短, cut list, WS1–6 |
 
 ### CoinCast (`apps/coin-cast-app`)
 

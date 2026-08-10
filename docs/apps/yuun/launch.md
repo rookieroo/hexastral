@@ -6,55 +6,64 @@ Yuun is a Chinese almanac (中华黄历) with Today-first navigation and a three
 
 | Tier | Identity | For you | Push | Widget / Watch |
 |---|---|---|---|---|
-| Anonymous Free | local `deviceId` | conclusion summary (on-device birth) | public 黄历 | public 黄历 + optional Fit via WatchConnectivity |
-| Signed-in Free | Apple/Google | same + restore | personal conclusion | + Watch credential for independent refresh |
+| Anonymous Free | local `deviceId` | conclusion summary (on-device birth) | public 黄历 | public 黄历 + optional Fit via WatchConnectivity **(iOS)** |
+| Signed-in Free | Apple/Google | same + restore | personal conclusion | + Watch credential for independent refresh **(iOS)** |
 | Pro (`auspice_pro`) | + RC entitlement | full reasons | conclusion + deterministic tips | full explanation stays in-app; LLM only on tap |
 
-> **ASO / review note (2026-07-30):** Store copy matches Today-first IA + three-tier privacy. Widget / Lock Screen / Watch may be claimed **only after** production archive + device evidence (see [widget-watch-scope.md](./widget-watch-scope.md)). System requirements: App iOS 15.1+, widgets iOS 17.0+, watchOS 10+.
+> **No-IAP first ship:** Production / preview set `EXPO_PUBLIC_IAP_ENABLED=false`. Paywall shows Coming soon (no StoreKit / Play Billing). Do not create store subscriptions until banking is ready. See [release-config-gate.md](./release-config-gate.md).
+
+> **ASO / review note:** Store copy matches Free almanac; no Pro prices / RevenueCat while `EXPO_PUBLIC_IAP_ENABLED=false`. Widget / Lock Screen / Watch may be claimed on **App Store** only after production archive + device evidence (see [widget-watch-scope.md](./widget-watch-scope.md)). **Google Play:** home widgets (S/M/L) after [android-widget-runbook.md](./android-widget-runbook.md) matrix; do not claim Lock Screen / Watch on Android. System requirements (iOS): App iOS 15.1+, widgets iOS 17.0+, watchOS 10+.
 
 ---
 
-## State (July 2026)
+## State (July 2026+)
 
 **Code complete (Today-first IA + launch harden):**
 - **Today** (`/(tabs)/`): WeekStrip + yi/ji + For you; swipe right → Calendar, left → Settings
 - **Calendar** / **Settings** modular groups
-- For-you: free verdict + summary; Pro = per-reason
+- For-you: free verdict + summary; Pro = per-reason (locked until IAP enabled)
 - Anonymous local birth preview + sign-in CTA; sync when multi-device on
 - Calendar feed: free `/calendar.ics` · Pro `/calendar/personal.ics`
 - 亲友: Free cap 3; Pro unlimited
 - Notifications: server Expo push (anonymous = public; signed-in = personal; Pro = tips); timeline node (Pro)
-- Sign-in at paywall: Apple + Google; RC restore; real prices / Restore / legal
+- Paywall: Coming soon when IAP off; Apple + Google + RC when `EXPO_PUBLIC_IAP_ENABLED=true`
 - Root `AuspiceErrorBoundary`; `supportsTablet: false`; marketing `1.0.0`
 
-**Native Widget + Watch (v1 capability — evidence-gated):**
+**Native Widget + Watch (iOS v1 capability — evidence-gated):**
 - Targets in repo: `targets/widget`, `targets/watch`, `targets/watch-widget`
 - **Go only if** production archive includes all three + TestFlight device matrix passes (see [widget-build-runbook.md](./widget-build-runbook.md)). If any target missing or path fails → strip ASO/screenshot claims before submit.
+- **Android:** Glance home widgets (S/M/L) via `@zhop/widget-kit-android` — see [android-widget-runbook.md](./android-widget-runbook.md). No Lock Screen / Wear.
 
 ---
 
 ## Open work (pre-submit)
 
 ### Backend (human secrets / deploy)
-- [ ] Confirm Worker secrets: `CYCLE_CALENDAR_SECRET`, `REVENUECAT_API_KEY`, `REVENUECAT_WEBHOOK_SECRET`
+- [ ] Confirm Worker secrets needed for Free path (e.g. `CYCLE_CALENDAR_SECRET`)
 - [ ] `ALLOW_DEV_PRO=0` on production vars
-- [ ] RevenueCat + ASC: `auspice_pro_monthly` / `auspice_pro_annual` / entitlement `auspice_pro` / offering `auspice_default` / webhook
+- [ ] _(Post-banking)_ RevenueCat + ASC IAP + webhook + `EXPO_PUBLIC_IAP_ENABLED=true`
 - [ ] Spot-check: deploy API after Yuun API diffs (`cd apps/hexastral-api && bun deploy`) — **needs explicit approval**
 - [ ] Confirm birthCity nullish schema live; retest three save paths on device
 
 ### App Store Connect
 - [ ] ASC record; **content rating 12+**
-- [ ] Paste ASO from `apps/auspice-app/aso-metadata.json` (4 locales)
-- [ ] Screenshots per [screenshot-direction.md](../../publish/screenshot-direction.md); Widget/Watch shots only if archive evidence exists
+- [ ] Paste ASO from `apps/auspice-app/aso-metadata.json` (4 locales) — no-IAP copy
+- [ ] Screenshots per [screenshot-direction.md](../../publish/screenshot-direction.md); Widget/Watch shots only if archive evidence exists; avoid purchase UI while IAP off
 - [ ] `node scripts/aso-charcount.mjs` + `node scripts/aso-code-parity.mjs`
-- [ ] Fill `eas.json` `ascAppId` + production RevenueCat keys (EAS Secrets)
+- [ ] Fill `eas.json` `ascAppId` (RC keys optional until post-banking)
 - [ ] Nutrition Labels match privacy manifest collected types
 - [ ] Device smoke: [pre-submit-smoke.md](./pre-submit-smoke.md)
 
+### Google Play
+- [ ] Listing from `aso-metadata.json` → `googlePlay` (home widgets OK after matrix; no Watch/lock)
+- [ ] Smoke: install, Today / Calendar, birth, push, sign-in, account delete
+- [ ] Widget matrix: [android-widget-runbook.md](./android-widget-runbook.md)
+- [ ] No Play Billing products for no-IAP ship
+
 ### Build + evidence
-- [ ] `AUSPICE_REQUIRE_PROD_KEYS=1 node scripts/assert-release-config.mjs` green
-- [ ] EAS production archive: confirm widget / watch / watch-widget embedded
-- [ ] TestFlight: iPhone + Watch matrix (first install, phone unreachable, midnight, locale/yiji mode, birth update, delete account, Lock/Home families, complications)
+- [ ] EAS production with `EXPO_PUBLIC_IAP_ENABLED=false`
+- [ ] _(iOS)_ EAS production archive: confirm widget / watch / watch-widget embedded if claiming widgets
+- [ ] _(iOS)_ TestFlight: iPhone + Watch matrix when claiming widgets
 
 ### CI
 - [ ] Root `bun typecheck && bun lint && bun test && bun check-deps` green
@@ -66,4 +75,8 @@ Yuun is a Chinese almanac (中华黄历) with Today-first navigation and a three
 
 ## Go / No-Go
 
-Any P0 open → **No-Go**. See plan todos: paywall, value ladder, birth/delete, privacy/ASO, release config, Widget/Watch evidence, CI/docs.
+**No-IAP Go** if Free path + ASO/privacy + smoke are green; IAP / RC / banking open items are **not** P0 blockers for this ship.
+
+Any P0 on Free path (crash, broken birth, missing privacy URL, misleading Pro prices in store) → **No-Go**.
+
+**Post-banking:** first auto-renewable subscription must be submitted with a new app version; restore Pro ASO + `EXPO_PUBLIC_IAP_ENABLED=true`.

@@ -43,7 +43,8 @@ bun deploy:prod
 3. Uses `bun deploy:prod` (not `bun deploy`) — the script passes the production environment flag.
 4. IAM credentials must have **only** `ses:SendEmail` permission (least privilege).
 5. Keep this service internal-only — no public routes.
-6. Deploy in **Wave 1** — no outbound service bindings.
+6. `ALLOWED_FROM_EMAILS` / `ALLOWED_CALLERS` in wrangler vars gate multi-tenant senders (e.g. `noreply@notionflare.com`, caller `notionflare-newsletter`).
+7. Deploy in **Wave 1** — no outbound service bindings.
 
 ## Smoke Checks
 

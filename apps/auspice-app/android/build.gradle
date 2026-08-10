@@ -22,3 +22,6 @@ allprojects {
 
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
+
+// Prefer NDK 27 when present; keep 26 until 27.1 is fully installed.
+ext.ndkVersion = "26.1.10909125"

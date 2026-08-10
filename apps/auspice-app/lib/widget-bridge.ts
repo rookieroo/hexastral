@@ -1,9 +1,9 @@
 /**
- * Widget bridge — builds a 7-day 黄历 window and writes it via
- * `@zhop/widget-kit-ios` into App Group `group.com.hexastral.yuun`.
+ * Widget bridge — builds a 7-day 黄历 window and dual-writes:
+ * - iOS: `@zhop/widget-kit-ios` → App Group
+ * - Android: `@zhop/widget-kit-android` → SharedPreferences + Glance reload
  *
- * No-ops until `react-native-shared-group-preferences` is linked (prebuild).
- * See docs/apps/yuun/widget-build-runbook.md.
+ * See docs/apps/yuun/widget-build-runbook.md and android-widget-runbook.md.
  */
 
 import type { YijiVocabularyMode } from '@zhop/astro-core'
@@ -14,6 +14,8 @@ import {
   type YuunWidgetData,
   type YuunWidgetDay,
 } from '@zhop/widget-kit-ios'
+import { writeAndroidWidgetPayload } from '@zhop/widget-kit-android'
+import { Platform } from 'react-native'
 import {
   buildDailyCardModel,
   compactChrome,
@@ -108,7 +110,7 @@ function toWidgetDay(
   }
 }
 
-/** Write the window into the App Group (envelope + legacy mirror). */
+/** Write the window into iOS App Group and/or Android SharedPreferences. */
 export async function writeWidgetDays(
   days: YuunWidgetDay[],
   locale: Locale = 'zh-Hans'
@@ -116,10 +118,17 @@ export async function writeWidgetDays(
   const data: YuunWidgetData = { days, chrome: toWidgetChrome(locale) }
   const fresh = new Date()
   fresh.setDate(fresh.getDate() + WINDOW_DAYS)
-  await writeWidgetPayload('yuun', localeToWidget(locale), data, fresh.toISOString(), {
-    appGroupId: APP_GROUP,
-    mirrorLegacyYuunDays: true,
-  })
+  const freshIso = fresh.toISOString()
+  const widgetLocale = localeToWidget(locale)
+
+  if (Platform.OS === 'ios') {
+    await writeWidgetPayload('yuun', widgetLocale, data, freshIso, {
+      appGroupId: APP_GROUP,
+      mirrorLegacyYuunDays: true,
+    })
+  } else if (Platform.OS === 'android') {
+    await writeAndroidWidgetPayload('yuun', widgetLocale, data, freshIso)
+  }
 }
 
 /**
@@ -154,10 +163,17 @@ export async function syncWidgetWindow(
   const data: YuunWidgetData = { days, chrome: toWidgetChrome(locale) }
   const fresh = new Date()
   fresh.setDate(fresh.getDate() + WINDOW_DAYS)
-  await writeWidgetPayload('yuun', localeToWidget(locale), data, fresh.toISOString(), {
-    appGroupId: APP_GROUP,
-    mirrorLegacyYuunDays: true,
-  })
+  const freshIso = fresh.toISOString()
+  const widgetLocale = localeToWidget(locale)
+
+  if (Platform.OS === 'ios') {
+    await writeWidgetPayload('yuun', widgetLocale, data, freshIso, {
+      appGroupId: APP_GROUP,
+      mirrorLegacyYuunDays: true,
+    })
+  } else if (Platform.OS === 'android') {
+    await writeAndroidWidgetPayload('yuun', widgetLocale, data, freshIso)
+  }
 }
 
 /**

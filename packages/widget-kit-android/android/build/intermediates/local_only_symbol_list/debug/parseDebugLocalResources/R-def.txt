@@ -1,0 +1,6 @@
+R_DEF: Internal format may change without notice
+local
+layout yuun_widget_loading
+string yuun_widget_description
+string yuun_widget_name
+xml yuun_widget_info

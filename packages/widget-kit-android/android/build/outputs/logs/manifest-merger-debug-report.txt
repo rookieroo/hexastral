@@ -1,0 +1,38 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:1:1-15:12
+INJECTED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:1:1-15:12
+	package
+		INJECTED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:1:11-69
+application
+ADDED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:2:3-14:17
+receiver#expo.modules.widgetkitandroid.YuunWidgetReceiver
+ADDED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:3:5-13:16
+	android:label
+		ADDED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:6:7-47
+	android:exported
+		ADDED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:5:7-30
+	android:name
+		ADDED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:4:7-41
+intent-filter#action:name:android.appwidget.action.APPWIDGET_UPDATE
+ADDED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:7:7-9:23
+action#android.appwidget.action.APPWIDGET_UPDATE
+ADDED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:8:9-76
+	android:name
+		ADDED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:8:17-73
+meta-data#android.appwidget.provider
+ADDED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:10:7-12:52
+	android:resource
+		ADDED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:12:9-49
+	android:name
+		ADDED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:11:9-50
+uses-sdk
+INJECTED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml
+INJECTED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml

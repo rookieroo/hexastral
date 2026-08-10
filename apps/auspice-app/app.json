@@ -135,6 +135,7 @@
       },
       "REVENUECAT_IOS_API_KEY": "REPLACE_WITH_REVENUECAT_IOS_API_KEY",
       "REVENUECAT_ANDROID_API_KEY": "REPLACE_WITH_REVENUECAT_ANDROID_API_KEY",
+      "_iapNote": "Production EAS sets EXPO_PUBLIC_IAP_ENABLED=false until banking; see lib/iap-enabled.ts",
       "eas": {
         "projectId": "269d6ab5-6462-4f8e-ad6d-69a526dcb91e"
       }
@@ -152,6 +153,7 @@
       "./plugins/withIosPodDeploymentTarget.cjs",
       "./plugins/withWidgetDisableDebugDylib.cjs",
       "./plugins/withReleaseIdentity.cjs",
+      "./plugins/withAndroidNdkVersion.cjs",
       [
         "@zhop/widget-kit-ios/app.plugin.js",
         {
@@ -159,6 +161,13 @@
           "appSlug": "yuun",
           "appGroupId": "group.com.hexastral.yuun",
           "watchComplication": true
+        }
+      ],
+      [
+        "@zhop/widget-kit-android/app.plugin.js",
+        {
+          "widgetName": "Yuun",
+          "appSlug": "yuun"
         }
       ],
       [

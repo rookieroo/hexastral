@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="yuun_widget_description">Chinese almanac — Good / Avoid for today</string>
+    <string name="yuun_widget_name">Yuun</string>
+</resources>

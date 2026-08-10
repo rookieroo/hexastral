@@ -1,0 +1,33 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="expo.modules.widgetkitandroid" >
+4
+5    <uses-sdk android:minSdkVersion="24" />
+6
+7    <application>
+7-->/Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:2:3-14:17
+8        <receiver
+8-->/Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:3:5-13:16
+9            android:name="expo.modules.widgetkitandroid.YuunWidgetReceiver"
+9-->/Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:4:7-41
+10            android:exported="true"
+10-->/Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:5:7-30
+11            android:label="@string/yuun_widget_name" >
+11-->/Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:6:7-47
+12            <intent-filter>
+12-->/Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:7:7-9:23
+13                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+13-->/Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:8:9-76
+13-->/Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:8:17-73
+14            </intent-filter>
+15
+16            <meta-data
+16-->/Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:10:7-12:52
+17                android:name="android.appwidget.provider"
+17-->/Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:11:9-50
+18                android:resource="@xml/yuun_widget_info" />
+18-->/Users/chris/Desktop/code/web/hexastral/packages/widget-kit-android/android/src/main/AndroidManifest.xml:12:9-49
+19        </receiver>
+20    </application>
+21
+22</manifest>

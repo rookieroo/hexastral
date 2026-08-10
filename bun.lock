@@ -54,10 +54,12 @@
         "@zhop/satellite-runtime": "workspace:*",
         "@zhop/satellite-ui": "workspace:*",
         "@zhop/scenario-yuan": "workspace:*",
+        "@zhop/widget-kit-android": "workspace:*",
         "@zhop/widget-kit-ios": "workspace:*",
         "babel-preset-expo": "~54.0.10",
         "expo": "~54.0.33",
         "expo-apple-authentication": "~8.0.8",
+        "expo-build-properties": "~1.0.10",
         "expo-constants": "~18.0.13",
         "expo-crypto": "~15.0.8",
         "expo-dev-client": "~6.0.20",
@@ -969,6 +971,28 @@
         "react": "^19.2.3",
         "react-dom": "^19.2.3",
       },
+    },
+    "packages/widget-kit-android": {
+      "name": "@zhop/widget-kit-android",
+      "version": "0.1.0",
+      "dependencies": {
+        "@expo/config-plugins": "~54.0.4",
+      },
+      "devDependencies": {
+        "@types/react": "^19.1.10",
+        "@zhop/typescript-config": "workspace:*",
+        "react-native": "0.81.5",
+        "typescript": "^5.9.3",
+      },
+      "peerDependencies": {
+        "expo": "*",
+        "expo-modules-core": "*",
+        "react": "^19.2.3",
+        "react-native": ">=0.81.0",
+      },
+      "optionalPeers": [
+        "expo-modules-core",
+      ],
     },
     "packages/widget-kit-ios": {
       "name": "@zhop/widget-kit-ios",
@@ -2790,6 +2814,8 @@
 
     "@zhop/ui": ["@zhop/ui@workspace:packages/ui"],
 
+    "@zhop/widget-kit-android": ["@zhop/widget-kit-android@workspace:packages/widget-kit-android"],
+
     "@zhop/widget-kit-ios": ["@zhop/widget-kit-ios@workspace:packages/widget-kit-ios"],
 
     "@zhop/xingqi-app": ["@zhop/xingqi-app@workspace:apps/xingqi-app"],
@@ -3237,6 +3263,8 @@
     "expo-auth-session": ["expo-auth-session@7.0.11", "", { "dependencies": { "expo-application": "~7.0.8", "expo-constants": "~18.0.13", "expo-crypto": "~15.0.9", "expo-linking": "~8.0.12", "expo-web-browser": "~15.0.11", "invariant": "^2.2.4" }, "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-AhWtt/m9rb1Po77X/VBFbeE6UTgbm2vXP2iCblUSRsHCw2qD6lO0ulKUB8Xyxy9FtoI9yrNQ1iwCNgIIgo8VYQ=="],
 
     "expo-blur": ["expo-blur@15.0.8", "", { "peerDependencies": { "expo": "*", "react": "*", "react-native": "*" } }, "sha512-rWyE1NBRZEu9WD+X+5l7gyPRszw7n12cW3IRNAb5i6KFzaBp8cxqT5oeaphJapqURvcqhkOZn2k5EtBSbsuU7w=="],
+
+    "expo-build-properties": ["expo-build-properties@1.0.10", "", { "dependencies": { "ajv": "^8.11.0", "semver": "^7.6.0" }, "peerDependencies": { "expo": "*" } }, "sha512-mFCZbrbrv0AP5RB151tAoRzwRJelqM7bCJzCkxpu+owOyH+p/rFC/q7H5q8B9EpVWj8etaIuszR+gKwohpmu1Q=="],
 
     "expo-calendar": ["expo-calendar@15.0.8", "", { "peerDependencies": { "expo": "*", "react-native": "*" } }, "sha512-i+ojy6zFnWSPb2DYp4L4W4U5iVI+NXnuHr3xysShoV8znNOmixP1TOYuJXt5Lpz+BpHCWseU31gV1E5SSkIKsw=="],
 

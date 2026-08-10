@@ -1,0 +1,37 @@
+{
+  "name": "@zhop/widget-kit-android",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Android Glance home-screen widgets for HexAstral satellite apps. Expo module writes SharedPreferences payload + reloads widgets; config plugin documents wiring.",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./plugin": "./app.plugin.js",
+    "./app.plugin.js": "./app.plugin.js"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format . --write"
+  },
+  "dependencies": {
+    "@expo/config-plugins": "~54.0.4"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "expo-modules-core": "*",
+    "react": "^19.2.3",
+    "react-native": ">=0.81.0"
+  },
+  "peerDependenciesMeta": {
+    "expo-modules-core": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.10",
+    "@zhop/typescript-config": "workspace:*",
+    "react-native": "0.81.5",
+    "typescript": "^5.9.3"
+  }
+}

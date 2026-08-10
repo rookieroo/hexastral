@@ -1,6 +1,7 @@
 /**
  * Yuun Pro paywall — sign-in gate then RevenueCat purchase/restore with
  * localized prices, auto-renew disclosure, and Privacy/Terms links.
+ * When `EXPO_PUBLIC_IAP_ENABLED` is not `true`, shows Coming soon (no StoreKit / Play Billing).
  */
 import { useTheme } from '@zhop/core-ui'
 import { reconcilePortfolioEntitlements } from '@zhop/satellite-runtime'
@@ -12,6 +13,7 @@ import { MoonLoader } from '@/components/MoonLoader'
 
 import { isSignedIn, signInWithApple, signInWithGoogle } from '@/lib/account'
 import { privacyUrl, termsUrl } from '@/lib/config'
+import { isIapEnabled } from '@/lib/iap-enabled'
 import { useStrings } from '@/lib/i18n-context'
 
 const AUSPICE_PRO_PRODUCT_IDS = {
@@ -31,16 +33,17 @@ export function AuspicePaywallSheet({
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
   const scheme = useColorScheme()
+  const iapEnabled = isIapEnabled()
   const [signedIn, setSignedIn] = useState<boolean | null>(null)
   const [signingIn, setSigningIn] = useState(false)
   const [failed, setFailed] = useState(false)
 
   useEffect(() => {
-    if (!visible) return
+    if (!visible || !iapEnabled) return
     isSignedIn()
       .then(setSignedIn)
       .catch(() => setSignedIn(false))
-  }, [visible])
+  }, [visible, iapEnabled])
 
   const runSignIn = async (fn: () => Promise<string | null>) => {
     setSigningIn(true)
@@ -73,7 +76,24 @@ export function AuspicePaywallSheet({
           ))}
         </View>
 
-        {signedIn === null ? (
+        {!iapEnabled ? (
+          <View
+            style={{
+              gap: spacing.sm,
+              padding: spacing.lg,
+              borderWidth: 0.5,
+              borderRadius: 0,
+              borderColor: colors.separator,
+            }}
+          >
+            <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>
+              {t.proComingSoon}
+            </Text>
+            <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 19 }}>
+              {t.proComingSoonBody}
+            </Text>
+          </View>
+        ) : signedIn === null ? (
           <View style={{ paddingVertical: spacing.xl, alignItems: 'center' }}>
             <MoonLoader />
           </View>

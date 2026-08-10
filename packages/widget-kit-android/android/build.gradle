@@ -1,0 +1,75 @@
+buildscript {
+  def kotlinVer =
+    (rootProject.ext.has("kotlinVersion") ? rootProject.ext.get("kotlinVersion") : null) ?: "2.1.20"
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+    // Kotlin 2.0+ requires the Compose Compiler Gradle plugin when compose is enabled.
+    classpath("org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlinVer")
+  }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+apply plugin: 'maven-publish'
+
+group = 'host.exp.exponent'
+version = '0.1.0'
+
+def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
+if (expoModulesCorePlugin.exists()) {
+  apply from: expoModulesCorePlugin
+  applyKotlinExpoModulesCorePlugin()
+  useDefaultAndroidSdkVersions()
+} else {
+  android {
+    compileSdkVersion safeExtGet("compileSdkVersion", 35)
+    defaultConfig {
+      minSdkVersion safeExtGet("minSdkVersion", 24)
+      targetSdkVersion safeExtGet("targetSdkVersion", 35)
+    }
+  }
+}
+
+android {
+  namespace "expo.modules.widgetkitandroid"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  buildFeatures {
+    compose true
+  }
+  lintOptions {
+    abortOnError false
+  }
+  publishing {
+    singleVariant("release") {
+      withSourcesJar()
+    }
+  }
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  implementation project(':expo-modules-core')
+  implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${getKotlinVersion()}"
+  implementation "androidx.glance:glance-appwidget:1.1.1"
+  implementation "androidx.glance:glance-material3:1.1.1"
+  implementation "androidx.compose.runtime:runtime:1.7.6"
+  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0"
+}
+
+def safeExtGet(prop, fallback) {
+  rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}
+
+def getKotlinVersion() {
+  ext.has("kotlinVersion") ? ext.kotlinVersion() : "2.1.20"
+}
