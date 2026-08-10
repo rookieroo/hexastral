@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="yuun_widget_description">今日宜忌 — 打开 Yuun 同步一次即可</string>
+    <string name="yuun_widget_name">Yuun 黄历</string>
+    <string name="yuun_widget_preview_subtitle">宜 · 忌</string>
+    <string name="yuun_widget_preview_title">甲辰 · 宜出行</string>
+</resources>

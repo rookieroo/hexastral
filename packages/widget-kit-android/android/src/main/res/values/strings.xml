@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <string name="yuun_widget_name">Yuun</string>
-  <string name="yuun_widget_description">Chinese almanac — Good / Avoid for today</string>
+  <string name="yuun_widget_name">Yuun Almanac</string>
+  <string name="yuun_widget_description">Today’s Good / Avoid — open Yuun once to sync</string>
+  <string name="yuun_widget_preview_title">甲辰 · 宜出行</string>
+  <string name="yuun_widget_preview_subtitle">Good · Avoid</string>
 </resources>

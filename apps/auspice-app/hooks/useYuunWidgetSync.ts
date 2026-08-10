@@ -28,9 +28,10 @@ let debounceTimer: ReturnType<typeof setTimeout> | null = null
 /**
  * Imperative sync — call after birth save/clear so Fit chrome updates without
  * waiting for the next AppState pulse.
+ * iOS → App Group; Android → SharedPreferences + Glance reload.
  */
 export function requestYuunWidgetSync(locale: Locale, force = false): void {
-  if (Platform.OS !== 'ios') return
+  if (Platform.OS !== 'ios' && Platform.OS !== 'android') return
   if (debounceTimer) clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => {
     debounceTimer = null
@@ -62,10 +63,12 @@ async function runYuunWidgetSync(locale: Locale, force: boolean): Promise<void> 
         Boolean(payload.personalization)
       )
       lastSyncKey = key
-      // Mint/push Watch bearer + prefs after App Group payload write.
-      await provisionYuunWatch(locale).catch((err) => {
-        console.warn('[yuun-widget-sync] watch provision failed:', err)
-      })
+      // Watch companion is iOS-only.
+      if (Platform.OS === 'ios') {
+        await provisionYuunWatch(locale).catch((err) => {
+          console.warn('[yuun-widget-sync] watch provision failed:', err)
+        })
+      }
     } catch (err) {
       console.warn('[yuun-widget-sync] failed:', err)
     }
@@ -86,12 +89,12 @@ export function useYuunWidgetSync(locale: Locale): void {
   localeRef.current = locale
 
   useEffect(() => {
-    if (Platform.OS !== 'ios') return
+    if (Platform.OS !== 'ios' && Platform.OS !== 'android') return
     requestYuunWidgetSync(locale, true)
   }, [locale])
 
   useEffect(() => {
-    if (Platform.OS !== 'ios') return
+    if (Platform.OS !== 'ios' && Platform.OS !== 'android') return
     const onChange = (state: AppStateStatus) => {
       if (state === 'active') requestYuunWidgetSync(localeRef.current, true)
     }

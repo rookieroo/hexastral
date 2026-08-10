@@ -1,4 +1,7 @@
 int layout yuun_widget_loading 0x0
+int layout yuun_widget_preview 0x0
 int string yuun_widget_description 0x0
 int string yuun_widget_name 0x0
+int string yuun_widget_preview_subtitle 0x0
+int string yuun_widget_preview_title 0x0
 int xml yuun_widget_info 0x0

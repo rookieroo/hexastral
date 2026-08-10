@@ -1,5 +1,8 @@
 expo.modules.widgetkitandroid
 layout yuun_widget_loading
+layout yuun_widget_preview
 string yuun_widget_description
 string yuun_widget_name
+string yuun_widget_preview_subtitle
+string yuun_widget_preview_title
 xml yuun_widget_info
