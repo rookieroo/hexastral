@@ -45,8 +45,9 @@ import expo.modules.widgetkitandroid.WidgetPayloadParser.weekdayChip
 /**
  * Home Glance widget aligned with iOS systemSmall / Medium / Large.
  *
- * [SizeMode.Exact] so [LocalSize] tracks the real cell. Medium shows a compact
- * For you line (HyperOS rarely reaches Large); Large keeps summary + tip.
+ * [SizeMode.Exact] so [LocalSize] tracks the real cell. Small/Medium show a
+ * compact For you line when birth fit is present (HyperOS defaults to 2×2);
+ * Large keeps summary + tip.
  */
 class YuunGlanceAppWidget : GlanceAppWidget() {
   override val sizeMode = SizeMode.Exact
@@ -84,11 +85,15 @@ private enum class WidgetFamily {
   Large,
 }
 
-/** Approximate 2×2 / 4×2 / 4×4 cell breakpoints in dp. */
+/**
+ * Approximate 2×2 / 4×2 / 4×4 cell breakpoints in dp.
+ * HyperOS 2-wide cells often land ~140–155dp — treat those as Medium so
+ * For you is not stuck behind the Small-only matrix.
+ */
 private fun familyFor(size: DpSize): WidgetFamily =
   when {
     size.height >= 180.dp && size.width >= 160.dp -> WidgetFamily.Large
-    size.width >= 160.dp -> WidgetFamily.Medium
+    size.width >= 140.dp -> WidgetFamily.Medium
     else -> WidgetFamily.Small
   }
 
@@ -129,6 +134,10 @@ private fun MoonLogo(
   )
 }
 
+/**
+ * Glance RemoteViews caps each [Column]/[Row] at **10 direct children**.
+ * Helpers that emit multiple nodes must wrap them so parents stay under the cap.
+ */
 @Composable
 private fun ForYouLine(
   day: YuunWidgetDay,
@@ -141,23 +150,25 @@ private fun ForYouLine(
 
   val en = isEnglish(parsed.locale)
   val label = parsed.chrome.forYou.ifBlank { if (en) "For you" else "对你而言" }
-  Text(
-    text =
-      when {
-        en -> label
-        !fit.isNullOrBlank() -> "$label · $fit"
-        else -> label
-      },
-    style = TextStyle(color = YuunColors.text, fontSize = 12.sp, fontWeight = FontWeight.Bold),
-    maxLines = 1,
-  )
-  if (withSummary && !fitSummary.isNullOrBlank()) {
-    Spacer(GlanceModifier.height(4.dp))
+  Column(modifier = GlanceModifier.fillMaxWidth()) {
     Text(
-      text = fitSummary,
-      style = TextStyle(color = YuunColors.secondary, fontSize = 12.sp),
-      maxLines = 3,
+      text =
+        when {
+          en -> label
+          !fit.isNullOrBlank() -> "$label · $fit"
+          else -> label
+        },
+      style = TextStyle(color = YuunColors.text, fontSize = 12.sp, fontWeight = FontWeight.Bold),
+      maxLines = 1,
     )
+    if (withSummary && !fitSummary.isNullOrBlank()) {
+      Spacer(GlanceModifier.height(4.dp))
+      Text(
+        text = fitSummary,
+        style = TextStyle(color = YuunColors.secondary, fontSize = 12.sp),
+        maxLines = 3,
+      )
+    }
   }
 }
 
@@ -230,39 +241,57 @@ private fun SmallLayout(
   day: YuunWidgetDay,
   parsed: ParsedWidgetPayload,
 ) {
-  Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-    Text(
-      text = weekdayChip(day.date, parsed.locale),
-      style = TextStyle(color = YuunColors.secondary, fontSize = 10.sp, fontWeight = FontWeight.Medium),
-      maxLines = 1,
-    )
-    Spacer(GlanceModifier.defaultWeight())
-    MoonLogo(phase = day.moonPhase, dp = 40)
+  // Nested Column so root stays ≤10 Glance children.
+  Column(modifier = GlanceModifier.fillMaxSize()) {
+    Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+      Text(
+        text = weekdayChip(day.date, parsed.locale),
+        style = TextStyle(color = YuunColors.secondary, fontSize = 10.sp, fontWeight = FontWeight.Medium),
+        maxLines = 1,
+      )
+      Spacer(GlanceModifier.defaultWeight())
+      MoonLogo(phase = day.moonPhase, dp = 40)
+    }
+    Spacer(GlanceModifier.height(5.dp))
+    Row(verticalAlignment = Alignment.Bottom) {
+      Text(
+        text = day.ganZhi,
+        style = TextStyle(color = YuunColors.text, fontSize = 22.sp, fontWeight = FontWeight.Normal),
+        maxLines = 1,
+      )
+      Spacer(GlanceModifier.width(6.dp))
+      Text(
+        text = lunarOnly(day, parsed.chrome),
+        style = TextStyle(color = YuunColors.secondary, fontSize = 10.sp),
+        maxLines = 1,
+      )
+    }
+    val hasFit = !day.fit.isNullOrBlank() || !day.fitSummary.isNullOrBlank()
+    Spacer(GlanceModifier.height(if (hasFit) 6.dp else 8.dp))
+    if (hasFit) {
+      ForYouLine(day = day, parsed = parsed, withSummary = false)
+      Spacer(GlanceModifier.height(4.dp))
+      YiJiStacked(
+        goodLabel = parsed.chrome.good,
+        avoidLabel = parsed.chrome.avoid,
+        goodText = day.yiShort.ifBlank { day.yi },
+        avoidText = day.jiShort,
+        goodLines = 1,
+        avoidLines = 1,
+        fontSize = 11.sp,
+      )
+    } else {
+      YiJiStacked(
+        goodLabel = parsed.chrome.good,
+        avoidLabel = parsed.chrome.avoid,
+        goodText = day.yi.ifBlank { day.yiShort },
+        avoidText = day.jiShort,
+        goodLines = 2,
+        avoidLines = 1,
+        fontSize = 11.sp,
+      )
+    }
   }
-  Spacer(GlanceModifier.height(5.dp))
-  Row(verticalAlignment = Alignment.Bottom) {
-    Text(
-      text = day.ganZhi,
-      style = TextStyle(color = YuunColors.text, fontSize = 22.sp, fontWeight = FontWeight.Normal),
-      maxLines = 1,
-    )
-    Spacer(GlanceModifier.width(6.dp))
-    Text(
-      text = lunarOnly(day, parsed.chrome),
-      style = TextStyle(color = YuunColors.secondary, fontSize = 10.sp),
-      maxLines = 1,
-    )
-  }
-  Spacer(GlanceModifier.height(8.dp))
-  YiJiStacked(
-    goodLabel = parsed.chrome.good,
-    avoidLabel = parsed.chrome.avoid,
-    goodText = day.yi.ifBlank { day.yiShort },
-    avoidText = day.jiShort,
-    goodLines = 2,
-    avoidLines = 1,
-    fontSize = 11.sp,
-  )
 }
 
 @Composable
@@ -270,65 +299,66 @@ private fun MediumLayout(
   day: YuunWidgetDay,
   parsed: ParsedWidgetPayload,
 ) {
-  Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-    MoonLogo(phase = day.moonPhase, dp = 46)
-    Spacer(GlanceModifier.width(12.dp))
-    Column(modifier = GlanceModifier.defaultWeight()) {
-      Row(verticalAlignment = Alignment.Bottom) {
-        Text(
-          text = day.ganZhi,
-          style = TextStyle(color = YuunColors.text, fontSize = 24.sp, fontWeight = FontWeight.Normal),
-          maxLines = 1,
-        )
-        val pinyin = day.ganZhiPinyin?.takeIf { it.isNotBlank() && isEnglish(parsed.locale) }
-        if (pinyin != null) {
-          Spacer(GlanceModifier.width(6.dp))
+  Column(modifier = GlanceModifier.fillMaxSize()) {
+    Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+      MoonLogo(phase = day.moonPhase, dp = 46)
+      Spacer(GlanceModifier.width(12.dp))
+      Column(modifier = GlanceModifier.defaultWeight()) {
+        Row(verticalAlignment = Alignment.Bottom) {
           Text(
-            text = pinyin,
-            style = TextStyle(color = YuunColors.tertiary, fontSize = 11.sp),
+            text = day.ganZhi,
+            style = TextStyle(color = YuunColors.text, fontSize = 24.sp, fontWeight = FontWeight.Normal),
             maxLines = 1,
           )
+          val pinyin = day.ganZhiPinyin?.takeIf { it.isNotBlank() && isEnglish(parsed.locale) }
+          if (pinyin != null) {
+            Spacer(GlanceModifier.width(6.dp))
+            Text(
+              text = pinyin,
+              style = TextStyle(color = YuunColors.tertiary, fontSize = 11.sp),
+              maxLines = 1,
+            )
+          }
         }
+        Text(
+          text = calendarRow(day, parsed.chrome, parsed.locale),
+          style = TextStyle(color = YuunColors.secondary, fontSize = 10.sp, fontWeight = FontWeight.Medium),
+          maxLines = 1,
+        )
       }
-      Text(
-        text = calendarRow(day, parsed.chrome, parsed.locale),
-        style = TextStyle(color = YuunColors.secondary, fontSize = 10.sp, fontWeight = FontWeight.Medium),
-        maxLines = 1,
-      )
+      if (day.solarTerm.isNotBlank()) {
+        Spacer(GlanceModifier.width(6.dp))
+        Text(
+          text = day.solarTerm,
+          style = TextStyle(color = YuunColors.tertiary, fontSize = 10.sp),
+          maxLines = 2,
+        )
+      }
     }
-    if (day.solarTerm.isNotBlank()) {
-      Spacer(GlanceModifier.width(6.dp))
-      Text(
-        text = day.solarTerm,
-        style = TextStyle(color = YuunColors.tertiary, fontSize = 10.sp),
-        maxLines = 2,
-      )
+    Spacer(GlanceModifier.height(9.dp))
+    Hairline()
+    Spacer(GlanceModifier.height(9.dp))
+    if (!day.fit.isNullOrBlank() || !day.fitSummary.isNullOrBlank()) {
+      ForYouLine(day = day, parsed = parsed, withSummary = false)
+      Spacer(GlanceModifier.height(8.dp))
     }
-  }
-  Spacer(GlanceModifier.height(9.dp))
-  Hairline()
-  Spacer(GlanceModifier.height(9.dp))
-  Row(modifier = GlanceModifier.fillMaxWidth()) {
-    Column(modifier = GlanceModifier.defaultWeight()) {
-      Text(
-        text = "${parsed.chrome.good} ${day.yi}",
-        style = TextStyle(color = YuunColors.text, fontSize = 12.sp),
-        maxLines = 2,
-      )
+    Row(modifier = GlanceModifier.fillMaxWidth()) {
+      Column(modifier = GlanceModifier.defaultWeight()) {
+        Text(
+          text = "${parsed.chrome.good} ${day.yi}",
+          style = TextStyle(color = YuunColors.text, fontSize = 12.sp),
+          maxLines = 2,
+        )
+      }
+      Spacer(GlanceModifier.width(14.dp))
+      Column(modifier = GlanceModifier.defaultWeight()) {
+        Text(
+          text = "${parsed.chrome.avoid} ${day.ji}",
+          style = TextStyle(color = YuunColors.secondary, fontSize = 12.sp),
+          maxLines = 2,
+        )
+      }
     }
-    Spacer(GlanceModifier.width(14.dp))
-    Column(modifier = GlanceModifier.defaultWeight()) {
-      Text(
-        text = "${parsed.chrome.avoid} ${day.ji}",
-        style = TextStyle(color = YuunColors.secondary, fontSize = 12.sp),
-        maxLines = 2,
-      )
-    }
-  }
-  // HyperOS users often stay on ~4×2 — show compact For you here (iOS Large-only).
-  if (!day.fit.isNullOrBlank() || !day.fitSummary.isNullOrBlank()) {
-    Spacer(GlanceModifier.height(8.dp))
-    ForYouLine(day = day, parsed = parsed, withSummary = false)
   }
 }
 
@@ -337,87 +367,81 @@ private fun LargeLayout(
   day: YuunWidgetDay,
   parsed: ParsedWidgetPayload,
 ) {
-  Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-    Column(modifier = GlanceModifier.defaultWeight()) {
-      Row(verticalAlignment = Alignment.Bottom) {
+  // Keep ≤10 direct children (Glance RemoteViews hard limit).
+  Column(modifier = GlanceModifier.fillMaxSize()) {
+    Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+      Column(modifier = GlanceModifier.defaultWeight()) {
         Text(
           text = day.ganZhi,
           style = TextStyle(color = YuunColors.text, fontSize = 30.sp, fontWeight = FontWeight.Normal),
           maxLines = 1,
         )
-        val pinyin = day.ganZhiPinyin?.takeIf { it.isNotBlank() }
-        if (pinyin != null) {
-          Spacer(GlanceModifier.width(7.dp))
+        Spacer(GlanceModifier.height(4.dp))
+        Text(
+          text = calendarRow(day, parsed.chrome, parsed.locale),
+          style = TextStyle(color = YuunColors.secondary, fontSize = 10.sp, fontWeight = FontWeight.Medium),
+          maxLines = 1,
+        )
+        val meta = metaRow(day, parsed.locale)
+        if (meta.isNotBlank()) {
+          Spacer(GlanceModifier.height(2.dp))
           Text(
-            text = pinyin,
-            style = TextStyle(color = YuunColors.secondary, fontSize = 12.sp),
+            text = meta,
+            style = TextStyle(color = YuunColors.tertiary, fontSize = 11.sp),
             maxLines = 1,
           )
         }
       }
-      Spacer(GlanceModifier.height(4.dp))
-      Text(
-        text = calendarRow(day, parsed.chrome, parsed.locale),
-        style = TextStyle(color = YuunColors.secondary, fontSize = 10.sp, fontWeight = FontWeight.Medium),
-        maxLines = 1,
-      )
-      val meta = metaRow(day, parsed.locale)
-      if (meta.isNotBlank()) {
-        Spacer(GlanceModifier.height(2.dp))
+      Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        MoonLogo(phase = day.moonPhase, dp = 58)
+        Spacer(GlanceModifier.height(4.dp))
         Text(
-          text = meta,
-          style = TextStyle(color = YuunColors.tertiary, fontSize = 11.sp),
+          text = moonCaption(day.moonPhase, parsed.chrome.moonPhaseNames),
+          style = TextStyle(color = YuunColors.tertiary, fontSize = 9.sp),
           maxLines = 1,
         )
       }
     }
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      MoonLogo(phase = day.moonPhase, dp = 58)
-      Spacer(GlanceModifier.height(4.dp))
-      Text(
-        text = moonCaption(day.moonPhase, parsed.chrome.moonPhaseNames),
-        style = TextStyle(color = YuunColors.tertiary, fontSize = 9.sp),
-        maxLines = 1,
-      )
-    }
-  }
-  Spacer(GlanceModifier.height(8.dp))
-  Hairline()
-  Spacer(GlanceModifier.height(8.dp))
-  YiJiStacked(
-    goodLabel = parsed.chrome.good,
-    avoidLabel = parsed.chrome.avoid,
-    goodText = day.yiLong,
-    avoidText = day.jiLong,
-    goodLines = 2,
-    avoidLines = 2,
-    fontSize = 14.sp,
-  )
-  Spacer(GlanceModifier.height(8.dp))
-  Hairline()
-  Spacer(GlanceModifier.height(8.dp))
-  ForYouLine(day = day, parsed = parsed, withSummary = true)
-  val tip = day.dayTip
-  if (!tip.isNullOrBlank()) {
     Spacer(GlanceModifier.height(8.dp))
-    val label = day.tipLabel ?: parsed.chrome.tip
-    if (label.isNotBlank() && !isEnglish(parsed.locale)) {
-      Text(
-        text = label,
-        style = TextStyle(color = YuunColors.tertiary, fontSize = 9.sp, fontWeight = FontWeight.Bold),
-        maxLines = 1,
-      )
-      Spacer(GlanceModifier.height(4.dp))
-    }
-    Text(
-      text = tip,
-      style =
-        TextStyle(
-          color = if (day.fit.isNullOrBlank()) YuunColors.text else YuunColors.secondary,
-          fontSize = 12.sp,
-        ),
-      maxLines = 3,
+    Hairline()
+    Spacer(GlanceModifier.height(8.dp))
+    YiJiStacked(
+      goodLabel = parsed.chrome.good,
+      avoidLabel = parsed.chrome.avoid,
+      goodText = day.yiLong,
+      avoidText = day.jiLong,
+      goodLines = 2,
+      avoidLines = 2,
+      fontSize = 14.sp,
     )
+    Spacer(GlanceModifier.height(8.dp))
+    Hairline()
+    Spacer(GlanceModifier.height(8.dp))
+    Column(modifier = GlanceModifier.fillMaxWidth()) {
+      ForYouLine(day = day, parsed = parsed, withSummary = true)
+      val tip = day.dayTip
+      if (!tip.isNullOrBlank()) {
+        Spacer(GlanceModifier.height(8.dp))
+        val label = day.tipLabel ?: parsed.chrome.tip
+        if (label.isNotBlank() && !isEnglish(parsed.locale)) {
+          Text(
+            text = label,
+            style = TextStyle(color = YuunColors.tertiary, fontSize = 9.sp, fontWeight = FontWeight.Bold),
+            maxLines = 1,
+          )
+          Spacer(GlanceModifier.height(4.dp))
+        }
+        Text(
+          text = tip,
+          style =
+            TextStyle(
+              color = if (day.fit.isNullOrBlank()) YuunColors.text else YuunColors.secondary,
+              fontSize = 12.sp,
+            ),
+          maxLines = 3,
+        )
+      }
+    }
   }
 }
 
@@ -431,15 +455,17 @@ private fun YiJiStacked(
   avoidLines: Int,
   fontSize: TextUnit,
 ) {
-  Text(
-    text = "$goodLabel $goodText",
-    style = TextStyle(color = YuunColors.text, fontSize = fontSize),
-    maxLines = goodLines,
-  )
-  Spacer(GlanceModifier.height(2.dp))
-  Text(
-    text = "$avoidLabel $avoidText",
-    style = TextStyle(color = YuunColors.secondary, fontSize = fontSize),
-    maxLines = avoidLines,
-  )
+  Column(modifier = GlanceModifier.fillMaxWidth()) {
+    Text(
+      text = "$goodLabel $goodText",
+      style = TextStyle(color = YuunColors.text, fontSize = fontSize),
+      maxLines = goodLines,
+    )
+    Spacer(GlanceModifier.height(2.dp))
+    Text(
+      text = "$avoidLabel $avoidText",
+      style = TextStyle(color = YuunColors.secondary, fontSize = fontSize),
+      maxLines = avoidLines,
+    )
+  }
 }
