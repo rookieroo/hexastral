@@ -111,11 +111,7 @@ export function ShichenPicker({
             }}
             accessibilityRole='button'
             accessibilityState={{ selected: active }}
-            accessibilityLabel={
-              disp.cjk
-                ? `${disp.cjkLabel} ${sub}`
-                : `${disp.animal}, ${sub}`
-            }
+            accessibilityLabel={disp.cjk ? `${disp.cjkLabel} ${sub}` : `${disp.animal}, ${sub}`}
           >
             <Text
               style={{

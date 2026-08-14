@@ -32,6 +32,7 @@ import { getAuspiceBirthInfo } from '@/lib/birth'
 import { getAuspiceDeviceId } from '@/lib/device'
 import { searchCity } from '@/lib/geocode'
 import { useStrings } from '@/lib/i18n-context'
+import { isIapEnabled } from '@/lib/iap-enabled'
 import {
   type AuspicePerson,
   addPerson,
@@ -143,7 +144,8 @@ export default function PeopleScreen() {
     // The 4th+ birthday REMINDER is a Pro perk — local scheduling already caps to
     // FREE_BIRTHDAY_LIMIT, so nudge the paywall when a free user crosses it (the
     // extra 亲友 is still saved for 合盘 etc., it just won't fire reminders).
-    if (!isPro && next.length > FREE_BIRTHDAY_LIMIT) setPaywallOpen(true)
+    // No paywall nudge while IAP is off — the cap simply stays silent.
+    if (isIapEnabled() && !isPro && next.length > FREE_BIRTHDAY_LIMIT) setPaywallOpen(true)
     // Persist the birthday server-side (authoritative cap + remote push). If the
     // save fails while server push is active, force a local schedule so the
     // reminder is not silently dropped.
@@ -183,6 +185,7 @@ export default function PeopleScreen() {
   }
 
   const openRelation = (p: AuspicePerson) => {
+    if (!isIapEnabled()) return
     if (!selfDate) {
       Alert.alert(t.people.needBirth, t.people.needBirthBody)
       return
@@ -514,30 +517,34 @@ export default function PeopleScreen() {
                   <Text style={{ color: colors.text, fontSize: 16 }}>{p.name}</Text>
                   <Text style={{ color: colors.dim, fontSize: 12 }}>{personLine(p)}</Text>
                 </View>
-                <Pressable
-                  onPress={() => openRelation(p)}
-                  accessibilityRole='button'
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 3,
-                    paddingHorizontal: spacing.md,
-                    paddingVertical: 6,
-                    borderRadius: 14,
-                    borderWidth: 0.5,
-                    borderColor: colors.accent,
-                    backgroundColor: colors.accentGhost,
-                  }}
-                >
-                  <Text style={{ color: colors.accent, fontSize: 12, fontWeight: '600' }}>
-                    {t.people.relation}
-                  </Text>
-                  {!isPro ? (
-                    <Text style={{ color: colors.accent, fontSize: 9, fontWeight: '700' }}>
-                      PRO
+                {/* 关系合盘 is Pro-gated AND lands in Yuel (not shipped yet) —
+                    hidden entirely while IAP is off so no dead wall is tappable. */}
+                {isIapEnabled() ? (
+                  <Pressable
+                    onPress={() => openRelation(p)}
+                    accessibilityRole='button'
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 3,
+                      paddingHorizontal: spacing.md,
+                      paddingVertical: 6,
+                      borderRadius: 14,
+                      borderWidth: 0.5,
+                      borderColor: colors.accent,
+                      backgroundColor: colors.accentGhost,
+                    }}
+                  >
+                    <Text style={{ color: colors.accent, fontSize: 12, fontWeight: '600' }}>
+                      {t.people.relation}
                     </Text>
-                  ) : null}
-                </Pressable>
+                    {!isPro ? (
+                      <Text style={{ color: colors.accent, fontSize: 9, fontWeight: '700' }}>
+                        PRO
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                ) : null}
                 <Pressable onPress={() => remove(p.id)} hitSlop={8} accessibilityRole='button'>
                   <Text style={{ color: colors.dim, fontSize: 13 }}>{t.people.delete}</Text>
                 </Pressable>

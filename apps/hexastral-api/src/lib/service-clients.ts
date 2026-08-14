@@ -180,7 +180,10 @@ export const mailerClient = {
   post<T = unknown>(svc: Fetcher, path: string, body: unknown): Promise<T> {
     const payload =
       body && typeof body === 'object'
-        ? { ...(body as Record<string, unknown>), caller: (body as { caller?: string }).caller ?? 'hexastral-api' }
+        ? {
+            ...(body as Record<string, unknown>),
+            caller: (body as { caller?: string }).caller ?? 'hexastral-api',
+          }
         : body
     return servicePost<T>(svc, 'svc-mailer', path, payload, TIMEOUTS.mailer)
   },

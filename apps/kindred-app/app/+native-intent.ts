@@ -32,10 +32,7 @@ export function rewriteKindredSystemPath(path: string): string {
       return query ? `/(reading)/full?${query}` : '/(reading)/full'
     }
 
-    if (
-      (firstSegment === 'resonate' || firstSegment === 'accept') &&
-      segments[1]
-    ) {
+    if ((firstSegment === 'resonate' || firstSegment === 'accept') && segments[1]) {
       const token = encodeURIComponent(segments[1])
       return query ? `/accept/${token}?${query}` : `/accept/${token}`
     }

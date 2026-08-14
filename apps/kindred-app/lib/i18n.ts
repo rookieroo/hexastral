@@ -344,7 +344,8 @@ export const translations: Translations = {
     'settings.signOut': 'Sign out',
     'settings.signOut.hint': 'Removes the local device key',
     'settings.signOut.confirmTitle': 'Sign out?',
-    'settings.signOut.confirmBody': 'This removes the local device key. You can sign in again to restore linked threads.',
+    'settings.signOut.confirmBody':
+      'This removes the local device key. You can sign in again to restore linked threads.',
     'settings.deleteAccount': 'Delete account',
     'settings.deleteAccount.confirmTitle': 'Permanently delete account?',
     'settings.deleteAccount.confirmBody':
@@ -359,7 +360,8 @@ export const translations: Translations = {
       'Let chat reference your readings across Yuel and Yuun (UseONE apps). Same account only — never shared with anyone else.',
     'settings.notifications.section': 'Notifications',
     'settings.dailyPush.label': 'Notifications',
-    'settings.dailyPush.caption': 'Relationship notes when the timing is right — decided by the system.',
+    'settings.dailyPush.caption':
+      'Relationship notes when the timing is right — decided by the system.',
     'settings.dailyPush.hint':
       'One switch for all Yuel pushes. Content and send time come from your readings (queued in the cloud); default daytime local slot, plus optional timeline node teasers. Not a personal almanac morning push.',
     'settings.dailyPush.deniedTitle': 'Notifications are off',
@@ -460,8 +462,7 @@ export const translations: Translations = {
       'Tie your purchase to an account so it survives a device wipe. Apple gives us nothing but a stable id and (optionally) your email.',
     'paywall.signInCta': 'Continue with Apple',
     'paywall.title': 'Yuel Pro',
-    'paywall.subtitle':
-      '3 full relationship unlocks/mo · living layer · invite friends anytime',
+    'paywall.subtitle': '3 full relationship unlocks/mo · living layer · invite friends anytime',
     'paywall.subtitleChat': "You've used your free messages for this reading.",
     'paywall.subtitleChapters': 'Unlock your complete reading — all six chapters',
     'paywall.bullet.unlimited': '3 full relationship unlocks or re-reads each month',
@@ -476,8 +477,7 @@ export const translations: Translations = {
     'unlock.pending': 'Purchase is still processing — try again in a moment',
     'unlock.failed': 'Could not unlock — please try again',
     'unlock.inviteShareLead': 'Our compatibility reading is in — come see, {name}:',
-    'paywall.bullet.support':
-      '2 free solo full readings · node alerts · fine-art export',
+    'paywall.bullet.support': '2 free solo full readings · node alerts · fine-art export',
     'report.fuel.kicker': 'After this reading',
     'report.fuel.pending':
       'This Pro bond reading seeds relationship reminders for about 30–45 days, plus optional node teasers.',
@@ -744,8 +744,7 @@ export const translations: Translations = {
     'bond.recomputeConfirmBody':
       '将用你当前的生辰重新生成这份合盘，并覆盖现有结果。会用掉本月 3 次 Pro 合盘额度中的 1 次，且不可恢复。',
     'bond.recomputeFailed': '重算失败，请重试。',
-    'bond.recomputeQuotaExhausted':
-      '本月 3 次 Pro 合盘额度已用完。可等下月重置，或单次购买解锁。',
+    'bond.recomputeQuotaExhausted': '本月 3 次 Pro 合盘额度已用完。可等下月重置，或单次购买解锁。',
     'bond.matching': '合盘中…',
     'bond.stage.align': '正在对齐天干地支…',
     'bond.stage.bazi': '正在排双方八字…',
@@ -914,8 +913,7 @@ export const translations: Translations = {
     'unlock.inviteShareLead': '{name}，我们的合盘结果出来了，一起看：',
     'paywall.bullet.support': '终身 2 次免费 solo 全开 · 节点提醒 · 精装导出',
     'report.fuel.kicker': '报告之后',
-    'report.fuel.pending':
-      '本 Pro 合盘会为未来约 30–45 天种下关系提醒，并可选节点日推送。',
+    'report.fuel.pending': '本 Pro 合盘会为未来约 30–45 天种下关系提醒，并可选节点日推送。',
     'report.fuel.ready':
       '约有 {n} 条关系提醒已入队（约 30–45 天窗口）。时间轴节点也可在合适时提醒。',
     'report.fuel.empty': '本次未生成提醒窗口。',
@@ -1178,8 +1176,7 @@ export const translations: Translations = {
     'bond.recomputeConfirmBody':
       '將用你目前的生辰重新生成這份合盤，並覆蓋現有結果。會用掉本月 3 次 Pro 合盤額度中的 1 次，且不可復原。',
     'bond.recomputeFailed': '重算失敗，請重試。',
-    'bond.recomputeQuotaExhausted':
-      '本月 3 次 Pro 合盤額度已用完。可等下月重置，或單次購買解鎖。',
+    'bond.recomputeQuotaExhausted': '本月 3 次 Pro 合盤額度已用完。可等下月重置，或單次購買解鎖。',
     'bond.matching': '合盤中…',
     'bond.stage.align': '正在對齊天干地支…',
     'bond.stage.bazi': '正在排雙方八字…',
@@ -1348,8 +1345,7 @@ export const translations: Translations = {
     'unlock.inviteShareLead': '{name}，我們的合盤結果出來了，一起看：',
     'paywall.bullet.support': '終身 2 次免費 solo 全開 · 節點提醒 · 精裝匯出',
     'report.fuel.kicker': '報告之後',
-    'report.fuel.pending':
-      '本 Pro 合盤會為未來約 30–45 天種下關係提醒，並可選節點日推送。',
+    'report.fuel.pending': '本 Pro 合盤會為未來約 30–45 天種下關係提醒，並可選節點日推送。',
     'report.fuel.ready':
       '約有 {n} 條關係提醒已入隊（約 30–45 天視窗）。時間軸節點也可在合適時提醒。',
     'report.fuel.empty': '本次未生成提醒視窗。',

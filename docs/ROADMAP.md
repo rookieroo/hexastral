@@ -34,7 +34,7 @@ One Worker hosts all four apps:
 - `/api/divination/*` — CoinCast casting (when wired)
 - `/api/portfolio/auth/{apple,google}` — unified identity
 
-Deploy: `cd apps/hexastral-api && bun deploy`. CI is validation-only.
+Deploy: `cd apps/hexastral-api && bun deploy`. No CI — validate locally with `bun run preflight`.
 
 Setup: [setup/](./setup/) · Store checklist: [publish/README.md](./publish/README.md)
 

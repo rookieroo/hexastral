@@ -60,9 +60,7 @@ export const portfolioAuthRoutes = new Hono<{
     const { identityToken, target_app, fullName: fullNameRaw } = parsed.data
     const audience = audienceForTarget(target_app)
     const fullName =
-      typeof fullNameRaw === 'string' && fullNameRaw.trim().length > 0
-        ? fullNameRaw.trim()
-        : null
+      typeof fullNameRaw === 'string' && fullNameRaw.trim().length > 0 ? fullNameRaw.trim() : null
 
     let sub: string
     // Apple ships the `email` claim ONLY on first authorization — subsequent

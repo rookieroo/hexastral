@@ -11,9 +11,9 @@ import {
   type BirthTriple,
   buildEgoTimeline,
   type PairReadingBirth,
+  type ResolvedBond,
   resolveResonanceCounterpart,
   resolveResonanceZiwei,
-  type ResolvedBond,
 } from './bonds-timeline'
 
 export type KindredTimelinePushLabels = {

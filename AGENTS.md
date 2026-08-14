@@ -62,7 +62,7 @@ Launch scope: **[docs/ROADMAP.md](docs/ROADMAP.md)** · Doc index: **[docs/READM
 ## House rules
 
 - **Pre-PMF** — aggressive refactor is OK when justified; verify "no real users" before assuming.
-- **CI is validation-only.** Deploys happen locally via `wrangler` / EAS. See [deploy.md](deploy.md).
+- **No CI.** All deploys happen locally via `wrangler` / EAS. Validation is also local — run `bun run preflight` before builds/submits. See [deploy.md](deploy.md).
 - **bun + biome + drizzle.** Don't introduce `npm` / `eslint` / `prisma`.
 - **`bunx`, never `npx`.** One-off CLIs (Expo, Wrangler, etc.) use `bunx`; prefer `bun run <script>` when defined.
 - **No emojis in code or commits** unless explicitly asked.
@@ -75,12 +75,13 @@ Launch scope: **[docs/ROADMAP.md](docs/ROADMAP.md)** · Doc index: **[docs/READM
 
 ```bash
 bun install            # workspace install
+bun run preflight      # full local validation: typecheck + lint + test + deps + ASO + release-config
 bun typecheck          # all workspaces (turbo)
 bun lint               # biome check across workspaces
-bun test               # astro-core + svc-fortune + hexastral-api golden tests
+bun test               # all discovered test suites (astro-core, api golden, apps, services)
 bun check-deps         # version consistency across workspaces
 
-# Per-app deploy (local; CI does NOT deploy):
+# Per-app deploy (all local — no CI exists):
 cd apps/hexastral-api && bun deploy
 cd apps/hexastral-web && bun deploy
 cd services/svc-astro && bun deploy

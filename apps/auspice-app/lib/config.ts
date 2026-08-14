@@ -5,8 +5,9 @@
 
 import type { Locale } from '@/lib/i18n'
 
-/** App Store listing — filled after App Store Connect app creation (manual). */
-export const APP_STORE_URL = 'https://apps.apple.com/app/idREPLACE_WITH_ASC_APP_ID'
+/** App Store listing — filled after App Store Connect app creation (manual).
+ *  Pre-launch this points at the Yuun brand LP so nothing ever 404s. */
+export const APP_STORE_URL = 'https://yuun.hexastral.com'
 
 // Per-app privacy appendix → hexastral-web `/[locale]/privacy/[appKey]` (registered
 // in `satellite-privacy-appendices.ts`); Terms is the shared `/[locale]/terms`. Both
@@ -36,12 +37,33 @@ export function termsUrl(locale: Locale): string {
 }
 
 /**
+ * Yuel brand LP (locale-segmented). Pre-launch hand-off fallback: Yuel is not on
+ * the store yet, so the "deep read your chart" CTA lands here instead of a 404.
+ * Swap this for the real App Store URL once Yuel ships.
+ */
+export function yuelLandingUrl(locale: Locale): string {
+  return `https://yuel.hexastral.com${brandLegalPath(locale, '')}`
+}
+
+/**
  * Flagship funnel deep links (ADR-0010 §4): wedding date-picking → Kindred;
- * office-opening / move-in → Fēng. App Store fallbacks for unverified installs.
+ * office-opening / move-in → Fēng.
+ *
+ * `appStoreUrl` stays a REPLACE_* placeholder until each app ships — it is ONLY
+ * consumed when `FLAGSHIP_LIVE[key]` is true (see kindred-handoff.ts). Until
+ * then, and as a never-404 safety net, `landingUrl` points at the live brand LP.
  */
 export const FLAGSHIP_LINKS = {
-  yuan: { deepLink: 'yuel://launch', appStoreUrl: 'https://apps.apple.com/app/idREPLACE_YUAN' },
-  feng: { deepLink: 'kanyu://launch', appStoreUrl: 'https://apps.apple.com/app/idREPLACE_FENG' },
+  yuan: {
+    deepLink: 'yuel://launch',
+    appStoreUrl: 'https://apps.apple.com/app/idREPLACE_YUAN',
+    landingUrl: 'https://yuel.hexastral.com',
+  },
+  feng: {
+    deepLink: 'kanyu://launch',
+    appStoreUrl: 'https://apps.apple.com/app/idREPLACE_FENG',
+    landingUrl: 'https://kanyu.hexastral.com',
+  },
 } as const
 
 /**

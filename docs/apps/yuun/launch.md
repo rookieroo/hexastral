@@ -65,8 +65,8 @@ Yuun is a Chinese almanac (中华黄历) with Today-first navigation and a three
 - [ ] _(iOS)_ EAS production archive: confirm widget / watch / watch-widget embedded if claiming widgets
 - [ ] _(iOS)_ TestFlight: iPhone + Watch matrix when claiming widgets
 
-### CI
-- [ ] Root `bun typecheck && bun lint && bun test && bun check-deps` green
+### Local validation (no CI)
+- [ ] `bun run preflight` green (typecheck + lint + test + check-deps + ASO parity/charcount + release-config soft-OK)
 
 ### Deploy legal pages
 - [ ] Deploy `hexastral-web` so `/en|/zh|/tw|/ja/privacy/yuun` return localized appendix (HTTP 200) — **needs approval**

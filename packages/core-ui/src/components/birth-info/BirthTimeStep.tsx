@@ -13,6 +13,7 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-nat
 import { useTheme } from '../../theme'
 import { CityPicker, type CityRecord } from '../CityPicker'
 import { type ShichenIndex, ShichenPicker } from '../ShichenPicker'
+import { shichenInlineLabel } from '../shichen-i18n'
 import { BirthClockField } from './BirthClockField'
 import { BirthProgressIndicator } from './BirthProgressIndicator'
 import { BirthTimeModeToggle } from './BirthTimeModeToggle'
@@ -21,7 +22,6 @@ import {
   birthTimeModeFromClock,
   clearedPreciseBirthFields,
 } from './birthTimeMode'
-import { shichenInlineLabel } from '../shichen-i18n'
 import { ShichenWheel } from './ShichenWheel'
 import type { BirthStepProps } from './types'
 

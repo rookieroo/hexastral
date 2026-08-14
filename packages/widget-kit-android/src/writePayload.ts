@@ -5,11 +5,7 @@
 
 import { Platform } from 'react-native'
 
-import {
-  type AppSlug,
-  type WidgetLocale,
-  type WidgetSyncPayload,
-} from './types'
+import type { AppSlug, WidgetLocale, WidgetSyncPayload } from './types'
 
 type WidgetKitAndroidNative = {
   writePayload: (payloadJson: string, locale: string, tipLabel: string) => void

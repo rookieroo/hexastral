@@ -38,7 +38,7 @@ import {
 } from '@zhop/satellite-runtime'
 import { type Href, useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native'
+import { Alert, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
@@ -67,6 +67,7 @@ import { openCalendarSubscribe, openPersonalCalendarSubscribe } from '@/lib/cale
 import { searchCity } from '@/lib/geocode'
 import { type Locale, resolveLocale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
+import { isIapEnabled } from '@/lib/iap-enabled'
 import { resetOnboarding } from '@/lib/onboarding-seen'
 import {
   disableDailyPush,
@@ -650,14 +651,18 @@ export default function MeScreen() {
           },
         ]
       : []),
-    {
-      id: 'timeline',
-      label: t.timelineRemindToggle,
-      hint: t.timelineRemindHint,
-      value: timelineRemindOn,
-      onToggle: toggleTimelineRemind,
-      showPro: pushTypeById('timeline')?.tier === 'pro' && !isPro,
-    },
+    ...(isIapEnabled()
+      ? [
+          {
+            id: 'timeline' as const,
+            label: t.timelineRemindToggle,
+            hint: t.timelineRemindHint,
+            value: timelineRemindOn,
+            onToggle: toggleTimelineRemind,
+            showPro: pushTypeById('timeline')?.tier === 'pro' && !isPro,
+          },
+        ]
+      : []),
   ]
 
   const toggleYijiMode = (modern: boolean) => {
@@ -673,6 +678,9 @@ export default function MeScreen() {
       }
     })()
   }
+
+  // Android ships home widgets only — relabel the widget surface entry accordingly.
+  const widgetsTitle = Platform.OS === 'android' ? t.widgetsAndroidTitle : t.watchWidgets
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -1015,12 +1023,12 @@ export default function MeScreen() {
         <LibrarySection />
 
         <View>
-          <SectionLabel>{t.watchWidgets}</SectionLabel>
+          <SectionLabel>{widgetsTitle}</SectionLabel>
           <View style={{ borderRadius: 14, backgroundColor: colors.card, overflow: 'hidden' }}>
             <Pressable
               onPress={() => router.push('/display' as Href)}
               accessibilityRole='button'
-              accessibilityLabel={t.watchWidgets}
+              accessibilityLabel={widgetsTitle}
               style={({ pressed }) => ({
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -1030,7 +1038,7 @@ export default function MeScreen() {
                 opacity: pressed ? 0.6 : 1,
               })}
             >
-              <Text style={{ color: colors.text, fontSize: 15 }}>{t.watchWidgets}</Text>
+              <Text style={{ color: colors.text, fontSize: 15 }}>{widgetsTitle}</Text>
               <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
             </Pressable>
           </View>
@@ -1131,60 +1139,65 @@ export default function MeScreen() {
           </Pressable>
           {/* Pro 对你而言 calendar — a GENUINELY personal feed: the day overlaid
               with YOUR 用神/忌神/六冲, leading with where it DIVERGES from the
-              universal 黄历 (that divergence is the 专属 value). */}
-          <Pressable
-            onPress={() => {
-              if (!isPro) {
-                setCalPaywallOpen(true)
-                return
-              }
-              if (!computedSolarDate) {
-                setEditingBirth(true)
-                return
-              }
-              // Await the result so a failed sign/open isn't silent ("点击没反应").
-              // Pass the VALIDATED computedSolarDate (birthValid guards it). In DEV
-              // the alert appends the failure tag (rc / sign:NNN / fetch / open) so
-              // the exact client-side cause is visible without digging Metro logs.
-              void (async () => {
-                const r = await openPersonalCalendarSubscribe(computedSolarDate)
-                if (!r.ok) {
-                  Alert.alert(
-                    t.personalCalendarRow,
-                    __DEV__ && r.detail
-                      ? `${t.personalCalendarFailed}\n\n[${r.detail}]`
-                      : t.personalCalendarFailed
-                  )
+              universal 黄历 (that divergence is the 专属 value).
+              Hidden while IAP is off — a Pro-only row must not end in a dead wall. */}
+          {isIapEnabled() ? (
+            <Pressable
+              onPress={() => {
+                if (!isPro) {
+                  setCalPaywallOpen(true)
+                  return
                 }
-              })()
-            }}
-            accessibilityRole='button'
-            accessibilityLabel={t.personalCalendarRow}
-            style={({ pressed }) => ({
-              marginTop: spacing.md,
-              backgroundColor: colors.card,
-              borderRadius: 14,
-              paddingVertical: spacing.md,
-              paddingHorizontal: spacing.lg,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing.md,
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <View style={{ flex: 1, gap: 4 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Text style={{ color: colors.text, fontSize: 15 }}>{t.personalCalendarRow}</Text>
-                {!isPro ? (
-                  <Text style={{ color: colors.accent, fontSize: 9, fontWeight: '700' }}>PRO</Text>
-                ) : null}
+                if (!computedSolarDate) {
+                  setEditingBirth(true)
+                  return
+                }
+                // Await the result so a failed sign/open isn't silent ("点击没反应").
+                // Pass the VALIDATED computedSolarDate (birthValid guards it). In DEV
+                // the alert appends the failure tag (rc / sign:NNN / fetch / open) so
+                // the exact client-side cause is visible without digging Metro logs.
+                void (async () => {
+                  const r = await openPersonalCalendarSubscribe(computedSolarDate)
+                  if (!r.ok) {
+                    Alert.alert(
+                      t.personalCalendarRow,
+                      __DEV__ && r.detail
+                        ? `${t.personalCalendarFailed}\n\n[${r.detail}]`
+                        : t.personalCalendarFailed
+                    )
+                  }
+                })()
+              }}
+              accessibilityRole='button'
+              accessibilityLabel={t.personalCalendarRow}
+              style={({ pressed }) => ({
+                marginTop: spacing.md,
+                backgroundColor: colors.card,
+                borderRadius: 14,
+                paddingVertical: spacing.md,
+                paddingHorizontal: spacing.lg,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.md,
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <View style={{ flex: 1, gap: 4 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={{ color: colors.text, fontSize: 15 }}>{t.personalCalendarRow}</Text>
+                  {!isPro ? (
+                    <Text style={{ color: colors.accent, fontSize: 9, fontWeight: '700' }}>
+                      PRO
+                    </Text>
+                  ) : null}
+                </View>
+                <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
+                  {t.personalCalendarHint}
+                </Text>
               </View>
-              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
-                {t.personalCalendarHint}
-              </Text>
-            </View>
-            <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
-          </Pressable>
+              <ChevronRightIcon size={16} color={colors.dim} strokeWidth={1.4} />
+            </Pressable>
+          ) : null}
         </View>
 
         <AuspicePaywallSheet visible={calPaywallOpen} onClose={() => setCalPaywallOpen(false)} />
@@ -1229,13 +1242,19 @@ export default function MeScreen() {
                 divider
                 disabled
               />
-              <SettingsRow
-                label={t.manageSubscription}
-                onPress={() => {
-                  void Linking.openURL('https://apps.apple.com/account/subscriptions')
-                }}
-                divider
-              />
+              {isIapEnabled() ? (
+                <SettingsRow
+                  label={t.manageSubscription}
+                  onPress={() => {
+                    void Linking.openURL(
+                      Platform.OS === 'android'
+                        ? 'https://play.google.com/store/account/subscriptions'
+                        : 'https://apps.apple.com/account/subscriptions'
+                    )
+                  }}
+                  divider
+                />
+              ) : null}
               <SettingsRow
                 label={deletingAccount ? t.deleteAccountWorking : t.deleteAccount}
                 danger

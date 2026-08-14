@@ -158,15 +158,20 @@ private fun ForYouLine(
           !fit.isNullOrBlank() -> "$label · $fit"
           else -> label
         },
-      style = TextStyle(color = YuunColors.text, fontSize = 12.sp, fontWeight = FontWeight.Bold),
+      style =
+        TextStyle(
+          color = YuunColors.text,
+          fontSize = WidgetSpec.MEDIUM_FOR_YOU_FONT.sp,
+          fontWeight = FontWeight.Bold,
+        ),
       maxLines = 1,
     )
     if (withSummary && !fitSummary.isNullOrBlank()) {
       Spacer(GlanceModifier.height(4.dp))
       Text(
         text = fitSummary,
-        style = TextStyle(color = YuunColors.secondary, fontSize = 12.sp),
-        maxLines = 3,
+        style = TextStyle(color = YuunColors.secondary, fontSize = WidgetSpec.LARGE_FOR_YOU_SUMMARY_FONT.sp),
+        maxLines = WidgetSpec.LARGE_FOR_YOU_SUMMARY_LINES,
       )
     }
   }
@@ -182,16 +187,16 @@ private fun YuunWidgetContent(
   val padV: Dp
   when (family) {
     WidgetFamily.Small -> {
-      padH = 12.dp
-      padV = 12.dp
+      padH = WidgetSpec.SMALL_PADDING.dp
+      padV = WidgetSpec.SMALL_PADDING.dp
     }
     WidgetFamily.Medium -> {
-      padH = 16.dp
-      padV = 14.dp
+      padH = WidgetSpec.MEDIUM_PADDING.dp
+      padV = WidgetSpec.MEDIUM_PADDING.dp
     }
     WidgetFamily.Large -> {
-      padH = 18.dp
-      padV = 18.dp
+      padH = WidgetSpec.LARGE_PADDING.dp
+      padV = WidgetSpec.LARGE_PADDING.dp
     }
   }
 
@@ -246,23 +251,33 @@ private fun SmallLayout(
     Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
       Text(
         text = weekdayChip(day.date, parsed.locale),
-        style = TextStyle(color = YuunColors.secondary, fontSize = 10.sp, fontWeight = FontWeight.Medium),
+        style =
+          TextStyle(
+            color = YuunColors.secondary,
+            fontSize = WidgetSpec.SMALL_WEEKDAY_FONT.sp,
+            fontWeight = FontWeight.Medium,
+          ),
         maxLines = 1,
       )
       Spacer(GlanceModifier.defaultWeight())
-      MoonLogo(phase = day.moonPhase, dp = 40)
+      MoonLogo(phase = day.moonPhase, dp = WidgetSpec.SMALL_MOON)
     }
     Spacer(GlanceModifier.height(5.dp))
     Row(verticalAlignment = Alignment.Bottom) {
       Text(
         text = day.ganZhi,
-        style = TextStyle(color = YuunColors.text, fontSize = 22.sp, fontWeight = FontWeight.Normal),
+        style =
+          TextStyle(
+            color = YuunColors.text,
+            fontSize = WidgetSpec.SMALL_GANZHI_FONT.sp,
+            fontWeight = FontWeight.Normal,
+          ),
         maxLines = 1,
       )
       Spacer(GlanceModifier.width(6.dp))
       Text(
         text = lunarOnly(day, parsed.chrome),
-        style = TextStyle(color = YuunColors.secondary, fontSize = 10.sp),
+        style = TextStyle(color = YuunColors.secondary, fontSize = WidgetSpec.SMALL_LUNAR_FONT.sp),
         maxLines = 1,
       )
     }
@@ -276,9 +291,9 @@ private fun SmallLayout(
         avoidLabel = parsed.chrome.avoid,
         goodText = day.yiShort.ifBlank { day.yi },
         avoidText = day.jiShort,
-        goodLines = 1,
-        avoidLines = 1,
-        fontSize = 11.sp,
+        goodLines = WidgetSpec.SMALL_GOOD_LINES_WITH_FIT,
+        avoidLines = WidgetSpec.SMALL_AVOID_LINES_WITH_FIT,
+        fontSize = WidgetSpec.SMALL_YIJI_FONT.sp,
       )
     } else {
       YiJiStacked(
@@ -286,9 +301,9 @@ private fun SmallLayout(
         avoidLabel = parsed.chrome.avoid,
         goodText = day.yi.ifBlank { day.yiShort },
         avoidText = day.jiShort,
-        goodLines = 2,
-        avoidLines = 1,
-        fontSize = 11.sp,
+        goodLines = WidgetSpec.SMALL_GOOD_LINES,
+        avoidLines = WidgetSpec.SMALL_AVOID_LINES,
+        fontSize = WidgetSpec.SMALL_YIJI_FONT.sp,
       )
     }
   }
@@ -301,13 +316,18 @@ private fun MediumLayout(
 ) {
   Column(modifier = GlanceModifier.fillMaxSize()) {
     Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-      MoonLogo(phase = day.moonPhase, dp = 46)
+      MoonLogo(phase = day.moonPhase, dp = WidgetSpec.MEDIUM_MOON)
       Spacer(GlanceModifier.width(12.dp))
       Column(modifier = GlanceModifier.defaultWeight()) {
         Row(verticalAlignment = Alignment.Bottom) {
           Text(
             text = day.ganZhi,
-            style = TextStyle(color = YuunColors.text, fontSize = 24.sp, fontWeight = FontWeight.Normal),
+            style =
+              TextStyle(
+                color = YuunColors.text,
+                fontSize = WidgetSpec.MEDIUM_GANZHI_FONT.sp,
+                fontWeight = FontWeight.Normal,
+              ),
             maxLines = 1,
           )
           val pinyin = day.ganZhiPinyin?.takeIf { it.isNotBlank() && isEnglish(parsed.locale) }
@@ -315,14 +335,19 @@ private fun MediumLayout(
             Spacer(GlanceModifier.width(6.dp))
             Text(
               text = pinyin,
-              style = TextStyle(color = YuunColors.tertiary, fontSize = 11.sp),
+              style = TextStyle(color = YuunColors.tertiary, fontSize = WidgetSpec.MEDIUM_PINYIN_FONT.sp),
               maxLines = 1,
             )
           }
         }
         Text(
           text = calendarRow(day, parsed.chrome, parsed.locale),
-          style = TextStyle(color = YuunColors.secondary, fontSize = 10.sp, fontWeight = FontWeight.Medium),
+          style =
+            TextStyle(
+              color = YuunColors.secondary,
+              fontSize = WidgetSpec.MEDIUM_CALENDAR_FONT.sp,
+              fontWeight = FontWeight.Medium,
+            ),
           maxLines = 1,
         )
       }
@@ -330,14 +355,14 @@ private fun MediumLayout(
         Spacer(GlanceModifier.width(6.dp))
         Text(
           text = day.solarTerm,
-          style = TextStyle(color = YuunColors.tertiary, fontSize = 10.sp),
-          maxLines = 2,
+          style = TextStyle(color = YuunColors.tertiary, fontSize = WidgetSpec.MEDIUM_TERM_FONT.sp),
+          maxLines = WidgetSpec.MEDIUM_TERM_MAX_LINES,
         )
       }
     }
-    Spacer(GlanceModifier.height(9.dp))
+    Spacer(GlanceModifier.height(WidgetSpec.MEDIUM_HAIRLINE_MARGIN.dp))
     Hairline()
-    Spacer(GlanceModifier.height(9.dp))
+    Spacer(GlanceModifier.height(WidgetSpec.MEDIUM_HAIRLINE_MARGIN.dp))
     if (!day.fit.isNullOrBlank() || !day.fitSummary.isNullOrBlank()) {
       ForYouLine(day = day, parsed = parsed, withSummary = false)
       Spacer(GlanceModifier.height(8.dp))
@@ -346,16 +371,16 @@ private fun MediumLayout(
       Column(modifier = GlanceModifier.defaultWeight()) {
         Text(
           text = "${parsed.chrome.good} ${day.yi}",
-          style = TextStyle(color = YuunColors.text, fontSize = 12.sp),
-          maxLines = 2,
+          style = TextStyle(color = YuunColors.text, fontSize = WidgetSpec.MEDIUM_YIJI_FONT.sp),
+          maxLines = WidgetSpec.MEDIUM_GOOD_LINES,
         )
       }
-      Spacer(GlanceModifier.width(14.dp))
+      Spacer(GlanceModifier.width(WidgetSpec.MEDIUM_COLUMN_GAP.dp))
       Column(modifier = GlanceModifier.defaultWeight()) {
         Text(
           text = "${parsed.chrome.avoid} ${day.ji}",
-          style = TextStyle(color = YuunColors.secondary, fontSize = 12.sp),
-          maxLines = 2,
+          style = TextStyle(color = YuunColors.secondary, fontSize = WidgetSpec.MEDIUM_YIJI_FONT.sp),
+          maxLines = WidgetSpec.MEDIUM_AVOID_LINES,
         )
       }
     }
@@ -373,13 +398,23 @@ private fun LargeLayout(
       Column(modifier = GlanceModifier.defaultWeight()) {
         Text(
           text = day.ganZhi,
-          style = TextStyle(color = YuunColors.text, fontSize = 30.sp, fontWeight = FontWeight.Normal),
+          style =
+            TextStyle(
+              color = YuunColors.text,
+              fontSize = WidgetSpec.LARGE_GANZHI_FONT.sp,
+              fontWeight = FontWeight.Normal,
+            ),
           maxLines = 1,
         )
         Spacer(GlanceModifier.height(4.dp))
         Text(
           text = calendarRow(day, parsed.chrome, parsed.locale),
-          style = TextStyle(color = YuunColors.secondary, fontSize = 10.sp, fontWeight = FontWeight.Medium),
+          style =
+            TextStyle(
+              color = YuunColors.secondary,
+              fontSize = WidgetSpec.LARGE_CALENDAR_FONT.sp,
+              fontWeight = FontWeight.Medium,
+            ),
           maxLines = 1,
         )
         val meta = metaRow(day, parsed.locale)
@@ -387,36 +422,36 @@ private fun LargeLayout(
           Spacer(GlanceModifier.height(2.dp))
           Text(
             text = meta,
-            style = TextStyle(color = YuunColors.tertiary, fontSize = 11.sp),
+            style = TextStyle(color = YuunColors.tertiary, fontSize = WidgetSpec.LARGE_META_FONT.sp),
             maxLines = 1,
           )
         }
       }
       Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        MoonLogo(phase = day.moonPhase, dp = 58)
+        MoonLogo(phase = day.moonPhase, dp = WidgetSpec.LARGE_MOON)
         Spacer(GlanceModifier.height(4.dp))
         Text(
           text = moonCaption(day.moonPhase, parsed.chrome.moonPhaseNames),
-          style = TextStyle(color = YuunColors.tertiary, fontSize = 9.sp),
+          style = TextStyle(color = YuunColors.tertiary, fontSize = WidgetSpec.LARGE_MOON_CAPTION_FONT.sp),
           maxLines = 1,
         )
       }
     }
-    Spacer(GlanceModifier.height(8.dp))
+    Spacer(GlanceModifier.height(WidgetSpec.LARGE_HAIRLINE_MARGIN.dp))
     Hairline()
-    Spacer(GlanceModifier.height(8.dp))
+    Spacer(GlanceModifier.height(WidgetSpec.LARGE_HAIRLINE_MARGIN.dp))
     YiJiStacked(
       goodLabel = parsed.chrome.good,
       avoidLabel = parsed.chrome.avoid,
       goodText = day.yiLong,
       avoidText = day.jiLong,
-      goodLines = 2,
-      avoidLines = 2,
-      fontSize = 14.sp,
+      goodLines = WidgetSpec.LARGE_GOOD_LINES,
+      avoidLines = WidgetSpec.LARGE_AVOID_LINES,
+      fontSize = WidgetSpec.LARGE_YIJI_FONT.sp,
     )
-    Spacer(GlanceModifier.height(8.dp))
+    Spacer(GlanceModifier.height(WidgetSpec.LARGE_HAIRLINE_MARGIN.dp))
     Hairline()
-    Spacer(GlanceModifier.height(8.dp))
+    Spacer(GlanceModifier.height(WidgetSpec.LARGE_HAIRLINE_MARGIN.dp))
     Column(modifier = GlanceModifier.fillMaxWidth()) {
       ForYouLine(day = day, parsed = parsed, withSummary = true)
       val tip = day.dayTip
@@ -426,7 +461,12 @@ private fun LargeLayout(
         if (label.isNotBlank() && !isEnglish(parsed.locale)) {
           Text(
             text = label,
-            style = TextStyle(color = YuunColors.tertiary, fontSize = 9.sp, fontWeight = FontWeight.Bold),
+            style =
+              TextStyle(
+                color = YuunColors.tertiary,
+                fontSize = WidgetSpec.LARGE_TIP_LABEL_FONT.sp,
+                fontWeight = FontWeight.Bold,
+              ),
             maxLines = 1,
           )
           Spacer(GlanceModifier.height(4.dp))
@@ -436,9 +476,9 @@ private fun LargeLayout(
           style =
             TextStyle(
               color = if (day.fit.isNullOrBlank()) YuunColors.text else YuunColors.secondary,
-              fontSize = 12.sp,
+              fontSize = WidgetSpec.LARGE_TIP_FONT.sp,
             ),
-          maxLines = 3,
+          maxLines = WidgetSpec.LARGE_TIP_LINES,
         )
       }
     }

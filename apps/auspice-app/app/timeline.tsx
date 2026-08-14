@@ -50,8 +50,10 @@ import {
   type TimelinePayload,
 } from '@/lib/api'
 import { getAuspiceBirthInfo } from '@/lib/birth'
+import { FLAGSHIP_LIVE } from '@/lib/config'
 import { getAuspiceDeviceId } from '@/lib/device'
 import { useStrings } from '@/lib/i18n-context'
+import { isIapEnabled } from '@/lib/iap-enabled'
 import { useImageShare } from '@/lib/imageShare'
 import { forwardLiuyue, type LiuyueCell } from '@/lib/liuyue'
 import { shareTaglineFor, timelineShareChrome, timelineShareUrl } from '@/lib/share'
@@ -478,38 +480,45 @@ export default function TimelineScreen() {
         {/* 你是谁 · 完整命书 — the WHO to the timeline's WHEN. The 命书 (八字+紫微
             chaptered deep-read) is the same chart read as identity; it lives here,
             beside its time-axis view, rather than competing for a Today-home CTA.
-            /reading guards its own no-birth case, so this is always safe to tap. */}
-        <Pressable
-          onPress={() => router.push('/reading')}
-          accessibilityRole='button'
-          accessibilityLabel={t.personal.readingTitle}
-          style={({ pressed }) => ({
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.md,
-            backgroundColor: colors.card,
-            borderRadius: 14,
-            paddingVertical: spacing.md,
-            paddingHorizontal: spacing.lg,
-            opacity: pressed ? 0.6 : 1,
-          })}
-        >
-          <BookOpen size={20} color={colors.accent} strokeWidth={1.6} />
-          <View style={{ flex: 1, gap: 3 }}>
-            <Text style={{ color: colors.text, fontSize: 15, fontWeight: '500' }}>
-              {t.personal.readingTitle}
-            </Text>
-            <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 16 }}>
-              {t.personal.readingHint}
-            </Text>
-          </View>
-          <ChevronRight size={16} color={colors.dim} strokeWidth={1.6} />
-        </Pressable>
+            /reading guards its own no-birth case, so this is always safe to tap.
+            HIDDEN until Yuel ships — the full 命书 belongs to Yuel; without it this
+            entry funnels into a placeholder (same policy as LibrarySection). */}
+        {FLAGSHIP_LIVE.yuan ? (
+          <Pressable
+            onPress={() => router.push('/reading')}
+            accessibilityRole='button'
+            accessibilityLabel={t.personal.readingTitle}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.md,
+              backgroundColor: colors.card,
+              borderRadius: 14,
+              paddingVertical: spacing.md,
+              paddingHorizontal: spacing.lg,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <BookOpen size={20} color={colors.accent} strokeWidth={1.6} />
+            <View style={{ flex: 1, gap: 3 }}>
+              <Text style={{ color: colors.text, fontSize: 15, fontWeight: '500' }}>
+                {t.personal.readingTitle}
+              </Text>
+              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 16 }}>
+                {t.personal.readingHint}
+              </Text>
+            </View>
+            <ChevronRight size={16} color={colors.dim} strokeWidth={1.6} />
+          </Pressable>
+        ) : null}
 
         {/* 本月深度 — the "this month" HEAD anchor (ADR-0026): deterministic 本月运势 +
             the Pro deep-read (the one tangible LLM, borrowed from Yuel). Self-gates on
-            birth, and it's where the month-start node push already lands (/timeline). */}
-        <MonthlyDepthCard isPro={isPro} locale={locale} onNeedPro={() => setPaywallOpen(true)} />
+            birth, and it's where the month-start node push already lands (/timeline).
+            Pro-only card — hidden while IAP is off (no dead wall). */}
+        {isIapEnabled() ? (
+          <MonthlyDepthCard isPro={isPro} locale={locale} onNeedPro={() => setPaywallOpen(true)} />
+        ) : null}
 
         {state.kind === 'loading' ? (
           <View style={{ paddingVertical: spacing['3xl'], alignItems: 'center' }}>
@@ -536,7 +545,9 @@ export default function TimelineScreen() {
             drill={drill}
             onSelect={handleSelect}
             onSelectDayun={onSelectDayun}
-            onLockedTap={() => setPaywallOpen(true)}
+            // Locked 大运 taps open the paywall only when IAP exists; without IAP
+            // the ghosted decades stay inert (free tier shows the living 大运 only).
+            onLockedTap={isIapEnabled() ? () => setPaywallOpen(true) : () => {}}
             colors={colors}
             spacing={spacing}
             canvasWidth={canvasWidth}
@@ -1000,8 +1011,12 @@ function Body({
 
       {/* Free: advertise the Pro 流月 (monthly) weave under the reading, for THIS
           year + ahead — restores the value cue the removed popover used to carry,
-          without blocking the year column (2026-06 feedback). */}
-      {!isPro && drill?.selectedYear != null && drill.selectedYear >= new Date().getFullYear() ? (
+          without blocking the year column (2026-06 feedback).
+          Hidden while IAP is off — the tap would dead-end in a "coming soon" wall. */}
+      {!isPro &&
+      isIapEnabled() &&
+      drill?.selectedYear != null &&
+      drill.selectedYear >= new Date().getFullYear() ? (
         <Pressable
           onPress={onLockedTap}
           accessibilityRole='button'
@@ -1031,8 +1046,9 @@ function Body({
         <ZejiLink year={futureLiunianYear} t={t} colors={colors} spacing={spacing} />
       ) : null}
 
-      {/* ONE unlock — the only paywall on the page. */}
-      {!isPro ? (
+      {/* ONE unlock — the only paywall on the page. Hidden while IAP is off:
+          the free build shows the living 大运 and never a dead "coming soon". */}
+      {!isPro && isIapEnabled() ? (
         <Pressable
           onPress={onLockedTap}
           accessibilityRole='button'

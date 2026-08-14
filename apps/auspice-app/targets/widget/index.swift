@@ -749,24 +749,24 @@ struct AuspiceWidgetEntryView: View {
     VStack(alignment: .leading, spacing: 0) {
       HStack(alignment: .center) {
         Text(weekdayChip(d))
-          .font(.system(size: 10, weight: .semibold))
+          .font(.system(size: WidgetSpec.smallWeekdayFont, weight: .semibold))
           .tracking(0.4)
           .foregroundColor(palette.secondary)
           .lineLimit(1)
         Spacer(minLength: 4)
         YuunPhaseLogo(phase: phaseOf(d), scheme: palette.scheme)
-          .frame(width: 40, height: 40)
+          .frame(width: WidgetSpec.smallMoon, height: WidgetSpec.smallMoon)
       }
 
       HStack(alignment: .firstTextBaseline, spacing: 6) {
         Text(ganZhiPrimary(d))
-          .font(.system(size: 22, weight: .light))
+          .font(.system(size: WidgetSpec.smallGanZhiFont, weight: .light))
           .tracking(1.5)
           .foregroundColor(palette.text)
           .lineLimit(1)
-          .minimumScaleFactor(0.75)
+          .minimumScaleFactor(WidgetSpec.smallGanZhiMinScale)
         Text(lunarOnly(d))
-          .font(.system(size: 10))
+          .font(.system(size: WidgetSpec.smallLunarFont))
           .foregroundColor(palette.secondary)
           .lineLimit(1)
           .minimumScaleFactor(0.7)
@@ -778,38 +778,38 @@ struct AuspiceWidgetEntryView: View {
       // Good: up to 2 lines; Avoid: 1 line (keep small compact).
       yiJiBlock(
         d,
-        yiSize: 11,
-        goodLines: 2,
-        avoidLines: 1,
+        yiSize: WidgetSpec.smallYijiFont,
+        goodLines: WidgetSpec.smallGoodLines,
+        avoidLines: WidgetSpec.smallAvoidLines,
         goodVariant: .plain,
         avoidVariant: .short
       )
     }
-    .padding(12)
+    .padding(WidgetSpec.smallPadding)
   }
 
   private func medium(_ d: SharedDay) -> some View {
     VStack(alignment: .leading, spacing: 0) {
       HStack(alignment: .center, spacing: 12) {
         YuunPhaseLogo(phase: phaseOf(d), scheme: palette.scheme)
-          .frame(width: 46, height: 46)
+          .frame(width: WidgetSpec.mediumMoon, height: WidgetSpec.mediumMoon)
         VStack(alignment: .leading, spacing: 2) {
           HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(ganZhiPrimary(d))
-              .font(.system(size: 27, weight: .light))
+              .font(.system(size: WidgetSpec.mediumGanZhiFont, weight: .light))
               .tracking(2)
               .foregroundColor(palette.text)
               .lineLimit(1)
-              .minimumScaleFactor(0.8)
+              .minimumScaleFactor(WidgetSpec.mediumGanZhiMinScale)
             if let pinyin = ganZhiPinyinGloss(d) {
               Text(pinyin)
-                .font(.system(size: 11))
+                .font(.system(size: WidgetSpec.mediumPinyinFont))
                 .foregroundColor(palette.tertiary)
                 .lineLimit(1)
             }
           }
           Text(calendarRow(d))
-            .font(.system(size: 10, weight: .medium))
+            .font(.system(size: WidgetSpec.mediumCalendarFont, weight: .medium))
             .foregroundColor(palette.secondary)
             .lineLimit(1)
             .minimumScaleFactor(0.75)
@@ -817,28 +817,28 @@ struct AuspiceWidgetEntryView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         if !d.solarTerm.isEmpty {
           Text(d.solarTerm)
-            .font(.system(size: 10))
+            .font(.system(size: WidgetSpec.mediumTermFont))
             .foregroundColor(palette.tertiary)
-            .lineLimit(2)
+            .lineLimit(WidgetSpec.mediumTermMaxLines)
             .multilineTextAlignment(.trailing)
-            .frame(maxWidth: 58, alignment: .trailing)
+            .frame(maxWidth: WidgetSpec.mediumTermMaxWidth, alignment: .trailing)
         }
       }
 
       Rectangle()
         .fill(palette.separator)
         .frame(height: 0.5)
-        .padding(.vertical, 9)
+        .padding(.vertical, WidgetSpec.mediumHairlineMargin)
 
       // Two-column 宜忌 — each ≤2 lines.
-      HStack(alignment: .top, spacing: 14) {
+      HStack(alignment: .top, spacing: WidgetSpec.mediumColumnGap) {
         yiJiRow(
           label: goodLabel.isEmpty ? (isEn ? "Good" : "宜") : goodLabel,
           text: yiText(d, variant: .plain),
           labelColor: palette.text,
           textColor: palette.text,
-          yiSize: 12,
-          maxLines: 2,
+          yiSize: WidgetSpec.mediumYijiFont,
+          maxLines: WidgetSpec.mediumGoodLines,
           scale: 0.85
         )
         yiJiRow(
@@ -846,14 +846,13 @@ struct AuspiceWidgetEntryView: View {
           text: jiText(d, variant: .plain),
           labelColor: palette.text,
           textColor: palette.secondary,
-          yiSize: 12,
-          maxLines: 2,
+          yiSize: WidgetSpec.mediumYijiFont,
+          maxLines: WidgetSpec.mediumAvoidLines,
           scale: 0.85
         )
       }
     }
-    .padding(.horizontal, 16)
-    .padding(.vertical, 14)
+    .padding(WidgetSpec.mediumPadding)
   }
 
   private func large(_ d: SharedDay) -> some View {
@@ -862,26 +861,26 @@ struct AuspiceWidgetEntryView: View {
         VStack(alignment: .leading, spacing: 4) {
           HStack(alignment: .firstTextBaseline, spacing: 7) {
             Text(ganZhiPrimary(d))
-              .font(.system(size: 34, weight: .light))
+              .font(.system(size: WidgetSpec.largeGanZhiFont, weight: .light))
               .tracking(2)
               .foregroundColor(palette.text)
               .lineLimit(1)
-              .minimumScaleFactor(0.85)
+              .minimumScaleFactor(WidgetSpec.largeGanZhiMinScale)
             if let pinyin = ganZhiPinyinGloss(d) {
               Text(pinyin)
-                .font(.system(size: 12))
+                .font(.system(size: WidgetSpec.largePinyinFont))
                 .foregroundColor(palette.secondary)
                 .lineLimit(1)
             }
           }
           Text(calendarRow(d))
-            .font(.system(size: 10, weight: .medium))
+            .font(.system(size: WidgetSpec.largeCalendarFont, weight: .medium))
             .foregroundColor(palette.secondary)
             .lineLimit(1)
           HStack(spacing: 6) {
             if !d.solarTerm.isEmpty {
               Text(d.solarTerm)
-                .font(.system(size: 11))
+                .font(.system(size: WidgetSpec.largeMetaFont))
                 .foregroundColor(palette.tertiary)
                 .lineLimit(1)
             }
@@ -890,14 +889,14 @@ struct AuspiceWidgetEntryView: View {
                 Text("·").foregroundColor(palette.tertiary)
               }
               Text("\(officer)日")
-                .font(.system(size: 11))
+                .font(.system(size: WidgetSpec.largeMetaFont))
                 .foregroundColor(palette.tertiary)
                 .lineLimit(1)
             }
             if !isEn, let mansion = d.mansion {
               Text("·").foregroundColor(palette.tertiary)
               Text("\(mansion)\(d.clashShengxiao.map { " · 冲\($0)" } ?? "")")
-                .font(.system(size: 11))
+                .font(.system(size: WidgetSpec.largeMetaFont))
                 .foregroundColor(palette.tertiary)
                 .lineLimit(1)
             }
@@ -908,9 +907,9 @@ struct AuspiceWidgetEntryView: View {
 
         VStack(spacing: 4) {
           YuunPhaseLogo(phase: phaseOf(d), scheme: palette.scheme)
-            .frame(width: 58, height: 58)
+            .frame(width: WidgetSpec.largeMoon, height: WidgetSpec.largeMoon)
           Text(moonCaption(phase: phaseOf(d), names: appChrome?.moonPhaseNames))
-            .font(.system(size: 9))
+            .font(.system(size: WidgetSpec.largeMoonCaptionFont))
             .foregroundColor(palette.tertiary)
             .lineLimit(1)
             .minimumScaleFactor(0.8)
@@ -921,9 +920,9 @@ struct AuspiceWidgetEntryView: View {
 
       yiJiBlock(
         d,
-        yiSize: 14,
-        goodLines: 2,
-        avoidLines: 2,
+        yiSize: WidgetSpec.largeYijiFont,
+        goodLines: WidgetSpec.largeGoodLines,
+        avoidLines: WidgetSpec.largeAvoidLines,
         goodVariant: .long,
         avoidVariant: .long
       )
@@ -933,14 +932,14 @@ struct AuspiceWidgetEntryView: View {
       if d.fit != nil || d.fitSummary != nil {
         VStack(alignment: .leading, spacing: 4) {
           Text(isEn ? forYouLabel : "\(forYouLabel) · \(d.fit ?? "")")
-            .font(.system(size: 12, weight: .bold))
+            .font(.system(size: WidgetSpec.largeForYouFont, weight: .bold))
             .foregroundColor(palette.text)
             .lineLimit(1)
           if let summary = d.fitSummary, !summary.isEmpty {
             Text(summary)
-              .font(.system(size: 12))
+              .font(.system(size: WidgetSpec.largeForYouSummaryFont))
               .foregroundColor(palette.secondary)
-              .lineLimit(3)
+              .lineLimit(WidgetSpec.largeForYouSummaryLines)
           }
         }
       }
@@ -949,20 +948,20 @@ struct AuspiceWidgetEntryView: View {
         VStack(alignment: .leading, spacing: 4) {
           if let label = resolvedTipLabel(d) {
             Text(label)
-              .font(.system(size: 9, weight: .bold))
+              .font(.system(size: WidgetSpec.largeTipLabelFont, weight: .bold))
               .tracking(1)
               .foregroundColor(palette.tertiary)
               .lineLimit(1)
           }
           Text(tip)
-            .font(.system(size: 12))
+            .font(.system(size: WidgetSpec.largeTipFont))
             .foregroundColor(d.fit == nil ? palette.text : palette.secondary)
-            .lineLimit(3)
+            .lineLimit(WidgetSpec.largeTipLines)
             .truncationMode(.tail)
         }
       }
     }
-    .padding(18)
+    .padding(WidgetSpec.largePadding)
   }
 
   private func circular(_ d: SharedDay) -> some View {

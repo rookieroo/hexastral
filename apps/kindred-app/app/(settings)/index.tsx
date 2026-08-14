@@ -8,7 +8,7 @@ import { Card } from '@zhop/core-ui'
 import { kindredDark, kindredSpacing, kindredType } from '@zhop/hexastral-tokens/kindred'
 import * as Linking from 'expo-linking'
 import { useRouter } from 'expo-router'
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { EmailVerifyModal } from '@/components/EmailVerifyModal'
@@ -134,8 +134,15 @@ function SettingsRow({
 export default function SettingsScreen() {
   const router = useRouter()
   const locale = useMemo(() => resolveLocale(), [])
-  const { userId, userEmail, hasLinkedSignIn, signOut, deleteAccount, refreshProfile, setUserEmail } =
-    useAuth()
+  const {
+    userId,
+    userEmail,
+    hasLinkedSignIn,
+    signOut,
+    deleteAccount,
+    refreshProfile,
+    setUserEmail,
+  } = useAuth()
   const [signInOpen, setSignInOpen] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
   const [emailModalOpen, setEmailModalOpen] = useState(false)
@@ -219,19 +226,23 @@ export default function SettingsScreen() {
   }, [refreshProfile])
 
   const handleSignOut = () => {
-    Alert.alert(t(locale, 'settings.signOut.confirmTitle'), t(locale, 'settings.signOut.confirmBody'), [
-      { text: t(locale, 'settings.deleteAccount.cancel'), style: 'cancel' },
-      {
-        text: t(locale, 'settings.signOut'),
-        style: 'destructive',
-        onPress: () => {
-          void (async () => {
-            await signOut()
-            router.replace('/')
-          })()
+    Alert.alert(
+      t(locale, 'settings.signOut.confirmTitle'),
+      t(locale, 'settings.signOut.confirmBody'),
+      [
+        { text: t(locale, 'settings.deleteAccount.cancel'), style: 'cancel' },
+        {
+          text: t(locale, 'settings.signOut'),
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              await signOut()
+              router.replace('/')
+            })()
+          },
         },
-      },
-    ])
+      ]
+    )
   }
 
   const handleDeleteAccount = () => {
@@ -317,7 +328,9 @@ export default function SettingsScreen() {
               onPress={() => setEmailModalOpen(true)}
               trailing={
                 <Text style={[kindredType.caption, { color: kindredDark.accent }]}>
-                  {userEmail ? t(locale, 'settings.email.change') : t(locale, 'settings.email.link')}
+                  {userEmail
+                    ? t(locale, 'settings.email.change')
+                    : t(locale, 'settings.email.link')}
                 </Text>
               }
             />
@@ -340,10 +353,7 @@ export default function SettingsScreen() {
                 }
               />
             ) : (
-              <SettingsRow
-                label={t(locale, 'signIn.title')}
-                onPress={() => setSignInOpen(true)}
-              />
+              <SettingsRow label={t(locale, 'signIn.title')} onPress={() => setSignInOpen(true)} />
             )}
           </Card>
         </View>
@@ -439,7 +449,9 @@ export default function SettingsScreen() {
         </View>
 
         {hasLinkedSignIn ? (
-          <View style={{ alignItems: 'center', gap: kindredSpacing.lg, marginTop: kindredSpacing.md }}>
+          <View
+            style={{ alignItems: 'center', gap: kindredSpacing.lg, marginTop: kindredSpacing.md }}
+          >
             <Pressable
               onPress={handleDeleteAccount}
               hitSlop={12}

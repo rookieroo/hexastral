@@ -21,6 +21,7 @@ import { cultureSnippetForHome, resolveCultureTargetId } from '@/lib/culture-pre
 import { ganzhiPinyin } from '@/lib/ganzhi-pinyin'
 import type { Locale, RokuyoStrings } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
+import { isIapEnabled } from '@/lib/iap-enabled'
 import { useImageShare } from '@/lib/imageShare'
 import { buildLuckyGuide, favorableElementOf } from '@/lib/luckyGuide'
 import { dayShareUrl, shareTaglineFor } from '@/lib/share'
@@ -189,7 +190,7 @@ export function DayView({
               onPress={() => shareImage(`${shareTaglineFor(locale)}\n${dayShareUrl(date, locale)}`)}
               hitSlop={12}
               accessibilityRole='button'
-              accessibilityLabel='Share'
+              accessibilityLabel={t.shareToday}
               style={({ pressed }) => ({
                 minWidth: 44,
                 minHeight: 44,
@@ -353,10 +354,14 @@ export function DayView({
         ganZhi={day.ganZhi}
         dayMaster={payload.personalization?.dayMaster}
         onClose={() => setExplainField(null)}
-        onUpgrade={() => {
-          setExplainField(null)
-          setPaywallOpen(true)
-        }}
+        onUpgrade={
+          isIapEnabled()
+            ? () => {
+                setExplainField(null)
+                setPaywallOpen(true)
+              }
+            : undefined
+        }
       />
       <AuspicePaywallSheet visible={paywallOpen} onClose={() => setPaywallOpen(false)} />
     </View>

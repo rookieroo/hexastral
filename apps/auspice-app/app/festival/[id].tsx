@@ -56,13 +56,19 @@ function splitPoetryBody(body: string): { quote: string | null; note: string } {
   const cjk = body.match(/「([^」]+)」/)
   if (cjk?.[1]) {
     const quote = cjk[1].trim()
-    const note = body.replace(cjk[0], '').replace(/^[\s—–−\-：:]+/, '').trim()
+    const note = body
+      .replace(cjk[0], '')
+      .replace(/^[\s—–−\-：:]+/, '')
+      .trim()
     return { quote, note: note || body }
   }
   const en = body.match(/[“"]([^”"]+)[”"]/)
   if (en?.[1] && en[1].length >= 12) {
     const quote = en[1].trim()
-    const note = body.replace(en[0], '').replace(/^[\s—–−\-：:]+/, '').trim()
+    const note = body
+      .replace(en[0], '')
+      .replace(/^[\s—–−\-：:]+/, '')
+      .trim()
     return { quote, note: note || body }
   }
   return { quote: null, note: body }
@@ -194,7 +200,9 @@ export default function FestivalDetailScreen() {
                 marginTop: spacing.xs,
               }}
             >
-              <Text style={{ color: colors.text, fontSize: 14, fontWeight: '500' }}>{heroDate}</Text>
+              <Text style={{ color: colors.text, fontSize: 14, fontWeight: '500' }}>
+                {heroDate}
+              </Text>
               {heroSubtitle ? (
                 <Text style={{ color: colors.dim, fontSize: 13 }}>{heroSubtitle}</Text>
               ) : null}
@@ -307,18 +315,15 @@ function CultureSection({
 }
 
 /** Soft paragraph breaks so long 文言 blocks scan like an almanac, not a wall. */
-function BodyParagraphs({
-  text,
-  colors,
-}: {
-  text: string
-  colors: Pick<SectionColors, 'text'>
-}) {
+function BodyParagraphs({ text, colors }: { text: string; colors: Pick<SectionColors, 'text'> }) {
   const chunks = splitBodyChunks(text)
   return (
     <View style={{ gap: 12 }}>
       {chunks.map((chunk, i) => (
-        <Text key={`${i}-${chunk.length}`} style={{ color: colors.text, fontSize: 15, lineHeight: 25 }}>
+        <Text
+          key={`${i}-${chunk.length}`}
+          style={{ color: colors.text, fontSize: 15, lineHeight: 25 }}
+        >
           {chunk}
         </Text>
       ))}

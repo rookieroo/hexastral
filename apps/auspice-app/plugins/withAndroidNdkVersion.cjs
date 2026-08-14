@@ -9,10 +9,7 @@ const path = require('node:path')
 const os = require('node:os')
 
 const requireFromExpo = createRequire(require.resolve('expo/package.json'))
-const {
-  withAppBuildGradle,
-  withProjectBuildGradle,
-} = requireFromExpo('@expo/config-plugins')
+const { withAppBuildGradle, withProjectBuildGradle } = requireFromExpo('@expo/config-plugins')
 
 const NDK_27 = '27.1.12297006'
 const NDK_26 = '26.1.10909125'
@@ -41,53 +38,51 @@ const withAndroidNdkVersion = (config) => {
   const ndkVersion = pickNdkVersion()
   const rootPin = `\next.ndkVersion = "${ndkVersion}"\n`
 
-  config = withProjectBuildGradle(config, (cfg) => {
-    if (cfg.modResults.language !== 'groovy') {
+  return withAppBuildGradle(
+    withProjectBuildGradle(config, (cfg) => {
+      if (cfg.modResults.language !== 'groovy') {
+        return cfg
+      }
+      let contents = cfg.modResults.contents
+      contents = contents.replace(
+        /\n\/\/ Pin after expo-root-project[\s\S]*?ext\.ndkVersion\s*=\s*"[^"]+"\n?/g,
+        '\n'
+      )
+      contents = contents.replace(/\n?ext\.ndkVersion\s*=\s*"[^"]+"\n?/g, '\n')
+      const afterRoot = /apply plugin: "com\.facebook\.react\.rootproject"/
+      if (afterRoot.test(contents)) {
+        contents = contents.replace(
+          afterRoot,
+          `apply plugin: "com.facebook.react.rootproject"${rootPin}`
+        )
+      } else if (contents.includes('apply plugin: "expo-root-project"')) {
+        contents = contents.replace(
+          /apply plugin: "expo-root-project"/,
+          `apply plugin: "expo-root-project"${rootPin}`
+        )
+      } else {
+        contents = `${contents.trimEnd()}${rootPin}`
+      }
+      cfg.modResults.contents = contents
+      return cfg
+    }),
+    (cfg) => {
+      if (cfg.modResults.language !== 'groovy') {
+        return cfg
+      }
+      let contents = cfg.modResults.contents
+      // Prefer rootProject.ext so ExpoRootProject + our pin stay aligned.
+      if (!contents.includes('ndkVersion rootProject.ext.ndkVersion')) {
+        contents = contents.replace(/ndkVersion\s+"[^"]+"/, 'ndkVersion rootProject.ext.ndkVersion')
+        contents = contents.replace(
+          /ndkVersion\s+rootProject\.ext\.ndkVersion/,
+          'ndkVersion rootProject.ext.ndkVersion'
+        )
+      }
+      cfg.modResults.contents = contents
       return cfg
     }
-    let contents = cfg.modResults.contents
-    contents = contents.replace(
-      /\n\/\/ Pin after expo-root-project[\s\S]*?ext\.ndkVersion\s*=\s*"[^"]+"\n?/g,
-      '\n'
-    )
-    contents = contents.replace(/\n?ext\.ndkVersion\s*=\s*"[^"]+"\n?/g, '\n')
-    const afterRoot = /apply plugin: "com\.facebook\.react\.rootproject"/
-    if (afterRoot.test(contents)) {
-      contents = contents.replace(
-        afterRoot,
-        `apply plugin: "com.facebook.react.rootproject"${rootPin}`
-      )
-    } else if (contents.includes('apply plugin: "expo-root-project"')) {
-      contents = contents.replace(
-        /apply plugin: "expo-root-project"/,
-        `apply plugin: "expo-root-project"${rootPin}`
-      )
-    } else {
-      contents = `${contents.trimEnd()}${rootPin}`
-    }
-    cfg.modResults.contents = contents
-    return cfg
-  })
-
-  return withAppBuildGradle(config, (cfg) => {
-    if (cfg.modResults.language !== 'groovy') {
-      return cfg
-    }
-    let contents = cfg.modResults.contents
-    // Prefer rootProject.ext so ExpoRootProject + our pin stay aligned.
-    if (!contents.includes('ndkVersion rootProject.ext.ndkVersion')) {
-      contents = contents.replace(
-        /ndkVersion\s+"[^"]+"/,
-        'ndkVersion rootProject.ext.ndkVersion'
-      )
-      contents = contents.replace(
-        /ndkVersion\s+rootProject\.ext\.ndkVersion/,
-        'ndkVersion rootProject.ext.ndkVersion'
-      )
-    }
-    cfg.modResults.contents = contents
-    return cfg
-  })
+  )
 }
 
 module.exports = withAndroidNdkVersion

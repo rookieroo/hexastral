@@ -7,6 +7,7 @@
  */
 
 import type { YijiVocabularyMode } from '@zhop/astro-core'
+import { writeAndroidWidgetPayload } from '@zhop/widget-kit-android'
 import {
   writeWidgetPayload,
   YUUN_MOON_PHASE_ORDER,
@@ -14,7 +15,6 @@ import {
   type YuunWidgetData,
   type YuunWidgetDay,
 } from '@zhop/widget-kit-ios'
-import { writeAndroidWidgetPayload } from '@zhop/widget-kit-android'
 import { Platform } from 'react-native'
 import {
   buildDailyCardModel,

@@ -56,7 +56,11 @@ import { buildBondMakeIf } from '../lib/relationship-makeif'
 import { explainRelationshipMakeIfWindow } from '../lib/relationship-makeif-explain'
 import { explainRelationshipTimelineNode } from '../lib/relationship-timeline-explain'
 import { mailerClient } from '../lib/service-clients'
-import { gateInterpretationChapters, resolveUnlockedChapterCount, SYNASTRY_TOTAL_CHAPTERS } from '../lib/synastry-chapters'
+import {
+  gateInterpretationChapters,
+  resolveUnlockedChapterCount,
+  SYNASTRY_TOTAL_CHAPTERS,
+} from '../lib/synastry-chapters'
 import { solarDateSchema } from '../lib/validation'
 import { consumeProAllowance, getProAllowanceStatus } from '../services/pro-allowance'
 import { getBondInviteCreditStatus } from '../services/quota'
@@ -352,7 +356,7 @@ async function topUpOneMissingChapter(
     .get()
   if (!seed) return { chapterCount: 0, pending: false, generatedKind: null }
 
-  let have = new Set<string>()
+  const have = new Set<string>()
   try {
     const parsed = JSON.parse(seed.interpretation) as { chapters?: ChapterLike[] }
     const chs = Array.isArray(parsed.chapters) ? parsed.chapters : []

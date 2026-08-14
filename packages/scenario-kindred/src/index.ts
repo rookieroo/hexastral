@@ -37,7 +37,6 @@ export {
 } from './glyphs'
 export * from './hooks'
 export { isCjkLocale, kindredFonts } from './kindredFonts'
-export { SYNASTRY_FREE_CHAPTERS, SYNASTRY_TOTAL_CHAPTERS } from './synastry-chapters'
 export {
   elementName,
   formatLean,
@@ -62,5 +61,6 @@ export {
   TIMELINE_NOTIFY_ID_PREFIX,
   type TimelineNotificationPlanItem,
 } from './lib/timeline-notify'
+export { SYNASTRY_FREE_CHAPTERS, SYNASTRY_TOTAL_CHAPTERS } from './synastry-chapters'
 export { spaceCjkLatin } from './text'
 export * from './types'

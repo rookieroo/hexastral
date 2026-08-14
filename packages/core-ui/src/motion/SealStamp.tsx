@@ -41,8 +41,6 @@ const CHOP_HEIGHT_RATIO = 2.64
 
 // HTML chopDrop easing: cubic-bezier(.3,.7,.25,1)
 const CHOP_EASING = Easing.bezier(0.3, 0.7, 0.25, 1)
-// Other tracks use ease-out
-const OTHER_EASING = Easing.out(Easing.cubic)
 
 export type SealStampProps = {
   /** Trigger animation by setting true. Set false to reset. */

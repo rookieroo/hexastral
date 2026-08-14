@@ -90,6 +90,8 @@ export interface Strings {
   // navigation / discovery
   openMonth: string
   discover: string
+  /** Accessibility label for the Today card share button. */
+  shareToday: string
   // Sprint 2 Tier-1 hero enrichments
   /** Label for the 本命年 emphasis on the year chip (Tier-1 #10). */
   benming: string
@@ -525,8 +527,10 @@ export interface Strings {
     compatYearRequired: string
   }
   watchWidgets: string
-  /** Honest blurb: free public 黄历 on Home / Lock / Watch; birth unlocks For you. */
-  watchWidgetsNote: string
+  /** Android entry/page title — Android ships home widgets only (no lock / watch). */
+  widgetsAndroidTitle: string
+  /** Section label above the iOS Lock Screen slot previews. */
+  widgetLockCaption: string
   /** Caption under the home-widget preview mockup. */
   widgetPreviewCaption: string
   /** Section label above Watch complication hot-zone previews. */
@@ -690,6 +694,7 @@ const zhHans: Strings = {
   terms: '使用条款',
   openMonth: '月历',
   discover: '探索矩阵',
+  shareToday: '分享今日黄历',
   benming: '本命年',
   nextSolarTerm: '下一节气',
   lunarLabel: '农历',
@@ -701,7 +706,6 @@ const zhHans: Strings = {
     '对你而言 · 每条宜忌逐条解读（用神 · 吉色 · 吉时）',
     '完整人生时间线 · 大运 / 流年 / 流月 +「假如」反思探索',
     '自定义日期范围 + 个人黄历日历订阅',
-    '命书深读 · 个人八字 / 紫微参考',
   ],
   proMonthly: '月度订阅',
   proAnnual: '年度订阅',
@@ -714,7 +718,8 @@ const zhHans: Strings = {
   proAutoRenewDisclaimer:
     '订阅将自动续订，除非在当前周期结束前至少 24 小时取消。可在 Apple ID 设置中管理。',
   proComingSoon: '即将推出',
-  proComingSoonBody: 'Yuun Pro 订阅即将上线。当前可继续使用免费黄历与「对你而言」摘要；深化解读上线后即可订阅。',
+  proComingSoonBody:
+    'Yuun Pro 订阅即将上线。当前可继续使用免费黄历与「对你而言」摘要；深化解读上线后即可订阅。',
   legalDisclaimerShort:
     '基于传统历法与命理文化，仅供娱乐、文化探索与个人省思，不构成医疗、法律、财务或人生决策建议。',
   signInToSubscribe: '订阅前请先登录',
@@ -1018,8 +1023,8 @@ const zhHans: Strings = {
     compatYearRequired: '关系合盘需要完整的阳历出生年份 —— 请在上方「出生年份」填写并确认。',
   },
   watchWidgets: '桌面 · 锁屏 · Watch',
-  watchWidgetsNote:
-    '公开黄历免费：主屏小 / 中 / 大、锁屏组件、Apple Watch 都显示当日干支与宜忌（人人相同）。录入生辰后，「对你而言」会出现在 App、桌面组件与 Watch。打开 Yuun 任意一次即可刷新桌面组件；Watch 可独立刷新，首次配对需打开 iPhone 上的 Yuun 一次。Watch 填充系统表盘热区；宜忌优先放矩形两行槽。',
+  widgetsAndroidTitle: '桌面组件',
+  widgetLockCaption: '锁屏组件',
   widgetPreviewCaption: '主屏小组件',
   watchPreviewCaption: 'Watch 热区（系统表盘）',
   watchSlotCircular: '圆形',
@@ -1151,6 +1156,7 @@ const zhHant: Strings = {
   terms: '使用條款',
   openMonth: '月曆',
   discover: '探索矩陣',
+  shareToday: '分享今日黃曆',
   benming: '本命年',
   nextSolarTerm: '下一節氣',
   lunarLabel: '農曆',
@@ -1162,7 +1168,6 @@ const zhHant: Strings = {
     '對你而言 · 每條宜忌逐條解讀（用神 · 吉色 · 吉時）',
     '完整人生時間線 · 大運 / 流年 / 流月 +「假如」反思探索',
     '自訂日期範圍 + 個人黃曆日曆訂閱',
-    '命書深讀 · 個人八字 / 紫微參考',
   ],
   proMonthly: '月度訂閱',
   proAnnual: '年度訂閱',
@@ -1175,7 +1180,8 @@ const zhHant: Strings = {
   proAutoRenewDisclaimer:
     '訂閱將自動續訂，除非在目前週期結束前至少 24 小時取消。可在 Apple ID 設定中管理。',
   proComingSoon: '即將推出',
-  proComingSoonBody: 'Yuun Pro 訂閱即將上線。目前可繼續使用免費黃曆與「對你而言」摘要；深化解讀上線後即可訂閱。',
+  proComingSoonBody:
+    'Yuun Pro 訂閱即將上線。目前可繼續使用免費黃曆與「對你而言」摘要；深化解讀上線後即可訂閱。',
   legalDisclaimerShort:
     '基於傳統曆法與命理文化，僅供娛樂、文化探索與個人省思，不構成醫療、法律、財務或人生決策建議。',
   signInToSubscribe: '訂閱前請先登入',
@@ -1465,8 +1471,8 @@ const zhHant: Strings = {
     compatYearRequired: '關係合盤需要完整的陽曆出生年份 —— 請在上方「出生年份」填寫並確認。',
   },
   watchWidgets: '桌面 · 鎖屏 · Watch',
-  watchWidgetsNote:
-    '公開黃曆免費：主屏小 / 中 / 大、鎖屏元件、Apple Watch 都顯示當日干支與宜忌（人人相同）。錄入生辰後，「對你而言」會出現在 App、桌面元件與 Watch。打開 Yuun 任意一次即可重新整理桌面元件；Watch 可獨立重新整理，首次配對需打開 iPhone 上的 Yuun 一次。Watch 填充系統錶盤熱區；宜忌優先放矩形兩行槽。',
+  widgetsAndroidTitle: '桌面元件',
+  widgetLockCaption: '鎖定畫面元件',
   widgetPreviewCaption: '主屏小組件',
   watchPreviewCaption: 'Watch 熱區（系統錶盤）',
   watchSlotCircular: '圓形',
@@ -1623,6 +1629,7 @@ const ja: Strings = {
   terms: '利用規約',
   openMonth: 'カレンダー',
   discover: 'ほかのアプリ',
+  shareToday: '今日の黄暦をシェア',
   benming: '本命年',
   nextSolarTerm: '次の節気',
   lunarLabel: '旧暦',
@@ -1634,7 +1641,6 @@ const ja: Strings = {
     'あなたへ · 宜忌を一項目ずつ（用神 · 吉色 · 吉時）',
     '人生タイムライン全期間 · 大運 / 流年 / 流月 +「もしも」省思',
     '日付範囲のカスタム + 個人の暦カレンダー購読',
-    '命書の深読み · 八字 / 紫微の個人参考',
   ],
   proMonthly: '月額プラン',
   proAnnual: '年額プラン',
@@ -1945,8 +1951,8 @@ const ja: Strings = {
       '相性鑑定には西暦の出生年が必要です —— 上の「生まれ年」にご記入・ご確認ください。',
   },
   watchWidgets: 'ホーム · ロック · Watch',
-  watchWidgetsNote:
-    '公開の黄暦は無料：ホームの小/中/大、ロック画面、Apple Watch に当日の干支と宜忌（誰でも同じ）。生年月日を入れると「あなたへ」がアプリ・ウィジェット・Watch に出ます。Yuun を一度開けばホーム画面が更新されます。Watch は単独で更新でき、初回ペアリング時だけ iPhone の Yuun を開いてください。Watch はシステム文字盤のスロットを埋めます。宜忌は矩形の2行向き。',
+  widgetsAndroidTitle: 'ホームウィジェット',
+  widgetLockCaption: 'ロック画面',
   widgetPreviewCaption: 'ホーム画面',
   watchPreviewCaption: 'Watch スロット（システム文字盤）',
   watchSlotCircular: '円形',
@@ -2091,6 +2097,7 @@ const en: Strings = {
   terms: 'Terms',
   openMonth: 'Calendar',
   discover: 'Discover',
+  shareToday: "Share today's almanac",
   benming: 'Benming yr',
   nextSolarTerm: 'Next term',
   lunarLabel: 'Chinese calendar',
@@ -2102,7 +2109,6 @@ const en: Strings = {
     'For you — every Good / Avoid explained (favorable element · color · hour)',
     'Your whole life in 10-year cycles — decade, year, month + what-if reflection',
     'Custom date-picker range + personal almanac calendar subscription',
-    'Chart deep-read — personal Ba Zi / Zi Wei reference',
   ],
   proMonthly: 'Monthly',
   proAnnual: 'Annual',
@@ -2436,8 +2442,8 @@ const en: Strings = {
       'Compatibility needs the full solar birth year — fill in and confirm “Birth year” above.',
   },
   watchWidgets: 'Home · Lock · Watch',
-  watchWidgetsNote:
-    'Public almanac is free: Home Small/Medium/Large, Lock Screen widgets, and Apple Watch show today’s stem-branch and Good / Avoid — the same for everyone. Add birth info to unlock For you on the app, widgets, and Watch. Open Yuun once (any screen) to refresh home widgets; Watch can refresh on its own after the first pairing opens iPhone Yuun. Watch fills system-face slots; prefer rectangular for Good / Avoid.',
+  widgetsAndroidTitle: 'Home Screen Widgets',
+  widgetLockCaption: 'Lock Screen',
   widgetPreviewCaption: 'Home Screen',
   watchPreviewCaption: 'Watch slots (system faces)',
   watchSlotCircular: 'Circular',

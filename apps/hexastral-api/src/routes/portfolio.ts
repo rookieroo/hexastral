@@ -2216,11 +2216,7 @@ portfolioRoutes.patch('/birth-sync-preferences', async (c) => {
   }
 
   const db = c.get('db')
-  const prior = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.id, userId))
-    .get()
+  const prior = await db.select({ id: users.id }).from(users).where(eq(users.id, userId)).get()
   if (!prior) throw new HTTPException(404, { message: 'User not found' })
 
   const patch = birthSyncPreferencePatch({

@@ -1,9 +1,15 @@
 # Deployment Operations
 
 This runbook is the deploy reference for the monorepo. All production deploys
-happen **locally** via wrangler / EAS. CI runs validation only — it does not deploy.
+happen **locally** via wrangler / EAS. There is no CI.
 
-## Preflight (recommended before any release)
+## Preflight (run before any release / submit)
+
+```bash
+bun run preflight   # typecheck + lint + test + check-deps + ASO gates + release-config
+```
+
+Or individually:
 
 ```bash
 bun typecheck     # type errors block deploy
@@ -94,11 +100,11 @@ API — wrangler cannot manage these). Intended retention per bucket:
 If you add an R2 lifecycle rule to `feng-annotated`, it MUST exclude the
 `annotated-raw/` prefix or live reports lose their map imagery.
 
-## What CI does (and does not)
+## Validation (no CI)
 
-- **Does**: typecheck / lint / test / check-deps on every PR and push to main.
-- **Does not**: deploy to production. There is no auto-deploy. All deploys are
-  triggered locally by an authorized engineer running the commands above.
+GitHub Actions was removed — validation and deploys are both local. `bun run preflight`
+replaces what CI used to check (typecheck / lint / test / check-deps / ASO gates /
+release-config). Run it before any build or submit.
 
 This is intentional — Cloudflare Workers deploys are near-instant and roll back
 with a single command (`wrangler rollback`), so the operational simplicity of

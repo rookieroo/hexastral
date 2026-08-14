@@ -176,7 +176,7 @@ Follow [docs/setup/revenuecat-entitlements.md](../setup/revenuecat-entitlements.
 > 0031–0033). Older notes that said “through 0018” are obsolete — always migrate
 > to the current tip before relying on push / birthday / FaceOracle cron paths.
 
-Order (local wrangler — CI does NOT deploy):
+Order (local wrangler — no CI exists):
 - [ ] Internal services first: `svc-astro`, `svc-notify`, `svc-signal`, `svc-geocode`,
       `svc-mailer`, `svc-admin-notify`, `svc-tail` (each: `cd services/<svc> && bun deploy`)
 - [ ] API + migrations:

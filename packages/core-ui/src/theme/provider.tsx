@@ -14,6 +14,9 @@
  */
 
 import { type ElevationKey, type ElevationLevel, elevation } from '@zhop/hexastral-tokens/elevation'
+// biome-ignore lint/correctness/noUnusedImports: `motion` is used in the
+// context type + value below (typeof at line ~95, value at ~193) — biome
+// misses the usage with the inline `type SpringKey` member present.
 import { duration, motion, type SpringKey, spring } from '@zhop/hexastral-tokens/motion'
 import {
   BORDER_RADIUS,

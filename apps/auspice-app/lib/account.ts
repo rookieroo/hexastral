@@ -21,6 +21,28 @@ import * as AppleAuthentication from 'expo-apple-authentication'
 import { Platform } from 'react-native'
 import Purchases from 'react-native-purchases'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from './growth-config'
+import { isIapEnabled } from './iap-enabled'
+
+/**
+ * Alias RevenueCat to the portfolio userId so purchases restore across devices.
+ *
+ * No-IAP builds (`EXPO_PUBLIC_IAP_ENABLED !== 'true'`) skip this entirely — the
+ * SDK is not configured there and `Purchases.logIn` would throw
+ * ("configure has not been called yet"), which used to fail sign-in AFTER the
+ * portfolio exchange already succeeded (server logged in, UI showed "failed").
+ *
+ * Even when IAP is enabled, a logIn failure must NOT fail sign-in: the portfolio
+ * identity is already established and the boot-time entitlement reconcile
+ * (ADR-0013 §5b) self-heals the RevenueCat alias once purchases are live.
+ */
+async function aliasRevenueCatIfEnabled(userId: string): Promise<void> {
+  if (!isIapEnabled()) return
+  try {
+    await Purchases.logIn(userId)
+  } catch (err) {
+    console.warn('[yuun.account] RevenueCat logIn failed; sign-in continues', err)
+  }
+}
 
 type GoogleSigninModule = typeof import('@react-native-google-signin/google-signin')
 let isGoogleSigninConfigured = false
@@ -101,12 +123,8 @@ export async function signInWithApple(): Promise<string | null> {
   }
 
   // Tie RevenueCat to the portfolio identity — required for cross-device restore.
-  try {
-    await Purchases.logIn(userId)
-  } catch (err) {
-    console.warn('[yuun.account] RevenueCat logIn failed after Apple sign-in', err)
-    throw new Error('RevenueCat alias failed after Apple sign-in')
-  }
+  // Skipped entirely in no-IAP builds; a failure here never fails the sign-in.
+  await aliasRevenueCatIfEnabled(userId)
   void transferBondsInBackground()
   return userId
 }
@@ -133,12 +151,7 @@ export async function signInWithGoogle(): Promise<string | null> {
       targetApp: PORTFOLIO_TARGET_APP,
       storagePrefix: PORTFOLIO_STORAGE_PREFIX,
     })
-    try {
-      await Purchases.logIn(userId)
-    } catch (err) {
-      console.warn('[yuun.account] RevenueCat logIn failed after Google sign-in', err)
-      throw new Error('RevenueCat alias failed after Google sign-in')
-    }
+    await aliasRevenueCatIfEnabled(userId)
     void transferBondsInBackground()
     return userId
   } catch (err) {

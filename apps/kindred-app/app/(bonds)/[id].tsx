@@ -796,11 +796,7 @@ export default function BondDetailScreen({
 
         {/* Living-layer FAB — after bloom + primer. PRO badge = deeper layer is
             Pro; free taste is consumed first (navigate), IAP only after exhaustion. */}
-        {detail.status === 'active' &&
-        !pickedQuote &&
-        !closing &&
-        bloomReady &&
-        !showPrimer ? (
+        {detail.status === 'active' && !pickedQuote && !closing && bloomReady && !showPrimer ? (
           <LivingLayerFab
             labels={{
               timeline: t('timeline.title'),

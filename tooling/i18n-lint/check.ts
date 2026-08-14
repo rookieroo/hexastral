@@ -56,12 +56,6 @@ type Surface = FlatSurface | SectionedSurface
 const SURFACES: Surface[] = [
   {
     kind: 'flat',
-    name: 'fate-app/messages',
-    dir: join(ROOT, 'apps/fate-app/messages'),
-    master: 'en',
-  },
-  {
-    kind: 'flat',
     name: 'hexastral-web/messages',
     dir: join(ROOT, 'apps/hexastral-web/messages'),
     master: 'en',

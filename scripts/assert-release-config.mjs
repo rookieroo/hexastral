@@ -78,6 +78,23 @@ if (eas) {
   }
 
   const prodEnv = eas.build?.production?.env ?? {}
+  // IAP gate invariant: no-IAP ship requires production EXPO_PUBLIC_IAP_ENABLED=false;
+  // the post-banking IAP ship (strict mode) requires true. Mismatch = loud failure —
+  // a production build with the wrong flag either breaks sign-in (true without RC keys)
+  // or ships a dead paywall (false with products configured).
+  const iapEnabled = prodEnv.EXPO_PUBLIC_IAP_ENABLED
+  if (strict) {
+    if (iapEnabled !== 'true') {
+      fail(
+        `production EXPO_PUBLIC_IAP_ENABLED must be 'true' for the IAP ship (got ${String(iapEnabled)})`,
+      )
+    }
+  } else if (iapEnabled !== 'false') {
+    fail(
+      `no-IAP ship requires production EXPO_PUBLIC_IAP_ENABLED='false' (got ${String(iapEnabled)}) — sign-in and the paywall depend on it`,
+    )
+  }
+
   for (const key of ['EXPO_PUBLIC_REVENUECAT_IOS_KEY', 'EXPO_PUBLIC_REVENUECAT_ANDROID_KEY']) {
     const v = prodEnv[key]
     if (!v || PLACEHOLDER.test(String(v))) {

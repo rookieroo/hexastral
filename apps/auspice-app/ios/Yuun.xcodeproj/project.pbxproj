@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -113,7 +113,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		XX271F250D94CFCEDA3CD3XX /* Exceptions for "widget" folder in "AuspiceWidget" target */ = {
+		XX271F250D94CFCEDA3CD3XX /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"expo-target.config.js",
@@ -121,7 +121,7 @@
 			);
 			target = XXF407C5B27D1453039EDEXX /* AuspiceWidget */;
 		};
-		XX348F7A597976AF1746C1XX /* Exceptions for "watch" folder in "YuunWatchApp" target */ = {
+		XX348F7A597976AF1746C1XX /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"expo-target.config.js",
@@ -129,7 +129,7 @@
 			);
 			target = XX16BA89470096787304EEXX /* YuunWatchApp */;
 		};
-		XX3FA1EAB6A4A4C8A5DF68XX /* Exceptions for "watch-widget" folder in "YuunWatch" target */ = {
+		XX3FA1EAB6A4A4C8A5DF68XX /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"expo-target.config.js",
@@ -140,42 +140,9 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		XX3FDEBEB27F32C5D81C91XX /* watch-widget */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				XX3FA1EAB6A4A4C8A5DF68XX /* Exceptions for "watch-widget" folder in "YuunWatch" target */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = "watch-widget";
-			sourceTree = "<group>";
-		};
-		XX9C622A3923308018BB78XX /* widget */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				XX271F250D94CFCEDA3CD3XX /* Exceptions for "widget" folder in "AuspiceWidget" target */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = widget;
-			sourceTree = "<group>";
-		};
-		XXBC072C3E310FD773C31FXX /* watch */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				XX348F7A597976AF1746C1XX /* Exceptions for "watch" folder in "YuunWatchApp" target */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = watch;
-			sourceTree = "<group>";
-		};
+		XX3FDEBEB27F32C5D81C91XX /* watch-widget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (XX3FA1EAB6A4A4C8A5DF68XX /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "watch-widget"; sourceTree = "<group>"; };
+		XX9C622A3923308018BB78XX /* widget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (XX271F250D94CFCEDA3CD3XX /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = widget; sourceTree = "<group>"; };
+		XXBC072C3E310FD773C31FXX /* watch */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (XX348F7A597976AF1746C1XX /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = watch; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */

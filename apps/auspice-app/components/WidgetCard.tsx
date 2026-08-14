@@ -1,7 +1,9 @@
 /**
  * WidgetCard — RN preview of home-screen widget layouts.
  * Zinc type on 宣纸 (light) / 星空 (dark) surfaces — mirrors native WidgetKit.
- * Layout SSOT: docs/apps/yuun/widget-layout-prototype.html
+ * Layout SSOT: lib/widget-spec.json (shared with Swift WidgetSpec.swift and
+ * Kotlin WidgetSpec.kt via `bun run widget-spec:gen`; previews and native
+ * widgets read the same numbers — never a second set).
  */
 
 import { useTheme } from '@zhop/core-ui'
@@ -11,6 +13,7 @@ import type { AuspiceDay, AuspicePersonalization } from '@/lib/api'
 import { localizeSolarTermCompact } from '@/lib/culture/names'
 import { getStrings, type Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
+import { WIDGET_SPEC } from '@/lib/widget-spec'
 import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
 import {
   buildDailyCardModel,
@@ -71,6 +74,7 @@ export function WidgetCard({
   width,
   height,
   localeOverride,
+  variant = 'ios',
 }: {
   date: string
   day: AuspiceDay
@@ -81,6 +85,13 @@ export function WidgetCard({
   height: number
   /** Force widget locale (system locale for settings previews). */
   localeOverride?: Locale
+  /**
+   * 'ios' mirrors WidgetKit; 'android' mirrors the Glance layouts
+   * (packages/widget-kit-android YuunGlanceAppWidget.kt) — medium differs:
+   * on HyperOS/Redmi the medium cell is narrow (2×2) so 宜/忌 wrap to two
+   * lines per column instead of the wide iPhone single-row columns.
+   */
+  variant?: 'ios' | 'android'
   /** @deprecated PhaseLogo ignores water-ink skins. */
   moonSkinId?: string
 }) {
@@ -96,7 +107,15 @@ export function WidgetCard({
   )
   const sub = { model, phaseOverride, chrome, locale, strings }
   const body =
-    size === 'medium' ? (
+    variant === 'android' ? (
+      size === 'medium' ? (
+        <AndroidMediumWidget {...sub} />
+      ) : size === 'large' ? (
+        <LargeWidget {...sub} />
+      ) : (
+        <AndroidSmallWidget {...sub} />
+      )
+    ) : size === 'medium' ? (
       <MediumWidget {...sub} />
     ) : size === 'large' ? (
       <LargeWidget {...sub} />
@@ -158,15 +177,16 @@ function YiJiLabeled({
 }
 
 function SmallWidget({ model, phaseOverride, chrome, locale }: SubProps) {
+  const S = WIDGET_SPEC.family.small
   const L = compactChrome(locale)
   const { mode } = useYijiDisplayMode()
   return (
-    <View style={{ flex: 1, padding: 12, justifyContent: 'space-between' }}>
+    <View style={{ flex: 1, padding: S.padding, justifyContent: 'space-between' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text
           style={{
             color: chrome.secondary,
-            fontSize: 10,
+            fontSize: S.weekdayFont,
             fontWeight: '600',
             letterSpacing: 0.4,
           }}
@@ -174,25 +194,25 @@ function SmallWidget({ model, phaseOverride, chrome, locale }: SubProps) {
         >
           {formatWidgetWeekdayChip(model.date, locale)}
         </Text>
-        <PhaseLogo phase={phaseOf(model, phaseOverride)} size={40} />
+        <PhaseLogo phase={phaseOf(model, phaseOverride)} size={S.moonSize} />
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
         <Text
           style={{
             color: chrome.text,
-            fontSize: 22,
+            fontSize: S.ganZhiFont,
             fontWeight: '300',
             letterSpacing: 2,
           }}
           numberOfLines={1}
           adjustsFontSizeToFit
-          minimumFontScale={0.75}
+          minimumFontScale={S.ganZhiMinScale}
         >
           {model.ganZhi}
         </Text>
         <Text
-          style={{ color: chrome.secondary, fontSize: 10, flexShrink: 1 }}
+          style={{ color: chrome.secondary, fontSize: S.lunarFont, flexShrink: 1 }}
           numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={0.7}
@@ -207,55 +227,158 @@ function SmallWidget({ model, phaseOverride, chrome, locale }: SubProps) {
           verbs={compactVerbs(model.goodForRaw, verbBudget(locale, 'medium'), locale, mode)}
           labelColor={chrome.text}
           textColor={chrome.text}
-          fontSize={11}
-          lines={2}
+          fontSize={S.yijiFont}
+          lines={S.goodLines}
         />
         <YiJiLabeled
           label={L.ji}
           verbs={compactVerbs(model.avoidRaw, verbBudget(locale, 'small'), locale, mode)}
           labelColor={chrome.text}
           textColor={chrome.secondary}
-          fontSize={11}
-          lines={1}
+          fontSize={S.yijiFont}
+          lines={S.avoidLines}
         />
       </View>
     </View>
   )
 }
 
+/**
+ * Android small replica — mirrors Glance `SmallLayout`: when birth fit is
+ * present it adds the For you line and tightens 宜/忌 to one line each
+ * (Android-only behavior from the spec).
+ */
+function AndroidSmallWidget({ model, phaseOverride, chrome, locale }: SubProps) {
+  const S = WIDGET_SPEC.family.small
+  const L = compactChrome(locale)
+  const { mode } = useYijiDisplayMode()
+  const hasFit = Boolean(model.fitLabel || model.fitSummary)
+  return (
+    <View style={{ flex: 1, padding: S.padding, justifyContent: 'space-between' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text
+          style={{
+            color: chrome.secondary,
+            fontSize: S.weekdayFont,
+            fontWeight: '600',
+            letterSpacing: 0.4,
+          }}
+          numberOfLines={1}
+        >
+          {formatWidgetWeekdayChip(model.date, locale)}
+        </Text>
+        <PhaseLogo phase={phaseOf(model, phaseOverride)} size={S.moonSize} />
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
+        <Text
+          style={{
+            color: chrome.text,
+            fontSize: S.ganZhiFont,
+            fontWeight: '300',
+            letterSpacing: 2,
+          }}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={S.ganZhiMinScale}
+        >
+          {model.ganZhi}
+        </Text>
+        <Text
+          style={{ color: chrome.secondary, fontSize: S.lunarFont, flexShrink: 1 }}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+        >
+          {model.lunarMonthDay || '—'}
+        </Text>
+      </View>
+
+      {hasFit ? (
+        <>
+          <Text
+            style={{ color: chrome.text, fontSize: S.forYouFont, fontWeight: '700' }}
+            numberOfLines={1}
+          >
+            {locale === 'en' ? L.forYou : `${L.forYou} · ${model.fitLabel}`}
+          </Text>
+          <View style={{ gap: 3 }}>
+            <YiJiLabeled
+              label={L.yi}
+              verbs={compactVerbs(model.goodForRaw, verbBudget(locale, 'small'), locale, mode)}
+              labelColor={chrome.text}
+              textColor={chrome.text}
+              fontSize={S.yijiFont}
+              lines={S.androidGoodLinesWithFit}
+            />
+            <YiJiLabeled
+              label={L.ji}
+              verbs={compactVerbs(model.avoidRaw, verbBudget(locale, 'small'), locale, mode)}
+              labelColor={chrome.text}
+              textColor={chrome.secondary}
+              fontSize={S.yijiFont}
+              lines={S.androidAvoidLinesWithFit}
+            />
+          </View>
+        </>
+      ) : (
+        <View style={{ gap: 3 }}>
+          <YiJiLabeled
+            label={L.yi}
+            verbs={compactVerbs(model.goodForRaw, verbBudget(locale, 'medium'), locale, mode)}
+            labelColor={chrome.text}
+            textColor={chrome.text}
+            fontSize={S.yijiFont}
+            lines={S.goodLines}
+          />
+          <YiJiLabeled
+            label={L.ji}
+            verbs={compactVerbs(model.avoidRaw, verbBudget(locale, 'small'), locale, mode)}
+            labelColor={chrome.text}
+            textColor={chrome.secondary}
+            fontSize={S.yijiFont}
+            lines={S.avoidLines}
+          />
+        </View>
+      )}
+    </View>
+  )
+}
+
 function MediumWidget({ model, phaseOverride, chrome, locale }: SubProps) {
+  const M = WIDGET_SPEC.family.medium
   const L = compactChrome(locale)
   const { mode } = useYijiDisplayMode()
   const yiN = verbBudget(locale, 'medium')
   const term = termLabel(model, locale)
   const calendar = formatWidgetCalendarRow(model.date, model.lunarMonthDay, locale)
   return (
-    <View style={{ flex: 1, paddingVertical: 14, paddingHorizontal: 16 }}>
+    <View style={{ flex: 1, padding: M.padding }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <PhaseLogo phase={phaseOf(model, phaseOverride)} size={46} />
+        <PhaseLogo phase={phaseOf(model, phaseOverride)} size={M.moonSize} />
         <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
           <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
             <Text
               style={{
                 color: chrome.text,
-                fontSize: 27,
+                fontSize: M.ganZhiFont,
                 fontWeight: '300',
                 letterSpacing: 2,
               }}
               numberOfLines={1}
               adjustsFontSizeToFit
-              minimumFontScale={0.8}
+              minimumFontScale={M.ganZhiMinScale}
             >
               {model.ganZhi}
             </Text>
             {locale === 'en' && model.ganZhiPinyin ? (
-              <Text style={{ color: chrome.tertiary, fontSize: 11 }} numberOfLines={1}>
+              <Text style={{ color: chrome.tertiary, fontSize: M.pinyinFont }} numberOfLines={1}>
                 {model.ganZhiPinyin}
               </Text>
             ) : null}
           </View>
           <Text
-            style={{ color: chrome.secondary, fontSize: 10, fontWeight: '500' }}
+            style={{ color: chrome.secondary, fontSize: M.calendarFont, fontWeight: '500' }}
             numberOfLines={1}
           >
             {calendar}
@@ -263,25 +386,32 @@ function MediumWidget({ model, phaseOverride, chrome, locale }: SubProps) {
         </View>
         {term ? (
           <Text
-            style={{ color: chrome.tertiary, fontSize: 10, maxWidth: 58, textAlign: 'right' }}
-            numberOfLines={2}
+            style={{
+              color: chrome.tertiary,
+              fontSize: M.termFont,
+              maxWidth: M.termMaxWidth,
+              textAlign: 'right',
+            }}
+            numberOfLines={M.termMaxLines}
           >
             {term}
           </Text>
         ) : null}
       </View>
 
-      <View style={{ height: 0.5, backgroundColor: chrome.separator, marginVertical: 9 }} />
+      <View
+        style={{ height: 0.5, backgroundColor: chrome.separator, marginVertical: M.hairlineMargin }}
+      />
 
-      <View style={{ flexDirection: 'row', gap: 14 }}>
+      <View style={{ flexDirection: 'row', gap: M.columnGap }}>
         <View style={{ flex: 1 }}>
           <YiJiLabeled
             label={L.yi}
             verbs={compactVerbs(model.goodForRaw, yiN, locale, mode)}
             labelColor={chrome.text}
             textColor={chrome.text}
-            fontSize={12}
-            lines={2}
+            fontSize={M.yijiFont}
+            lines={M.goodLines}
           />
         </View>
         <View style={{ flex: 1 }}>
@@ -290,8 +420,114 @@ function MediumWidget({ model, phaseOverride, chrome, locale }: SubProps) {
             verbs={compactVerbs(model.avoidRaw, yiN, locale, mode)}
             labelColor={chrome.text}
             textColor={chrome.secondary}
-            fontSize={12}
-            lines={2}
+            fontSize={M.yijiFont}
+            lines={M.avoidLines}
+          />
+        </View>
+      </View>
+    </View>
+  )
+}
+
+/**
+ * Android medium replica — mirrors Glance `MediumLayout` in the standard 4×2
+ * cell: moon + 干支 header, hairline, optional For you line, then 宜/忌 as two
+ * side-by-side columns (maxLines=2, so verbs wrap on narrow cells). Differs
+ * from the iPhone medium only by the For you line above the 宜/忌 row.
+ */
+function AndroidMediumWidget({ model, phaseOverride, chrome, locale }: SubProps) {
+  const M = WIDGET_SPEC.family.medium
+  const L = compactChrome(locale)
+  const { mode } = useYijiDisplayMode()
+  const term = termLabel(model, locale)
+  const calendar = formatWidgetCalendarRow(model.date, model.lunarMonthDay, locale)
+  const hasFit = Boolean(model.fitLabel || model.fitSummary)
+  return (
+    <View style={{ flex: 1, padding: M.padding }}>
+      {/* Header — mirrors Glance MediumLayout: moon + 干支 + calendar row + term. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <PhaseLogo phase={phaseOf(model, phaseOverride)} size={M.moonSize} />
+        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
+            <Text
+              style={{
+                color: chrome.text,
+                fontSize: M.ganZhiFont,
+                fontWeight: '400',
+                letterSpacing: 2,
+              }}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={M.ganZhiMinScale}
+            >
+              {model.ganZhi}
+            </Text>
+            {locale === 'en' && model.ganZhiPinyin ? (
+              <Text style={{ color: chrome.tertiary, fontSize: M.pinyinFont }} numberOfLines={1}>
+                {model.ganZhiPinyin}
+              </Text>
+            ) : null}
+          </View>
+          <Text
+            style={{ color: chrome.secondary, fontSize: M.calendarFont, fontWeight: '500' }}
+            numberOfLines={1}
+          >
+            {calendar}
+          </Text>
+        </View>
+        {term ? (
+          <Text
+            style={{
+              color: chrome.tertiary,
+              fontSize: M.termFont,
+              maxWidth: M.termMaxWidth,
+              textAlign: 'right',
+            }}
+            numberOfLines={M.termMaxLines}
+          >
+            {term}
+          </Text>
+        ) : null}
+      </View>
+
+      <View
+        style={{ height: 0.5, backgroundColor: chrome.separator, marginVertical: M.hairlineMargin }}
+      />
+
+      {/* For you line when birth fit is present (Glance MediumLayout). */}
+      {hasFit ? (
+        <>
+          <Text
+            style={{ color: chrome.text, fontSize: M.forYouFont, fontWeight: '700' }}
+            numberOfLines={1}
+          >
+            {locale === 'en' ? L.forYou : `${L.forYou} · ${model.fitLabel}`}
+          </Text>
+          <View style={{ height: 8 }} />
+        </>
+      ) : null}
+
+      {/* 宜/忌 side-by-side columns — each wraps up to 2 lines (matches Glance
+          maxLines=2; on narrow cells like HyperOS the verbs wrap to a new line). */}
+      <View style={{ flexDirection: 'row', gap: M.columnGap }}>
+        <View style={{ flex: 1 }}>
+          <YiJiLabeled
+            label={L.yi}
+            verbs={compactVerbs(model.goodForRaw, verbBudget(locale, 'medium'), locale, mode)}
+            labelColor={chrome.text}
+            textColor={chrome.text}
+            fontSize={M.yijiFont}
+            lines={M.goodLines}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <YiJiLabeled
+            label={L.ji}
+            verbs={compactVerbs(model.avoidRaw, verbBudget(locale, 'medium'), locale, mode)}
+            labelColor={chrome.text}
+            textColor={chrome.secondary}
+            fontSize={M.yijiFont}
+            lines={M.avoidLines}
           />
         </View>
       </View>
@@ -300,6 +536,7 @@ function MediumWidget({ model, phaseOverride, chrome, locale }: SubProps) {
 }
 
 function LargeWidget({ model, phaseOverride, chrome, locale, strings }: SubProps) {
+  const Lg = WIDGET_SPEC.family.large
   const L = compactChrome(locale)
   const { mode } = useYijiDisplayMode()
   const yiN = verbBudget(locale, 'large')
@@ -313,42 +550,47 @@ function LargeWidget({ model, phaseOverride, chrome, locale, strings }: SubProps
     !en && model.mansion ? model.mansion : null,
   ].filter(Boolean)
   return (
-    <View style={{ flex: 1, padding: 18, gap: 8 }}>
+    <View style={{ flex: 1, padding: Lg.padding, gap: 8 }}>
       <View
         style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}
       >
         <View style={{ gap: 4, flex: 1, minWidth: 0, paddingRight: 8, paddingTop: 3 }}>
           <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 7 }}>
             <Text
-              style={{ color: chrome.text, fontSize: 34, fontWeight: '300', letterSpacing: 2 }}
+              style={{
+                color: chrome.text,
+                fontSize: Lg.ganZhiFont,
+                fontWeight: '300',
+                letterSpacing: 2,
+              }}
               numberOfLines={1}
               adjustsFontSizeToFit
-              minimumFontScale={0.85}
+              minimumFontScale={Lg.ganZhiMinScale}
             >
               {model.ganZhi}
             </Text>
             {en && model.ganZhiPinyin ? (
-              <Text style={{ color: chrome.secondary, fontSize: 12 }} numberOfLines={1}>
+              <Text style={{ color: chrome.secondary, fontSize: Lg.pinyinFont }} numberOfLines={1}>
                 {model.ganZhiPinyin}
               </Text>
             ) : null}
           </View>
           <Text
-            style={{ color: chrome.secondary, fontSize: 10, fontWeight: '500' }}
+            style={{ color: chrome.secondary, fontSize: Lg.calendarFont, fontWeight: '500' }}
             numberOfLines={1}
           >
             {calendar}
           </Text>
           {detailParts.length > 0 ? (
-            <Text style={{ color: chrome.tertiary, fontSize: 11 }} numberOfLines={1}>
+            <Text style={{ color: chrome.tertiary, fontSize: Lg.metaFont }} numberOfLines={1}>
               {detailParts.join(' · ')}
               {!en && model.clashShengxiao ? ` · 冲${model.clashShengxiao}` : ''}
             </Text>
           ) : null}
         </View>
         <View style={{ alignItems: 'center', gap: 4 }}>
-          <PhaseLogo phase={phase} size={58} />
-          <Text style={{ color: chrome.tertiary, fontSize: 9 }} numberOfLines={1}>
+          <PhaseLogo phase={phase} size={Lg.moonSize} />
+          <Text style={{ color: chrome.tertiary, fontSize: Lg.moonCaptionFont }} numberOfLines={1}>
             {moonPhaseCaption(phase, strings)}
           </Text>
         </View>
@@ -362,16 +604,16 @@ function LargeWidget({ model, phaseOverride, chrome, locale, strings }: SubProps
           verbs={compactVerbs(model.goodForRaw, yiN, locale, mode)}
           labelColor={chrome.text}
           textColor={chrome.text}
-          fontSize={14}
-          lines={2}
+          fontSize={Lg.yijiFont}
+          lines={Lg.goodLines}
         />
         <YiJiLabeled
           label={L.ji}
           verbs={compactVerbs(model.avoidRaw, yiN, locale, mode)}
           labelColor={chrome.text}
           textColor={chrome.secondary}
-          fontSize={14}
-          lines={2}
+          fontSize={Lg.yijiFont}
+          lines={Lg.avoidLines}
         />
       </View>
 
@@ -379,13 +621,16 @@ function LargeWidget({ model, phaseOverride, chrome, locale, strings }: SubProps
 
       {model.fitLabel || model.fitSummary ? (
         <View style={{ gap: 4 }}>
-          <Text style={{ color: chrome.text, fontSize: 12, fontWeight: '700' }} numberOfLines={1}>
+          <Text
+            style={{ color: chrome.text, fontSize: Lg.forYouFont, fontWeight: '700' }}
+            numberOfLines={1}
+          >
             {en ? L.forYou : `${L.forYou} · ${model.fitLabel}`}
           </Text>
           {model.fitSummary ? (
             <Text
-              style={{ color: chrome.secondary, fontSize: 12, lineHeight: 17 }}
-              numberOfLines={3}
+              style={{ color: chrome.secondary, fontSize: Lg.forYouSummaryFont, lineHeight: 17 }}
+              numberOfLines={Lg.forYouSummaryLines}
             >
               {model.fitSummary}
             </Text>
@@ -397,7 +642,12 @@ function LargeWidget({ model, phaseOverride, chrome, locale, strings }: SubProps
         <View style={{ gap: 4, marginTop: model.fitLabel || model.fitSummary ? 6 : 0 }}>
           {!en ? (
             <Text
-              style={{ color: chrome.tertiary, fontSize: 9, letterSpacing: 1, fontWeight: '700' }}
+              style={{
+                color: chrome.tertiary,
+                fontSize: Lg.tipLabelFont,
+                letterSpacing: 1,
+                fontWeight: '700',
+              }}
               numberOfLines={1}
             >
               {L.tip}
@@ -406,10 +656,10 @@ function LargeWidget({ model, phaseOverride, chrome, locale, strings }: SubProps
           <Text
             style={{
               color: model.fitLabel ? chrome.secondary : chrome.text,
-              fontSize: 12,
+              fontSize: Lg.tipFont,
               lineHeight: 17,
             }}
-            numberOfLines={3}
+            numberOfLines={Lg.tipLines}
           >
             {model.dayTip}
           </Text>

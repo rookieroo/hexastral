@@ -221,6 +221,10 @@ export function ReadingChatScreen(props: ReadingChatScreenProps) {
 
   const flatListRef = useRef<FlatList>(null)
 
+  // readingType/readingId are semantic deps: callers may memoize `fetchHistory`
+  // without capturing them, so keep both to guarantee a refetch when the chart
+  // changes — removing them would make the effect miss chart switches.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: semantic deps, see above
   useEffect(() => {
     let cancelled = false
     setIsLoadingHistory(true)

@@ -9,6 +9,7 @@ Home-screen Glance widgets (small / medium / large), aligned with iOS
 | --- | --- |
 | RN sync | [`lib/widget-bridge.ts`](../../apps/auspice-app/lib/widget-bridge.ts) → `writeAndroidWidgetPayload` |
 | Package | [`packages/widget-kit-android`](../../packages/widget-kit-android) |
+| **Layout SSOT** | [`lib/widget-spec.json`](../../apps/auspice-app/lib/widget-spec.json) → generated `WidgetSpec.kt` (`bun run widget-spec:gen`; preflight runs `widget-spec:check`) — Glance, WidgetKit and the RN preview all read the same numbers |
 | Prefs | `yuun_widget_prefs` / key `hexastral_widget_payload_v1` (same JSON as iOS) |
 | Glance | `YuunGlanceAppWidget` + `YuunWidgetReceiver` |
 

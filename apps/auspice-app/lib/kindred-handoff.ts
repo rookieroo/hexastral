@@ -27,7 +27,8 @@
 
 import { Alert, Linking } from 'react-native'
 import type { AuspiceBirthInfo } from './birth'
-import { FLAGSHIP_LINKS } from './config'
+import { FLAGSHIP_LINKS, FLAGSHIP_LIVE, yuelLandingUrl } from './config'
+import { resolveLocale } from './i18n'
 import type { AuspicePerson } from './people'
 
 /** Kindred's URL scheme — fixed once at hand-off contract v1. */
@@ -35,10 +36,6 @@ const YUEL_SCHEME = 'yuel://'
 
 /** Kindred's repositioned consumer scheme (Yuel, 缘) + bundle. */
 const KINDRED_SCHEME = 'yuel://'
-// App-Store fallback when Yuel (Kindred, bundle com.hexastral.yuel) isn't
-// installed. Placeholder id until the listing is live — same REPLACE_*
-// convention as config.ts; fill once App Store Connect issues the app id.
-const KINDRED_APP_STORE = 'https://apps.apple.com/app/idREPLACE_KINDRED'
 
 interface BuildArgs {
   person: AuspicePerson
@@ -105,7 +102,10 @@ export async function openKindredCompose(args: BuildArgs): Promise<boolean> {
     return true
   } catch {
     try {
-      await Linking.openURL(FLAGSHIP_LINKS.yuan.appStoreUrl)
+      // Store only when Yuel has actually shipped; the brand LP otherwise.
+      await Linking.openURL(
+        FLAGSHIP_LIVE.yuan ? FLAGSHIP_LINKS.yuan.appStoreUrl : FLAGSHIP_LINKS.yuan.landingUrl
+      )
       return true
     } catch {
       return false
@@ -172,18 +172,20 @@ export function buildKindredReadingUrl(self?: AuspiceBirthInfo | null): string {
 
 /**
  * Open Yuel's full personal 命书, carrying the self birth to skip re-entry. Falls
- * back to the App Store when Yuel isn't installed (degrades gracefully — a missing
- * scheme throws and we hop to the store; if even that fails we resolve false).
- * Resolves true once a target (Yuel or the Store) was opened.
+ * back when Yuel isn't installed: the Yuel brand LP while Yuel is pre-launch (a
+ * real, localized page — never a placeholder 404), and the App Store listing once
+ * it ships. Resolves true once a target (Yuel, the LP, or the Store) was opened.
  */
 export async function openKindredReading(self?: AuspiceBirthInfo | null): Promise<void> {
   try {
     await Linking.openURL(buildKindredReadingUrl(self))
   } catch {
     try {
-      await Linking.openURL(KINDRED_APP_STORE)
+      await Linking.openURL(
+        FLAGSHIP_LIVE.yuan ? FLAGSHIP_LINKS.yuan.appStoreUrl : yuelLandingUrl(resolveLocale())
+      )
     } catch {
-      // Neither Yuel nor the Store could be opened — nothing more we can do.
+      // Neither Yuel, the LP, nor the Store could be opened — nothing more we can do.
     }
   }
 }

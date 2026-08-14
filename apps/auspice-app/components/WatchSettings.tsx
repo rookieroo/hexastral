@@ -5,26 +5,25 @@
 
 import { useTheme } from '@zhop/core-ui'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { Platform, Pressable, Text, useWindowDimensions, View } from 'react-native'
 import { type AuspiceDayPayload, fetchAuspiceDay } from '@/lib/api'
 import { getAuspiceBirthDate } from '@/lib/birth'
 import { useDevMoonPhase } from '@/lib/dev-moon-phase'
 import { useStrings } from '@/lib/i18n-context'
 import { syncWidgetWindow } from '@/lib/widget-bridge'
+import { WIDGET_SPEC } from '@/lib/widget-spec'
 import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
 import { buildDailyCardModel, compactVerbs, moonPhaseForIsoDate } from './DailyCard'
 import { PhaseLogo } from './PhaseLogo'
 import { WidgetCard, type WidgetSize } from './WidgetCard'
 import { widgetSurfaceBg } from './WidgetSurface'
 
-/** System widget logical sizes (pt) — layout at full size, then scale for the row. */
-const WIDGET_BOX: Record<WidgetSize, { w: number; h: number }> = {
-  small: { w: 158, h: 158 },
-  medium: { w: 338, h: 158 },
-  large: { w: 338, h: 354 },
-}
-
-const PREVIEW_SCALE = 0.52
+/**
+ * System widget logical sizes (pt) — from the single widget spec
+ * (lib/widget-spec.json), shared with the native Swift/Glance widgets.
+ * 小 = 2×2, 中 = 4×2, 大 = 4×4 (Android Glance uses the identical cell matrix).
+ */
+const WIDGET_BOX: Record<WidgetSize, { w: number; h: number }> = WIDGET_SPEC.boxSizesPt
 
 function pad(n: number) {
   return String(n).padStart(2, '0')
@@ -53,24 +52,34 @@ function ScaledWidgetPreview({
   payload,
   livePhase,
   previewBg,
+  maxWidth,
 }: {
   size: WidgetSize
   label: string
   payload: AuspiceDayPayload
   livePhase: number | undefined
   previewBg: string
+  /** Available content width — previews scale down to fit narrow screens. */
+  maxWidth: number
 }) {
   const { colors } = useTheme()
+  const isAndroid = Platform.OS === 'android'
   const box = WIDGET_BOX[size]
-  const scaledW = Math.round(box.w * PREVIEW_SCALE)
-  const scaledH = Math.round(box.h * PREVIEW_SCALE)
+  const scale = Math.min(1, maxWidth / box.w)
+  const scaledW = Math.round(box.w * scale)
+  const scaledH = Math.round(box.h * scale)
   return (
     <View style={{ gap: 6, alignItems: 'center' }}>
       <View
         style={{
           width: scaledW,
           height: scaledH,
-          borderRadius: Math.round(22 * PREVIEW_SCALE),
+          // Corner radii come from the shared spec: iOS 22pt (WidgetKit system
+          // mask), Android 16dp (systemAppWidgetBackgroundRadius). MIUI/HyperOS
+          // ignores the Android mask and shows square, but most devices round.
+          borderRadius: isAndroid
+            ? Math.round(WIDGET_SPEC.cornerRadiusPt.android * scale)
+            : Math.round(WIDGET_SPEC.cornerRadiusPt.ios * scale),
           overflow: 'hidden',
           backgroundColor: previewBg,
         }}
@@ -79,7 +88,7 @@ function ScaledWidgetPreview({
           style={{
             width: box.w,
             height: box.h,
-            transform: [{ scale: PREVIEW_SCALE }],
+            transform: [{ scale }],
             transformOrigin: 'top left',
           }}
         >
@@ -91,6 +100,7 @@ function ScaledWidgetPreview({
             date={payload.date}
             day={payload.day}
             personalization={payload.personalization}
+            variant={isAndroid ? 'android' : 'ios'}
           />
         </View>
       </View>
@@ -258,6 +268,137 @@ function CornerSlotPreview({
   )
 }
 
+/**
+ * iPhone Lock Screen mock — portrait phone frame (Dynamic Island + top clock)
+ * so it reads unmistakably as the iPhone lock screen, NOT a watch face:
+ *   Dynamic Island → inline widget → big clock → date → circular + rectangular
+ *   widgets near the bottom. Lock Screen widgets are an iPhone feature (iOS 17+);
+ *   the Apple Watch complications have their own section below.
+ */
+function LockScreenMock({
+  ganZhi,
+  solarTerm,
+  yiLine,
+  phase,
+  border,
+  text,
+  dim,
+}: {
+  ganZhi: string
+  solarTerm: string
+  yiLine: string
+  phase: number
+  border: string
+  text: string
+  dim: string
+}) {
+  const now = new Date()
+  const hh = String(now.getHours()).padStart(2, '0')
+  const mm = String(now.getMinutes()).padStart(2, '0')
+  return (
+    <View
+      style={{
+        width: 148,
+        height: 252,
+        borderRadius: 32,
+        borderWidth: 0.5,
+        borderColor: border,
+        paddingHorizontal: 12,
+        paddingTop: 8,
+        paddingBottom: 14,
+        gap: 6,
+        alignItems: 'center',
+      }}
+    >
+      {/* Dynamic Island */}
+      <View
+        style={{
+          width: 44,
+          height: 12,
+          borderRadius: 6,
+          backgroundColor: border,
+          opacity: 0.7,
+        }}
+      />
+
+      {/* Inline widget — sits above the clock. iOS inline widgets are borderless text. */}
+      <View
+        style={{
+          alignSelf: 'stretch',
+          height: 22,
+          paddingHorizontal: 8,
+          justifyContent: 'center',
+          marginTop: 6,
+        }}
+      >
+        <Text style={{ color: text, fontSize: 10 }} numberOfLines={1}>
+          {yiLine}
+        </Text>
+      </View>
+
+      {/* Clock + date */}
+      <Text style={{ color: text, fontSize: 38, fontWeight: '200', letterSpacing: 2 }}>
+        {hh}:{mm}
+      </Text>
+      <Text style={{ color: dim, fontSize: 10 }}>
+        {ganZhi}
+        {solarTerm ? ` · ${solarTerm}` : ''}
+      </Text>
+
+      <View style={{ flex: 1 }} />
+
+      {/* Circular + rectangular widgets near the bottom. iOS lock-screen widgets
+          are borderless with NO background fill — bare glyphs and text. */}
+      <View
+        style={{
+          flexDirection: 'row',
+          gap: 8,
+          alignItems: 'center',
+          alignSelf: 'stretch',
+        }}
+      >
+        <View
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1,
+          }}
+        >
+          <PhaseLogo phase={phase} size={12} />
+          <Text
+            style={{ color: text, fontSize: 10, fontWeight: '600', letterSpacing: 1 }}
+            numberOfLines={1}
+          >
+            {ganZhi}
+          </Text>
+        </View>
+        <View
+          style={{
+            flex: 1,
+            height: 48,
+            paddingHorizontal: 8,
+            justifyContent: 'center',
+            gap: 2,
+          }}
+        >
+          <Text
+            style={{ color: text, fontSize: 12, fontWeight: '600', letterSpacing: 1 }}
+            numberOfLines={1}
+          >
+            {ganZhi}
+          </Text>
+          <Text style={{ color: dim, fontSize: 10 }} numberOfLines={1}>
+            {yiLine}
+          </Text>
+        </View>
+      </View>
+    </View>
+  )
+}
+
 export function WatchSettings() {
   const { colors, spacing, mode } = useTheme()
   const surfaceMode = mode === 'light' ? 'light' : 'dark'
@@ -285,6 +426,10 @@ export function WatchSettings() {
   const previewDayIso = useMemo(() => addDaysIso(todayIso(), dayOffset), [dayOffset])
   const livePhase = phaseOverride ?? moonPhaseForIsoDate(previewDayIso)
   const previewBg = widgetSurfaceBg(surfaceMode)
+  const { width: windowWidth } = useWindowDimensions()
+  // Page content width (display.tsx pads spacing.xl on both sides); cap at the
+  // widest widget box so the large preview never overflows narrow screens.
+  const maxPreviewWidth = Math.max(120, Math.min(WIDGET_BOX.large.w, windowWidth - spacing.xl * 2))
   const sizeLabel = (s: WidgetSize) =>
     s === 'small' ? t.widgetSizeSmall : s === 'medium' ? t.widgetSizeMedium : t.widgetSizeLarge
 
@@ -312,9 +457,12 @@ export function WatchSettings() {
   return (
     <View style={{ gap: spacing.lg }}>
       {payload ? (
-        <View style={{ gap: spacing.md }}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={{ flexDirection: 'row', gap: spacing.md, paddingVertical: 4 }}>
+        <>
+          {/* 桌面组件 — both platforms. Android ships home widgets only.
+              Vertical stack: 小 → 中 → 大, scaled to the screen width. */}
+          <View style={{ gap: spacing.sm }}>
+            <Label>{t.widgetPreviewCaption}</Label>
+            <View style={{ gap: spacing.md, alignItems: 'center', paddingVertical: 4 }}>
               {(['small', 'medium', 'large'] as const).map((size) => (
                 <ScaledWidgetPreview
                   key={size}
@@ -323,32 +471,18 @@ export function WatchSettings() {
                   payload={payload}
                   livePhase={livePhase}
                   previewBg={previewBg}
+                  maxWidth={maxPreviewWidth}
                 />
               ))}
             </View>
-          </ScrollView>
+          </View>
 
-          <View style={{ gap: spacing.sm }}>
-            <Label>{t.watchPreviewCaption}</Label>
-            <View
-              style={{
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                gap: spacing.md,
-                alignItems: 'flex-end',
-              }}
-            >
-              <View style={{ gap: 6, alignItems: 'center' }}>
-                <CircularSlotPreview
-                  ganZhi={ganZhi}
-                  phase={phase}
-                  border={colors.separator}
-                  text={colors.text}
-                />
-                <SlotCaption>{t.watchSlotCircular}</SlotCaption>
-              </View>
-              <View style={{ gap: 6, alignItems: 'center' }}>
-                <RectangularSlotPreview
+          {Platform.OS === 'ios' ? (
+            <>
+              {/* 锁屏 — iOS only (Lock Screen widgets, iOS 17+). */}
+              <View style={{ gap: spacing.sm }}>
+                <Label>{t.widgetLockCaption}</Label>
+                <LockScreenMock
                   ganZhi={ganZhi}
                   solarTerm={solarTerm}
                   yiLine={yiLine}
@@ -357,22 +491,62 @@ export function WatchSettings() {
                   text={colors.text}
                   dim={colors.dim}
                 />
-                <SlotCaption>{t.watchSlotRectangular}</SlotCaption>
               </View>
-              <View style={{ gap: 6, alignItems: 'center' }}>
-                <InlineSlotPreview yiLine={yiLine} border={colors.separator} text={colors.text} />
-                <SlotCaption>{t.watchSlotInline}</SlotCaption>
-              </View>
-              <View style={{ gap: 6, alignItems: 'center' }}>
-                <CornerSlotPreview ganZhi={ganZhi} border={colors.separator} text={colors.text} />
-                <SlotCaption>{t.watchSlotCorner}</SlotCaption>
-              </View>
-            </View>
-          </View>
-        </View>
-      ) : null}
 
-      <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>{t.watchWidgetsNote}</Text>
+              {/* Apple Watch — iOS only. */}
+              <View style={{ gap: spacing.sm }}>
+                <Label>{t.watchPreviewCaption}</Label>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: spacing.md,
+                    alignItems: 'flex-end',
+                  }}
+                >
+                  <View style={{ gap: 6, alignItems: 'center' }}>
+                    <CircularSlotPreview
+                      ganZhi={ganZhi}
+                      phase={phase}
+                      border={colors.separator}
+                      text={colors.text}
+                    />
+                    <SlotCaption>{t.watchSlotCircular}</SlotCaption>
+                  </View>
+                  <View style={{ gap: 6, alignItems: 'center' }}>
+                    <RectangularSlotPreview
+                      ganZhi={ganZhi}
+                      solarTerm={solarTerm}
+                      yiLine={yiLine}
+                      phase={phase}
+                      border={colors.separator}
+                      text={colors.text}
+                      dim={colors.dim}
+                    />
+                    <SlotCaption>{t.watchSlotRectangular}</SlotCaption>
+                  </View>
+                  <View style={{ gap: 6, alignItems: 'center' }}>
+                    <InlineSlotPreview
+                      yiLine={yiLine}
+                      border={colors.separator}
+                      text={colors.text}
+                    />
+                    <SlotCaption>{t.watchSlotInline}</SlotCaption>
+                  </View>
+                  <View style={{ gap: 6, alignItems: 'center' }}>
+                    <CornerSlotPreview
+                      ganZhi={ganZhi}
+                      border={colors.separator}
+                      text={colors.text}
+                    />
+                    <SlotCaption>{t.watchSlotCorner}</SlotCaption>
+                  </View>
+                </View>
+              </View>
+            </>
+          ) : null}
+        </>
+      ) : null}
 
       {__DEV__ ? (
         <View style={{ gap: spacing.sm }}>

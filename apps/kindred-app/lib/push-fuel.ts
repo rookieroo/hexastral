@@ -60,9 +60,7 @@ export async function fetchPushFuel(): Promise<PushFuelSnapshot | null> {
     if (!res.ok) return null
     const json: unknown = await res.json()
     const data =
-      json && typeof json === 'object' && 'data' in json
-        ? (json as { data: unknown }).data
-        : json
+      json && typeof json === 'object' && 'data' in json ? (json as { data: unknown }).data : json
     return isFuelSnapshot(data) ? data : null
   } catch {
     return null

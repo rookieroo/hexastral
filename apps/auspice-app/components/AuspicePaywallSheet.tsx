@@ -13,8 +13,8 @@ import { MoonLoader } from '@/components/MoonLoader'
 
 import { isSignedIn, signInWithApple, signInWithGoogle } from '@/lib/account'
 import { privacyUrl, termsUrl } from '@/lib/config'
-import { isIapEnabled } from '@/lib/iap-enabled'
 import { useStrings } from '@/lib/i18n-context'
+import { isIapEnabled } from '@/lib/iap-enabled'
 
 const AUSPICE_PRO_PRODUCT_IDS = {
   monthly: 'auspice_pro_monthly',

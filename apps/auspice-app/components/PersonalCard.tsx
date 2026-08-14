@@ -15,6 +15,7 @@ import { type Href, useRouter } from 'expo-router'
 import { Pressable, Text, View } from 'react-native'
 import type { AuspicePersonalization } from '@/lib/api'
 import { useStrings } from '@/lib/i18n-context'
+import { isIapEnabled } from '@/lib/iap-enabled'
 import type { LuckyGuide } from '@/lib/luckyGuide'
 import { ELEMENT_COLORS } from '@/lib/shichen-content'
 
@@ -160,8 +161,9 @@ export function PersonalCard({
       ) : null}
 
       {locked ? (
-        hasWhy ? (
-          // The per-reason "why" is the only thing behind Pro. Quiet text link.
+        // The per-reason "why" is the only thing behind Pro. Quiet text link —
+        // hidden entirely while IAP is off (no dead "coming soon" wall).
+        isIapEnabled() && hasWhy ? (
           <Pressable
             onPress={onUnlock}
             accessibilityRole='button'

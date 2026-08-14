@@ -33,6 +33,7 @@ import {
   searchAuspiceDays,
 } from '@/lib/api'
 import { useStrings } from '@/lib/i18n-context'
+import { isIapEnabled } from '@/lib/iap-enabled'
 import { scheduleRetroCheck } from '@/lib/push'
 
 /** Free window + server cap (mirror auspice.ts MAX_SEARCH_SPAN_DAYS). */
@@ -260,56 +261,64 @@ export default function EventScreen() {
           </View>
         ) : null}
 
-        {/* Date range — the one Pro wall on this screen. */}
-        <View style={{ gap: spacing.sm }}>
-          <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 3 }}>
-            {t.eventRangeSection}
-          </Text>
-          {isPro ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-              <DateTimePicker
-                value={fromDate}
-                mode='date'
-                display={Platform.OS === 'ios' ? 'compact' : 'default'}
-                accentColor={colors.accent}
-                onChange={(_e, d) => {
-                  if (d) setFromDate(d)
+        {/* Date range — the one Pro wall on this screen. The whole section is
+            hidden while IAP is off (custom range is Pro-only; no dead wall). */}
+        {isIapEnabled() ? (
+          <View style={{ gap: spacing.sm }}>
+            <Text style={{ color: colors.secondary, fontSize: 11, letterSpacing: 3 }}>
+              {t.eventRangeSection}
+            </Text>
+            {isPro ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+                <DateTimePicker
+                  value={fromDate}
+                  mode='date'
+                  display={Platform.OS === 'ios' ? 'compact' : 'default'}
+                  accentColor={colors.accent}
+                  onChange={(_e, d) => {
+                    if (d) setFromDate(d)
+                  }}
+                />
+                <Text style={{ color: colors.dim, fontSize: 16 }}>→</Text>
+                <DateTimePicker
+                  value={toDate}
+                  mode='date'
+                  display={Platform.OS === 'ios' ? 'compact' : 'default'}
+                  accentColor={colors.accent}
+                  minimumDate={fromDate}
+                  maximumDate={addDays(fromDate, MAX_SPAN_DAYS - 1)}
+                  onChange={(_e, d) => {
+                    if (d) setToDate(d)
+                  }}
+                />
+              </View>
+            ) : (
+              <Pressable
+                onPress={() => setPaywallOpen(true)}
+                accessibilityRole='button'
+                accessibilityLabel={t.eventRangeUpsell}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: spacing.md,
                 }}
-              />
-              <Text style={{ color: colors.dim, fontSize: 16 }}>→</Text>
-              <DateTimePicker
-                value={toDate}
-                mode='date'
-                display={Platform.OS === 'ios' ? 'compact' : 'default'}
-                accentColor={colors.accent}
-                minimumDate={fromDate}
-                maximumDate={addDays(fromDate, MAX_SPAN_DAYS - 1)}
-                onChange={(_e, d) => {
-                  if (d) setToDate(d)
-                }}
-              />
-            </View>
-          ) : (
-            <Pressable
-              onPress={() => setPaywallOpen(true)}
-              accessibilityRole='button'
-              accessibilityLabel={t.eventRangeUpsell}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: spacing.md,
-              }}
-            >
-              <Text style={{ color: colors.text, fontSize: 14 }}>{t.eventRangeFreeNote}</Text>
-              <Text
-                style={{ color: colors.accent, fontSize: 12, fontWeight: '600', letterSpacing: 1 }}
               >
-                {t.eventRangeUpsell}
-              </Text>
-            </Pressable>
-          )}
-        </View>
+                <Text style={{ color: colors.text, fontSize: 14 }}>{t.eventRangeFreeNote}</Text>
+                <Text
+                  style={{
+                    color: colors.accent,
+                    fontSize: 12,
+                    fontWeight: '600',
+                    letterSpacing: 1,
+                  }}
+                >
+                  {t.eventRangeUpsell}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        ) : null}
 
         <Button variant='primary' fullWidth onPress={run}>
           {t.search}

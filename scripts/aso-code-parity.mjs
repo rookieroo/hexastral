@@ -37,6 +37,25 @@ const MUST_NOT_IN_PRO = [
 
 const SOFT_WARN = [/\bfortune\b/i, /major-fortune/i, /\blucky\b/i, /fortune-telling/i]
 
+/**
+ * Widget / Watch / lock-screen claims are evidence-gated: only claim them once a
+ * production archive containing the widget + watch targets passes the device
+ * matrix (docs/apps/yuun/widget-build-runbook.md / android-widget-runbook.md).
+ * The ASO file flips `_widgetEvidence: true` at that moment; until then any claim
+ * fails. Regexes target claim phrases, NOT settings labels like 组件外观 /
+ * ウィジェット外観 (which describe an in-app settings entry, not a store promise).
+ */
+const WIDGET_WATCH_CLAIMS = [
+  /\bwidgets?\b/i,
+  /lock\s*screen/i,
+  /complications?/i,
+  /\bwatch\b/i,
+  /Apple\s*Watch|アップルウォッチ/i,
+  /(桌面|主屏|主畫面|ホーム画面|ホームスクリーン).{0,6}(组件|元件|小組件|小部件|ウィジェット)/,
+  /锁屏|鎖屏|ロック画面|ロックスクリーン/,
+  /(免费|免費|無料|free).{0,10}(组件|元件|小組件|小部件|ウィジェット|widget)/i,
+]
+
 const PRIVACY_URL =
   /^https:\/\/yuun\.hexastral\.com\/(en|zh|tw|ja)\/privacy\/yuun$/
 const TERMS_URL = /^https:\/\/yuun\.hexastral\.com\/(en|zh|tw|ja)\/terms$/
@@ -53,23 +72,44 @@ let warned = false
 for (const file of files) {
   const meta = JSON.parse(readFileSync(file, 'utf8'))
   const doNotUse = meta._doNotUse ?? []
+  const widgetEvidence = meta._widgetEvidence === true
   console.log(`\n${meta.appName ?? file} — parity check`)
+
+  const scanDoNotUse = (where, text) => {
+    if (typeof text !== 'string') return
+    for (const term of doNotUse) {
+      if (text.toLowerCase().includes(term.toLowerCase())) {
+        console.error(`  FAIL ${where}: _doNotUse term "${term}"`)
+        failed = true
+      }
+    }
+  }
+
+  // Widget/Watch claims — evidence-gated across every copy surface. The
+  // description's "NOT astrology / 不是占星" disclaimers are exempt from
+  // _doNotUse (intentional category-distancing), so only the indexed fields
+  // feed that check while claims are scanned everywhere.
+  const scanWidgetClaims = (where, text) => {
+    if (typeof text !== 'string' || widgetEvidence) return
+    for (const re of WIDGET_WATCH_CLAIMS) {
+      if (re.test(text)) {
+        console.error(
+          `  FAIL ${where}: widget/Watch claim without evidence (_widgetEvidence !== true) — matches ${re}`,
+        )
+        failed = true
+      }
+    }
+  }
 
   for (const [locale, fields] of Object.entries(meta.locales ?? {})) {
     for (const field of INDEXED) {
-      const val = fields[field]
-      if (typeof val !== 'string') continue
-      const lower = val.toLowerCase()
-      for (const term of doNotUse) {
-        if (lower.includes(term.toLowerCase())) {
-          console.error(`  FAIL ${locale} ${field}: _doNotUse term "${term}"`)
-          failed = true
-        }
-      }
+      scanDoNotUse(`${locale} ${field}`, fields[field])
+      scanWidgetClaims(`${locale} ${field}`, fields[field])
     }
 
     const desc = fields.description
     if (typeof desc === 'string') {
+      scanWidgetClaims(`${locale} description`, desc)
       for (const re of MUST_NOT_CLAIM) {
         if (re.test(desc)) {
           console.error(`  FAIL ${locale} description: matches MUST_NOT_CLAIM ${re}`)
@@ -109,16 +149,18 @@ for (const file of files) {
       // Soft expect: free public almanac framing present for Yuun
       if (meta.appName === 'Yuun') {
         const hasFreeAlmanac =
-          /public almanac|公开黄历|公開黃曆|公開黄暦/i.test(desc) ||
-          /Home \/ Lock \/ Watch|主屏 \/ 锁屏 \/ Watch|主屏 \/ 鎖屏 \/ Watch|ホーム／ロック／Watch/.test(
-            desc,
-          )
+          /public almanac|公开黄历|公開黃曆|公開黄暦/i.test(desc)
         if (!hasFreeAlmanac) {
-          console.warn(`  WARN ${locale} description: missing free public-almanac / Home-Lock-Watch framing`)
+          console.warn(`  WARN ${locale} description: missing free public-almanac framing`)
           warned = true
         }
       }
     }
+  }
+
+  for (const [locale, fields] of Object.entries(meta.googlePlay?.locales ?? {})) {
+    scanWidgetClaims(`googlePlay ${locale} shortDescription`, fields.shortDescription)
+    scanWidgetClaims(`googlePlay ${locale} fullDescription`, fields.fullDescription)
   }
 
   if (meta.contentRating !== '12+') {

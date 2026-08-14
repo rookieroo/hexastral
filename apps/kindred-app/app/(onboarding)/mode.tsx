@@ -23,11 +23,7 @@ import { YuelMark } from '@/components/YuelMark'
 import { useAuth } from '@/lib/auth'
 import { type Locale, resolveLocale, type TranslationKey, t } from '@/lib/i18n'
 import { updateDraft } from '@/lib/onboardingDraft'
-import {
-  ensureSelfBirthSynced,
-  isSelfBirthReady,
-  loadSelfBirth,
-} from '@/lib/selfBirth'
+import { ensureSelfBirthSynced, isSelfBirthReady, loadSelfBirth } from '@/lib/selfBirth'
 
 type Intent = 'know' | 'invite'
 
