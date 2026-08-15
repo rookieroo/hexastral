@@ -167,7 +167,6 @@ interface GNode {
   kind: 'source' | 'dayun' | 'liunian' | 'mergeBack'
   state: NodeState
   /** Free users only see SOURCE + current 大运 branch + current 流年. */
-  locked: boolean
   isHead: boolean
   element: '木' | '火' | '土' | '金' | '水'
   fit?: PersonalFit
@@ -225,7 +224,6 @@ function curve(
 
 function buildGraph(
   payload: TimelinePayload,
-  isPro: boolean,
   width: number,
   shensha?: ShenShaBranches,
   /** Set of 大运 indices to render expanded (with all their 流年 commits). 大运
@@ -264,7 +262,6 @@ function buildGraph(
     r: SOURCE_R,
     kind: 'source',
     state: 'past',
-    locked: false,
     isHead: false,
     element: dayMaster.element,
     title: `${dayMaster.stem}${dayMaster.branch}`,
@@ -275,10 +272,8 @@ function buildGraph(
 
   // ── 大运 branches — each a real git-graph branch: peel out of the trunk, run
   //    its 流年 as commits down the lane, then merge back. The current 大运 is the
-  //    checked-out HEAD (open, "now" at the live year). Other unlocked 大运 show
-  //    only NOTABLE 流年 (a few commits — the "一串节点" look without dumping 80
-  //    years); the checked-out 大运 expands to its full decade. Free tier locks
-  //    every 大运 but the current one to a ghost bump. ──
+  //    checked-out HEAD (open, "now" at the live year). Deterministic for EVERY
+  //    tier (2026-08): no ghost locks — every 大运 is a real branch.
   // A 大运 is "expanded" when the user (or the default rule) wants its full
   // decade of 流年 commits rendered. Anything not in this set collapses to just
   // its head + merge ring — past/far-future stay tidy. Fall back to "current
@@ -289,7 +284,6 @@ function buildGraph(
 
   payload.dayun.forEach((d, i) => {
     const state: NodeState = i < cur ? 'past' : i === cur ? 'current' : 'future'
-    const locked = !isPro && state !== 'current'
     const dayunY = y
     const dayunChip = chipFor(d.reasons, d.pillar.branch, shensha, interactionFor(d.pillar.branch))
     // 十神 decade-theme — which life domain this 大运 activates vs the 日主.
@@ -302,49 +296,11 @@ function buildGraph(
     const branchColor = DOMAIN_COLORS[dayunDomain]
     const branchPath = Skia.Path.Make()
 
-    if (locked) {
-      // Ghosted (Free, non-current) — a single bump that peels out and rejoins.
-      // Stays gray so the Pro contrast carries.
-      curve(branchPath, TRUNK_X, dayunY - STEP / 2, BRANCH_X, dayunY)
-      curve(branchPath, BRANCH_X, dayunY, TRUNK_X, dayunY + STEP / 2)
-      branches.push({ color: branchColor, path: branchPath, ghost: true })
-      nodes.push({
-        id: `dayun-${d.index}`,
-        x: BRANCH_X,
-        y: dayunY,
-        r: NODE_R,
-        kind: 'dayun',
-        state,
-        locked: true,
-        isHead: false,
-        element: d.pillar.element,
-        fit: d.fit,
-        chip: dayunChip,
-        domain: dayunDomain,
-        branchColor,
-        title: `${d.pillar.stem}${d.pillar.branch}`,
-        sub: `${d.startAge}`,
-        ref: { kind: 'dayun', row: d },
-      })
-      trunkBottom = Math.max(trunkBottom, dayunY + STEP / 2)
-      y += STEP
-      return
-    }
-
-    // Free's current branch runs up to "now" only — forward-looking years stay
-    // the Pro moat. Beyond that: a 大运 in the expanded set renders its full
-    // decade; everything else collapses to ZERO 流年 commits (just the head + a
-    // merge ring), so past + far-future decades read as a tidy spine until the
-    // user taps to drill in.
+    // An expanded 大运 renders its full decade; everything else collapses to
+    // ZERO 流年 commits (just the head + a merge ring), so past + far-future
+    // decades read as a tidy spine until the user taps to drill in.
     const isExpanded = expandedSet.has(i)
-    const years =
-      state === 'current'
-        ? isPro
-          ? d.liunian
-          : d.liunian.filter((ln) => ln.year <= thisYear)
-        : isExpanded
-          ? d.liunian
-          : []
+    const years = isExpanded ? d.liunian : []
 
     // Peel the branch out of the trunk and place the 大运 head.
     curve(branchPath, TRUNK_X, dayunY - STEP / 2, BRANCH_X, dayunY)
@@ -356,7 +312,6 @@ function buildGraph(
       r: state === 'current' ? NODE_R + 1 : NODE_R,
       kind: 'dayun',
       state,
-      locked: false,
       isHead: false,
       element: d.pillar.element,
       fit: d.fit,
@@ -382,7 +337,6 @@ function buildGraph(
         r: ln.isCurrent ? HEAD_R : NODE_R,
         kind: 'liunian',
         state: ls,
-        locked: false,
         isHead: ln.isCurrent,
         element: ln.pillar.element,
         fit: ln.fit,
@@ -407,7 +361,6 @@ function buildGraph(
         r: NODE_R - 1,
         kind: 'mergeBack',
         state,
-        locked: false,
         isHead: false,
         element: d.pillar.element,
         branchColor,
@@ -440,7 +393,6 @@ function buildGraph(
   const hero =
     nodes.find(
       (n) =>
-        !n.locked &&
         n.kind !== 'source' &&
         n.state === 'future' &&
         n.chip !== undefined &&
@@ -471,10 +423,8 @@ function buildGraph(
 
 export function TimelineGraph({
   payload,
-  isPro,
   selectedId,
   onSelect,
-  onLockedTap,
   colors,
   width,
   detail,
@@ -485,10 +435,8 @@ export function TimelineGraph({
   expandedDayunIndices,
 }: {
   payload: TimelinePayload
-  isPro: boolean
   selectedId: string | null
   onSelect: (id: string) => void
-  onLockedTap: () => void
   colors: GColors
   width: number
   /** The selected node's reading — popped up anchored to that node. */
@@ -505,8 +453,8 @@ export function TimelineGraph({
   expandedDayunIndices?: ReadonlySet<number>
 }) {
   const graph = useMemo(
-    () => buildGraph(payload, isPro, width, shensha, expandedDayunIndices),
-    [payload, isPro, width, shensha, expandedDayunIndices]
+    () => buildGraph(payload, width, shensha, expandedDayunIndices),
+    [payload, width, shensha, expandedDayunIndices]
   )
   const selectedNode = graph.nodes.find((n) => n.id === selectedId)
 
@@ -548,15 +496,6 @@ export function TimelineGraph({
         {graph.nodes.map((n) => {
           const elementColor = ELEMENT_COLORS[n.element]
           const lane = n.branchColor ?? elementColor
-          if (n.locked) {
-            return (
-              <Group key={n.id}>
-                {/* bg halo punches the line → the node sits on it with a clean gap */}
-                <Circle cx={n.x} cy={n.y} r={n.r + 3} color={colors.bg} />
-                <Circle cx={n.x} cy={n.y} r={n.r} color={colors.dim} opacity={0.3} />
-              </Group>
-            )
-          }
           const selected = selectedId === n.id
           // Branch nodes (大运 head + 流年, out in the lane) render SOLID; only a
           // trunk node that absorbs a branch (mergeBack) is a ring + centre dot.
@@ -636,10 +575,6 @@ export function TimelineGraph({
           <Pressable
             key={`hit-${n.id}`}
             onPress={() => {
-              if (n.locked) {
-                onLockedTap()
-                return
-              }
               Haptics.selectionAsync().catch(() => {})
               // Merge-back rings route taps to their 大运 (same period, different
               // git-graph anchor — the detail bubble lives on the 大运 head).
@@ -650,7 +585,7 @@ export function TimelineGraph({
               onSelect(n.id)
             }}
             accessibilityRole='button'
-            accessibilityLabel={n.locked ? undefined : `${n.title} ${n.sub}`}
+            accessibilityLabel={`${n.title} ${n.sub}`}
             style={{
               position: 'absolute',
               left: 0,
@@ -660,7 +595,7 @@ export function TimelineGraph({
               justifyContent: 'center',
             }}
           >
-            {n.locked || structural ? null : (
+            {structural ? null : (
               <View
                 style={{
                   position: 'absolute',

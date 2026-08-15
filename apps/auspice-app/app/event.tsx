@@ -13,7 +13,7 @@
  */
 
 import DateTimePicker from '@react-native-community/datetimepicker'
-import { resolveYijiSearchVerbs } from '@zhop/astro-core'
+import { formatYijiList, resolveYijiSearchVerbs } from '@zhop/astro-core'
 import { Button, useTheme } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -35,28 +35,11 @@ import {
 import { useStrings } from '@/lib/i18n-context'
 import { isIapEnabled } from '@/lib/iap-enabled'
 import { scheduleRetroCheck } from '@/lib/push'
+import { useVoiceMode } from '@/lib/voice-mode-context'
 
 /** Free window + server cap (mirror auspice.ts MAX_SEARCH_SPAN_DAYS). */
 const FREE_WINDOW_DAYS = 30
 const MAX_SPAN_DAYS = 92
-
-const HOT_WORD_KEYS = [
-  '相亲',
-  '读书',
-  '进修',
-  '面试',
-  '体检',
-  '发布',
-  '上线',
-  '谈判',
-  'AI',
-  '游戏',
-] as const
-type HotWordKey = (typeof HOT_WORD_KEYS)[number]
-
-function isHotWordKey(key: string): key is HotWordKey {
-  return (HOT_WORD_KEYS as readonly string[]).includes(key)
-}
 
 function fmt(d: Date) {
   const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -83,10 +66,27 @@ function isSpecialized(e: AuspiceEvent): e is SpecializedCycleEvent {
 /** Optional deep-link params from /timeline ("查看吉日"). Pro-only fields, since
  *  Free is pinned to the next-30-days window regardless. */
 const EVENT_SET = new Set<string>(CYCLE_EVENTS)
-const SEARCH_KEY_SET = new Set<string>([...CYCLE_EVENTS, ...HOT_WORD_KEYS])
+/**
+ * 现代场景词 — 黄历原文没有「面试」「换工作」这类词，但服务端把它们
+ * 翻译成传统宜忌动词再打分（面试 → 见贵·求财，装修 → 修造）。
+ * 全量展示（2026-08：不再折叠），标签随「黄历模式」开关换注册表。
+ */
+const MODERN_EVENT_KEYS = [
+  '面试',
+  '相亲',
+  '体检',
+  '发布',
+  '谈判',
+  '读书',
+  '换工作',
+  '装修',
+  '买车',
+] as const
+const MODERN_EVENT_SET = new Set<string>(MODERN_EVENT_KEYS)
 function parseSearchKey(raw: string | string[] | undefined): string | null {
   const s = Array.isArray(raw) ? raw[0] : raw
-  return s && SEARCH_KEY_SET.has(s) ? s : null
+  // Deep links only carry the stable event ids (or a free-text custom event).
+  return s && (EVENT_SET.has(s) || s.trim().length > 0) ? s : null
 }
 function parseIsoDate(raw: string | string[] | undefined): Date | null {
   const s = Array.isArray(raw) ? raw[0] : raw
@@ -98,8 +98,11 @@ function parseIsoDate(raw: string | string[] | undefined): Date | null {
 export default function EventScreen() {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
+  const { mode: voiceMode } = useVoiceMode()
   const router = useRouter()
   const params = useLocalSearchParams<{ event?: string; from?: string; to?: string }>()
+  // 黄历模式 is zh-only: en/ja 永远白话，不渲染 classical 注册表。
+  const classicalActive = voiceMode === 'classical' && locale.startsWith('zh')
 
   const [searchKey, setSearchKey] = useState<string>(
     () => parseSearchKey(params.event) ?? 'wedding'
@@ -133,11 +136,27 @@ export default function EventScreen() {
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
   const specialized = resolvedEvent != null && isSpecialized(resolvedEvent)
 
-  const searchLabel = isHotWordKey(searchKey)
-    ? t.eventAliases[searchKey]
-    : EVENT_SET.has(searchKey)
-      ? t.events[searchKey as AuspiceEvent]
-      : searchKey
+  /**
+   * 注册表感知的事项标签：
+   * - 10 传统事项：白话（结婚/开业/…）↔ 原文（嫁娶/开市/…）。
+   * - 现代词：白话（面试/换工作/…）↔ 原文映射（见贵·求财/修造/…）——
+   *   现代概念在原文里只存在其映射动词，展示打分所用的宜忌动词是唯一诚实呈现。
+   */
+  const eventLabel = (key: string): string | undefined => {
+    if (EVENT_SET.has(key)) {
+      return classicalActive
+        ? t.eventsClassical[key as AuspiceEvent]
+        : t.events[key as AuspiceEvent]
+    }
+    if (MODERN_EVENT_SET.has(key)) {
+      return classicalActive
+        ? formatYijiList(resolveYijiSearchVerbs(key)?.verbs ?? [], locale, 'traditional', 2)
+        : t.modernEventLabels[key]
+    }
+    return undefined
+  }
+
+  const searchLabel = eventLabel(searchKey) ?? searchKey
 
   const run = () => {
     // Free → fixed next-30-days; Pro → the chosen window, clamped to the server cap.
@@ -160,8 +179,8 @@ export default function EventScreen() {
     // Specialized scoring is free now — only the window is gated.
     const promise =
       resolvedEvent != null && isSpecialized(resolvedEvent)
-        ? fetchAuspiceSpecialized(resolvedEvent as SpecializedCycleEvent, fromIso, toIso)
-        : searchAuspiceDays(searchKey, fromIso, toIso, locale)
+        ? fetchAuspiceSpecialized(resolvedEvent as SpecializedCycleEvent, fromIso, toIso, voiceMode)
+        : searchAuspiceDays(searchKey, fromIso, toIso, locale, voiceMode)
     promise
       .then((r) => setResult(r))
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
@@ -169,6 +188,9 @@ export default function EventScreen() {
   }
 
   const flagship: 'yuan' | 'feng' = resolvedEvent === 'wedding' ? 'yuan' : 'feng'
+
+  /** 白话 ↔ 原文文案层（「黄历模式」zh-only；en/ja 恒白话）。 */
+  const pick = (modern: string, classical: string) => (classicalActive ? classical : modern)
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -178,8 +200,9 @@ export default function EventScreen() {
           <Text
             style={{ color: colors.secondary, fontSize: 11, letterSpacing: 3, marginBottom: 8 }}
           >
-            {t.pickEvent}
+            {pick(t.pickEvent, t.pickEventClassical)}
           </Text>
+          {/* 全量展示（2026-08：不折叠）——标签注册表随「黄历模式」切换。 */}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             {CYCLE_EVENTS.map((e) => {
               const selected = e === searchKey
@@ -197,45 +220,49 @@ export default function EventScreen() {
                   }}
                 >
                   <Text style={{ color: selected ? '#fff' : colors.text, fontSize: 14 }}>
-                    {t.events[e]}
+                    {eventLabel(e)}
                   </Text>
                 </Pressable>
               )
             })}
           </View>
-          <Text
-            style={{
-              color: colors.secondary,
-              fontSize: 11,
-              letterSpacing: 3,
-              marginTop: spacing.md,
-              marginBottom: spacing.sm,
-            }}
-          >
-            {t.eventAliasSection}
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            {HOT_WORD_KEYS.map((key) => {
-              const selected = key === searchKey
-              return (
-                <Pressable
-                  key={key}
-                  onPress={() => setSearchKey(key)}
-                  style={{
-                    paddingVertical: spacing.sm,
-                    paddingHorizontal: spacing.lg,
-                    borderRadius: 999,
-                    backgroundColor: selected ? colors.accent : colors.card,
-                    borderWidth: 0.5,
-                    borderColor: selected ? colors.accent : colors.separator,
-                  }}
-                >
-                  <Text style={{ color: selected ? '#fff' : colors.text, fontSize: 14 }}>
-                    {t.eventAliases[key]}
-                  </Text>
-                </Pressable>
-              )
-            })}
+
+          {/* 现代场景词 — 黄历原文没有「面试」这类词，服务端映射到传统
+              宜忌动词（面试→见贵·求财）再打分；原文模式展示映射动词。 */}
+          <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
+            <Text
+              style={{
+                color: colors.secondary,
+                fontSize: 11,
+                letterSpacing: 3,
+                marginBottom: spacing.sm,
+              }}
+            >
+              {pick(t.modernEventsTitle, t.modernEventsTitleClassical)}
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+              {MODERN_EVENT_KEYS.map((key) => {
+                const selected = key === searchKey
+                return (
+                  <Pressable
+                    key={key}
+                    onPress={() => setSearchKey(key)}
+                    style={{
+                      paddingVertical: spacing.sm,
+                      paddingHorizontal: spacing.lg,
+                      borderRadius: 999,
+                      backgroundColor: selected ? colors.accent : colors.card,
+                      borderWidth: 0.5,
+                      borderColor: selected ? colors.accent : colors.separator,
+                    }}
+                  >
+                    <Text style={{ color: selected ? '#fff' : colors.text, fontSize: 14 }}>
+                      {eventLabel(key)}
+                    </Text>
+                  </Pressable>
+                )
+              })}
+            </View>
           </View>
         </View>
 
@@ -256,7 +283,7 @@ export default function EventScreen() {
             <Text
               style={{ color: colors.accent, fontSize: 12, fontWeight: '600', letterSpacing: 1 }}
             >
-              {t.specializedActive}
+              {pick(t.specializedActive, t.specializedActiveClassical)}
             </Text>
           </View>
         ) : null}
@@ -321,13 +348,15 @@ export default function EventScreen() {
         ) : null}
 
         <Button variant='primary' fullWidth onPress={run}>
-          {t.search}
+          {pick(t.search, t.searchClassical)}
         </Button>
 
         {loading ? (
           <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
             <MoonLoader />
-            <Text style={{ color: colors.secondary, marginTop: spacing.sm }}>{t.searching}</Text>
+            <Text style={{ color: colors.secondary, marginTop: spacing.sm }}>
+              {pick(t.searching, t.searchingClassical)}
+            </Text>
           </View>
         ) : error ? (
           <Text style={{ color: colors.secondary }}>
@@ -335,8 +364,16 @@ export default function EventScreen() {
           </Text>
         ) : result ? (
           <View style={{ gap: spacing.md }}>
+            {/* 搜索窗口标注 — free 固定未来 30 天；Pro 为自选窗口。 */}
+            <Text style={{ color: colors.dim, fontSize: 12 }}>
+              {pick(t.eventWindowLabel, t.eventWindowLabelClassical)
+                .replace('{from}', fmt(new Date(result.range.from)))
+                .replace('{to}', fmt(new Date(result.range.to)))}
+            </Text>
             {result.top.length === 0 ? (
-              <Text style={{ color: colors.secondary }}>{t.noResults}</Text>
+              <Text style={{ color: colors.secondary }}>
+                {pick(t.noResults, t.noResultsClassical)}
+              </Text>
             ) : (
               result.top.map((r) => (
                 <Pressable
@@ -367,7 +404,9 @@ export default function EventScreen() {
                       {r.date}
                     </Text>
                     {r.recommended ? (
-                      <Text style={{ color: colors.accent, fontSize: 12 }}>{t.recommended}</Text>
+                      <Text style={{ color: colors.accent, fontSize: 12 }}>
+                        {pick(t.recommended, t.recommendedClassical)}
+                      </Text>
                     ) : null}
                   </View>
                   <Text style={{ color: colors.secondary, fontSize: 13 }}>{r.reasoning}</Text>

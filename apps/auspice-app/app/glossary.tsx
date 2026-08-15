@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { CultureIntroBlock } from '@/components/culture/CultureIntroBlock'
+import { AlmanacGlossary } from '@/components/glossary/AlmanacGlossary'
 import { BaziPillars } from '@/components/glossary/BaziPillars'
 import { GanzhiGrid } from '@/components/glossary/GanzhiGrid'
 import { ShichenWheel } from '@/components/glossary/ShichenWheel'
@@ -46,6 +47,8 @@ function parseGlossaryOpen(raw: string | string[] | undefined): CultureCategoryK
 
 function categoryLabel(key: CultureCategoryKey, t: Strings): string {
   switch (key) {
+    case 'huangli':
+      return t.glossaryHuangli
     case 'festivals':
       return t.festivalsSection
     case 'jieqi':
@@ -182,6 +185,8 @@ function CategoryBody({
   locale: Locale
 }) {
   if (cat === 'shichen') return <ShichenWheel />
+  // 黄历行话 — the orthodox 通书 register moved off the home page (2026-08).
+  if (cat === 'huangli') return <AlmanacGlossary locale={locale} />
   // 干支 / 八字 keep their inline reference visual + a drill-in to the full
   // explainer (the product mechanics behind timeline / 黄历 / make-if).
   if (cat === 'ganzhi') {

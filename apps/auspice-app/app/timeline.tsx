@@ -6,9 +6,11 @@
  * the 大运 you're living is the checked-out HEAD branch carrying the 流年 as
  * commits, and 流月 are the finest commits of the current year.
  *
- * Gating is ONE wall, ONE CTA (2026-06 feedback — the old page showed three
- * "unlock" rows). Free sees the SOURCE + the current branch + this year; Pro
- * lights up the whole life. The single unlock CTA sits at the very bottom.
+ * Tiering (2026-08): the DETERMINISTIC life is FREE for every tier — all 大运,
+ * 流年, 流月 and their 对你而言 readings (data is already in the payload; zero
+ * LLM). Pro's increment is interpretation depth only: the per-node LLM
+ * deep-read, the MonthlyDepth card, and 印证 (event pinning). No paywall rows
+ * on the page itself; Pro cues live on the LLM surfaces.
  *
  * ADR-0018 minimalism: no chrome, no bordered "cards". The graph and the app's
  * own type ARE the page. Element colors come from the shared 五行 palette.
@@ -27,7 +29,6 @@ import {
   type WuXing,
 } from '@zhop/astro-core'
 import { useTheme } from '@zhop/core-ui'
-import { ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { verdictColors } from '@zhop/hexastral-tokens/palette'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
@@ -57,6 +58,7 @@ import { isIapEnabled } from '@/lib/iap-enabled'
 import { useImageShare } from '@/lib/imageShare'
 import { forwardLiuyue, type LiuyueCell } from '@/lib/liuyue'
 import { shareTaglineFor, timelineShareChrome, timelineShareUrl } from '@/lib/share'
+import { useVoiceMode } from '@/lib/voice-mode-context'
 
 function shichenToHour(timeIndex: number | null): number {
   if (timeIndex === null || timeIndex < 0 || timeIndex > 11) return -1
@@ -150,9 +152,14 @@ function resolveNodeDetail(
   /** Chart 用神 五行 — appended as a 化解 ("支线解法") on conflict / 忌神 nodes. */
   favorableEl?: WuXing | null,
   /** UI locale — headings drop the raw 干支 outside zh (jargon to non-CJK readers). */
-  lang?: string
+  lang?: string,
+  /** 「黄历原声」 — classical headings (丙午大运 · 甲辰之月) + 文言 advice. */
+  classical = false
 ): NodeDetail | null {
   const cjk = (lang ?? 'zh').startsWith('zh')
+  /** Per-grade advice — classical register swaps in the 文言 sentence. */
+  const advice = (fit: PersonalFit): string =>
+    classical ? t.timelineAdviceClassical[fit] : t.timelineAdvice[fit]
   // The 用神/忌神 element note — the per-node "why" the per-grade advice drops.
   const elementNote = (reasons: string[], element: string): string => {
     if (reasons.includes('favorable_element_present'))
@@ -182,7 +189,9 @@ function resolveNodeDetail(
   if (selectedId === 'source') {
     return {
       heading: cjk
-        ? `${payload.pillars.day.stem}${payload.pillars.day.branch} · ${t.baziDayMaster}`
+        ? classical
+          ? `命局 · ${payload.pillars.day.stem}${payload.pillars.day.branch}日主`
+          : `${payload.pillars.day.stem}${payload.pillars.day.branch} · ${t.baziDayMaster}`
         : t.baziDayMaster,
       fit: null,
       body: t.personal.birthHint,
@@ -195,10 +204,12 @@ function resolveNodeDetail(
     const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
     return {
       heading: cjk
-        ? `${row.pillar.stem}${row.pillar.branch} · ${row.startAge}–${row.endAge} · ${t.personal.fit[row.fit]}`
+        ? classical
+          ? `${row.pillar.stem}${row.pillar.branch}大运 · ${row.startAge}–${row.endAge}岁 · ${t.personal.fit[row.fit]}`
+          : `${row.pillar.stem}${row.pillar.branch} · ${row.startAge}–${row.endAge} · ${t.personal.fit[row.fit]}`
         : `${t.timelineDayun} · ${row.startAge}–${row.endAge} · ${t.personal.fit[row.fit]}`,
       fit: row.fit,
-      body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}${huajie(row.reasons)}${ziweiNote(row.ziwei)}`,
+      body: `${advice(row.fit)}${elementNote(row.reasons, row.pillar.element)}${clash}${huajie(row.reasons)}${ziweiNote(row.ziwei)}`,
     }
   }
   if (selectedId.startsWith('liuyue-')) {
@@ -208,10 +219,12 @@ function resolveNodeDetail(
     const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
     return {
       heading: cjk
-        ? `${row.year}.${row.month} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`
+        ? classical
+          ? `${row.pillar.stem}${row.pillar.branch}之月 · ${row.year}.${row.month} · ${t.personal.fit[row.fit]}`
+          : `${row.year}.${row.month} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`
         : `${row.year}.${row.month} · ${t.personal.fit[row.fit]}`,
       fit: row.fit,
-      body: `${t.timelineAdvice[row.fit]}${elementNote(row.reasons, row.pillar.element)}${clash}${huajie(row.reasons)}${ziweiNote(row.ziwei)}`,
+      body: `${advice(row.fit)}${elementNote(row.reasons, row.pillar.element)}${clash}${huajie(row.reasons)}${ziweiNote(row.ziwei)}`,
     }
   }
   const year = Number(selectedId.slice('liunian-'.length))
@@ -224,10 +237,12 @@ function resolveNodeDetail(
   const clash = row.reasons.includes('personal_clash') ? ` ${t.timelineClashNote}` : ''
   return {
     heading: cjk
-      ? `${row.year} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`
+      ? classical
+        ? `${row.pillar.stem}${row.pillar.branch}之年 · ${row.year} · ${t.personal.fit[row.fit]}`
+        : `${row.year} · ${row.pillar.stem}${row.pillar.branch} · ${t.personal.fit[row.fit]}`
       : `${row.year} · ${t.personal.fit[row.fit]}`,
     fit: row.fit,
-    body: `${t.timelineAdvice[row.fit]}${clash}${huajie(row.reasons)}${ziweiNote(row.ziwei)}`,
+    body: `${advice(row.fit)}${clash}${huajie(row.reasons)}${ziweiNote(row.ziwei)}`,
   }
 }
 
@@ -273,6 +288,8 @@ type ScreenState =
 export default function TimelineScreen() {
   const { colors, spacing, isDark } = useTheme()
   const { t, locale } = useStrings()
+  const { classical: classicalMode } = useVoiceMode()
+  const classicalActive = classicalMode && locale.startsWith('zh')
   const router = useRouter()
   const pushParams = useLocalSearchParams<{
     nodeType?: string
@@ -545,9 +562,6 @@ export default function TimelineScreen() {
             drill={drill}
             onSelect={handleSelect}
             onSelectDayun={onSelectDayun}
-            // Locked 大运 taps open the paywall only when IAP exists; without IAP
-            // the ghosted decades stay inert (free tier shows the living 大运 only).
-            onLockedTap={isIapEnabled() ? () => setPaywallOpen(true) : () => {}}
             colors={colors}
             spacing={spacing}
             canvasWidth={canvasWidth}
@@ -570,7 +584,7 @@ export default function TimelineScreen() {
             // reading), falling back to the current 大运 so a fresh share still has a
             // takeaway. What they see on screen = what they share.
             const shareDetail =
-              resolveNodeDetail(state.payload, selectedId, t, favEl, locale) ??
+              resolveNodeDetail(state.payload, selectedId, t, favEl, locale, classicalActive) ??
               (snap
                 ? {
                     heading: `${snap.dayun} · ${snap.dayunAges} · ${t.personal.fit[snap.fit]}`,
@@ -603,7 +617,6 @@ export default function TimelineScreen() {
                     onSelectYear={() => {}}
                     fitColor={FIT_COLOR}
                     lang={locale}
-                    isPro={isPro}
                   />
                   {/* Bake the SELECTED node's reading below the graph (no anchored
                       popover in a static card) — the share's takeaway tracks the
@@ -802,7 +815,6 @@ function Body({
   drill,
   onSelect,
   onSelectDayun,
-  onLockedTap,
   colors,
   spacing,
   canvasWidth,
@@ -816,21 +828,23 @@ function Body({
   drill: Drill | null
   onSelect: (id: string) => void
   onSelectDayun: (i: number) => void
-  onLockedTap: () => void
   colors: BodyColors
   spacing: BodySpacing
   canvasWidth: number
   t: ReturnType<typeof useStrings>['t']
   lang: string
 }) {
+  const { classical: classicalMode } = useVoiceMode()
+  const classical = classicalMode && lang.startsWith('zh')
   const favEl = useMemo(() => chartFavorableElement(payload), [payload])
-  // Which year's 流月 sub-branch is woven open (Pro). Derived-open only when it
-  // equals the selected year, so selecting elsewhere collapses the weave.
+  // Which year's 流月 sub-branch is woven open — deterministic for every tier.
+  // Derived-open only when it equals the selected year, so selecting elsewhere
+  // collapses the weave.
   const [liuyueOpenYear, setLiuyueOpenYear] = useState<number | null>(null)
   // Resolve the selected node → a 对你而言 verdict + advice line (no card chrome).
   const detail = useMemo(
-    () => resolveNodeDetail(payload, selectedId, t, favEl, lang),
-    [selectedId, payload, t, favEl, lang]
+    () => resolveNodeDetail(payload, selectedId, t, favEl, lang, classical),
+    [selectedId, payload, t, favEl, lang, classical]
   )
 
   // Pro per-node deep-read (LLM, server-落库). Lazy — fetched only when a
@@ -912,18 +926,12 @@ function Body({
     if (!Number.isFinite(year) || year <= new Date().getFullYear()) return null
     return payload.dayun.flatMap((d) => d.liunian).some((r) => r.year === year) ? year : null
   }, [selectedId, payload])
-  const curIdx = payload.currentDayunIndex
 
   return (
     <View style={{ gap: spacing.xl }}>
-      {!isPro ? (
-        <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
-          {t.timelineFreePreviewNote}
-        </Text>
-      ) : null}
-
-      {/* 大运 selector — pick a decade to drill into (the whole-life view read long
-          + unfocused). Free unlocks only the 大运 you're living; others → paywall. */}
+      {/* 大运 selector — pick any decade to drill into. Deterministic for EVERY
+          tier (data is already in the payload); Pro's increment is the LLM
+          deep-read + MonthlyDepth + 印证, never the ability to browse. */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -931,11 +939,10 @@ function Body({
       >
         {payload.dayun.map((d, i) => {
           const sel = i === selectedDayunIndex
-          const locked = !isPro && i !== curIdx
           return (
             <Pressable
               key={d.index}
-              onPress={() => (locked ? onLockedTap() : onSelectDayun(i))}
+              onPress={() => onSelectDayun(i)}
               accessibilityRole='button'
               accessibilityState={{ selected: sel }}
               style={{
@@ -946,17 +953,19 @@ function Body({
                 borderColor: sel ? colors.accent : colors.separator,
                 backgroundColor: sel ? colors.accent : 'transparent',
                 alignItems: 'center',
-                opacity: locked ? 0.45 : 1,
               }}
             >
               {/* Age leads (universal); 干支 demoted to a muted zh-only second line
-                  — raw 干支 reads as jargon outside Chinese (2026-06 feedback). */}
+                  — raw 干支 reads as jargon outside Chinese (2026-06 feedback).
+                  Classical register flips it: 干支 leads (历书体例), age below. */}
               <Text style={{ color: sel ? '#fff' : colors.text, fontSize: 16, fontWeight: '500' }}>
-                {`${d.startAge}+`}
+                {classical && lang.startsWith('zh')
+                  ? `${d.pillar.stem}${d.pillar.branch}`
+                  : `${d.startAge}+`}
               </Text>
               {lang.startsWith('zh') ? (
                 <Text style={{ color: sel ? '#fff' : colors.dim, fontSize: 10, marginTop: 1 }}>
-                  {`${d.pillar.stem}${d.pillar.branch}`}
+                  {classical ? `${d.startAge}岁起` : `${d.pillar.stem}${d.pillar.branch}`}
                 </Text>
               ) : null}
             </Pressable>
@@ -978,14 +987,13 @@ function Body({
             if (!r) return
             onSelect(`liunian-${r.year}`)
             // 流月 only for THIS year + ahead — past months aren't actionable, so we
-            // don't weave them (2026-06 feedback). Pro: tapping opens it (re-tap
-            // closes); Free: stays locked → the upsell under the reading.
+            // don't weave them (2026-06 feedback). Deterministic for every tier;
+            // tap opens it, re-tap closes.
             const past = r.year < new Date().getFullYear()
-            if (isPro && !past) setLiuyueOpenYear((c) => (c === r.year ? null : r.year))
+            if (!past) setLiuyueOpenYear((c) => (c === r.year ? null : r.year))
           }}
           fitColor={FIT_COLOR}
           lang={lang}
-          isPro={isPro}
           liuyue={drill.liuyue}
           liuyueOpen={drill.selectedYear != null && liuyueOpenYear === drill.selectedYear}
           selectedMonth={drill.selectedMonth}
@@ -1009,26 +1017,7 @@ function Body({
           to the 八字 explainer answers what they are. Free; no paywall. */}
       {detail ? <AboutLuckLink t={t} colors={colors} /> : null}
 
-      {/* Free: advertise the Pro 流月 (monthly) weave under the reading, for THIS
-          year + ahead — restores the value cue the removed popover used to carry,
-          without blocking the year column (2026-06 feedback).
-          Hidden while IAP is off — the tap would dead-end in a "coming soon" wall. */}
-      {!isPro &&
-      isIapEnabled() &&
-      drill?.selectedYear != null &&
-      drill.selectedYear >= new Date().getFullYear() ? (
-        <Pressable
-          onPress={onLockedTap}
-          accessibilityRole='button'
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-        >
-          <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>
-            {t.timelineLiuyueUpsell}
-          </Text>
-        </Pressable>
-      ) : null}
-
-      {/* 印证 — pin a real event on a past 流年 and let the chart corroborate it. */}
+      {/* 对你而言 reading for the selected 大运 / 流年 / 流月. */}
       {isPro && pinnableRow && birthBranch ? (
         <YinzhengPanel
           key={pinnableRow.year}
@@ -1044,29 +1033,6 @@ function Body({
           with that year's window (立春-aligned, within the server's 92-day cap). */}
       {futureLiunianYear ? (
         <ZejiLink year={futureLiunianYear} t={t} colors={colors} spacing={spacing} />
-      ) : null}
-
-      {/* ONE unlock — the only paywall on the page. Hidden while IAP is off:
-          the free build shows the living 大运 and never a dead "coming soon". */}
-      {!isPro && isIapEnabled() ? (
-        <Pressable
-          onPress={onLockedTap}
-          accessibilityRole='button'
-          accessibilityLabel={t.timelineProLocked}
-          style={({ pressed }) => ({
-            marginTop: spacing.md,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingVertical: spacing.md,
-            opacity: pressed ? 0.6 : 1,
-          })}
-        >
-          <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600', letterSpacing: 1 }}>
-            {t.timelineProLocked}
-          </Text>
-          <ChevronRightIcon size={16} color={colors.accent} strokeWidth={1.4} />
-        </Pressable>
       ) : null}
     </View>
   )

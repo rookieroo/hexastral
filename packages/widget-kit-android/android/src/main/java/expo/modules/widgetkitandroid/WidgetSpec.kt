@@ -60,4 +60,12 @@ object WidgetSpec {
     const val LARGE_TIP_LABEL_FONT = 9
     const val LARGE_TIP_FONT = 12
     const val LARGE_TIP_LINES = 3
+
+    // Large — 黄历模式 (撕页黄历)
+    const val LARGE_ALMANAC_PADDING = 14
+    const val LARGE_ALMANAC_V_PADDING = 8
+    const val LARGE_ALMANAC_DAY_FONT = 72
+    const val LARGE_ALMANAC_STRIP_FONT = 11
+    const val LARGE_ALMANAC_META_FONT = 10
+    const val LARGE_ALMANAC_YIJI_FONT = 13
 }

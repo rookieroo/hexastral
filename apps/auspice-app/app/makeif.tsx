@@ -54,6 +54,7 @@ import { localizeWuxing } from '@/lib/culture/terms'
 import { getAuspiceDeviceId } from '@/lib/device'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
+import { isIapEnabled } from '@/lib/iap-enabled'
 import { useImageShare } from '@/lib/imageShare'
 import {
   buildInteractiveModel,
@@ -175,7 +176,7 @@ export default function MakeIfScreen() {
             payload={state.payload}
             birth={state.birth}
           />
-        ) : (
+        ) : isIapEnabled() ? (
           <Teaser
             colors={colors}
             spacing={spacing}
@@ -184,6 +185,20 @@ export default function MakeIfScreen() {
             ctaLabel={makeIfInteractiveCopyForLocale(locale).unlockCta}
             onCta={() => setPaywallOpen(true)}
           />
+        ) : (
+          // No-IAP build: the Library entry is hidden; a deep link lands here
+          // instead of a dead "unlock → coming soon" wall.
+          <Text
+            style={{
+              color: colors.secondary,
+              fontSize: 14,
+              lineHeight: 22,
+              textAlign: 'center',
+              paddingVertical: spacing['3xl'],
+            }}
+          >
+            {t.proComingSoonBody}
+          </Text>
         )}
       </ScrollView>
       <AuspicePaywallSheet visible={paywallOpen} onClose={() => setPaywallOpen(false)} />

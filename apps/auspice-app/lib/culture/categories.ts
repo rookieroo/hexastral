@@ -41,6 +41,12 @@ const CATEGORY_WIKI: Record<CultureCategoryKey, LocalizedText> = {
     ja: '紫微斗数',
     en: 'Zi_wei_dou_shu',
   },
+  huangli: {
+    'zh-Hans': '黄历',
+    'zh-Hant': '黃曆',
+    ja: '黄暦',
+    en: 'Chinese_almanac',
+  },
 }
 
 const INTROS: Record<CultureCategoryKey, LocalizedText> = {
@@ -92,9 +98,18 @@ const INTROS: Record<CultureCategoryKey, LocalizedText> = {
     ja: '紫微斗数は紫微星を中心に百余の星を十二宮へ配し、四化と流年で性格・運の傾向を読む。四柱推命と並ぶ命理体系である。',
     en: 'Ziwei Dou Shu places 100+ stars across twelve palaces, led by the emperor star Ziwei — charting temperament and life phases alongside Bazi in the classical chart tradition.',
   },
+  huangli: {
+    'zh-Hans':
+      '黄历的宜忌来自一套沿袭千年的通书行话：建除十二神定日序，黄黑道十二值神分吉凶，二十八宿按日轮值，另有彭祖百忌与纳音。下方按表展开，每一条都以白话解释先行、行话原文随附。',
+    'zh-Hant':
+      '黃曆的宜忌來自一套沿襲千年的通書行話：建除十二神定日序，黃黑道十二值神分吉凶，二十八宿按日輪值，另有彭祖百忌與納音。下方按表展開，每一條都以白話解釋先行、行話原文隨附。',
+    ja: '黄暦の宜忌は千年続く通書の用語に由来する。建除十二神が日の序列を定め、黄黒道十二神が吉凶を分け、二十八宿が日替わりで輪番する。彭祖百忌と納音もあり、各項目を白話の説明から読める。',
+    en: "The almanac's do/don't pairs come from a millennial-old register: twelve 建除 officers order each day, twelve 黄黑道 day-gods grade it, twenty-eight mansions rotate by day, plus 彭祖 taboos and 纳音 elements. Plain-language explanations lead each entry below.",
+  },
 }
 
 const ORDER: ReadonlyArray<CultureCategoryKey> = [
+  'huangli',
   'festivals',
   'jieqi',
   'shichen',
@@ -122,6 +137,7 @@ export function isCultureCategoryKey(value: string): value is CultureCategoryKey
     value === 'shichen' ||
     value === 'ganzhi' ||
     value === 'sizhu' ||
-    value === 'ziwei'
+    value === 'ziwei' ||
+    value === 'huangli'
   )
 }

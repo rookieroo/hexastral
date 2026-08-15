@@ -530,3 +530,42 @@ export function analyzeBranchAgainstNatal(
 
   return null
 }
+
+// ========================================
+// 黄历日页「今日刑冲害合」— 单日支 vs 十二支归组
+// ========================================
+
+/** 单日支的刑冲害合归组 — 黄历日页「今日刑冲害合」行
+ *  （如未日：冲丑、六合午、三合亥卯、害子、刑丑戌）。 */
+export interface BranchRelationSummary {
+  /** 六冲对方支（无则 null） */
+  clash: EarthlyBranch | null
+  /** 六合对方支（无则 null） */
+  combine: EarthlyBranch | null
+  /** 三合其余两支（无则 []） */
+  triple: readonly EarthlyBranch[]
+  /** 六害对方支（无则 null） */
+  harm: EarthlyBranch | null
+  /** 相刑支（三刑对 + 自刑自身；无则 []） */
+  punish: readonly EarthlyBranch[]
+}
+
+export function branchRelationSummary(day: EarthlyBranch): BranchRelationSummary {
+  const clash = BRANCH_CLASH_MAP.find(([a, b]) => a === day || b === day)
+  const combine = BRANCH_SIX_COMBINATION.find(([a, b]) => a === day || b === day)
+  const triple = BRANCH_THREE_COMBINATION.find((g) => g.slice(0, 3).includes(day))
+  const harm = BRANCH_HARM_PAIRS.find(([a, b]) => a === day || b === day)
+  const punish = BRANCH_PUNISHMENT_PAIRS.filter(([a, b]) => a === day || b === day)
+    .map(([a, b]) => (a === day ? b : a))
+    .slice()
+  if (SELF_PUNISHMENT_BRANCHES.has(day)) punish.push(day)
+  return {
+    clash: clash ? (clash[0] === day ? clash[1] : clash[0]) : null,
+    combine: combine ? (combine[0] === day ? combine[1] : combine[0]) : null,
+    triple: triple
+      ? (triple.slice(0, 3) as readonly EarthlyBranch[]).filter((b) => b !== day)
+      : [],
+    harm: harm ? (harm[0] === day ? harm[1] : harm[0]) : null,
+    punish,
+  }
+}

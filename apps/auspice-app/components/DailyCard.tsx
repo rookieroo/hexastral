@@ -23,11 +23,13 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import type { AuspiceDay, AuspicePersonalization, PersonalFit } from '@/lib/api'
 import { localizeSolarTermName } from '@/lib/culture'
+import { classicalDailyTip } from '@/lib/culture/classical-tips'
 import { dailyWidgetTip } from '@/lib/culture/daily-widget-tips'
 import { ganzhiPinyin } from '@/lib/ganzhi-pinyin'
 import { getStrings, type Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import { ELEMENT_COLORS } from '@/lib/shichen-content'
+import { useVoiceMode } from '@/lib/voice-mode-context'
 import type { MoonSkinId, WatchTemplate } from '@/lib/widget-config'
 import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
 import { displayYijiVerb } from '@/lib/yiji-vocab'
@@ -327,7 +329,9 @@ export function buildDailyCardModel(
   day: AuspiceDay,
   personalization: AuspicePersonalization | null | undefined,
   t: Strings,
-  locale: Locale
+  locale: Locale,
+  /** 「黄历原声」 — classical almanac register (zh-Hans/zh-Hant only). */
+  classical = false
 ): DailyCardModel {
   const fit = personalization?.fit ?? null
   const en = locale === 'en'
@@ -352,12 +356,21 @@ export function buildDailyCardModel(
     ganzhiYear: yg ? `${yg.stem}${yg.branch}年` : null,
     benming: personalization?.benming === true,
     // Never prefix with "Chinese calendar" / "Lunar" — month/day (or 六月十五) only.
+    // Classical register: 岁次庚子年 · 六月十七 — the almanac's own voice.
     lunarLabel: ld
       ? en
         ? `${ld.month}/${ld.day}`
-        : `${t.lunarLabel} ${ld.monthName}${ld.dayName}`
+        : classical
+          ? `岁次${yg?.stem ?? ''}${yg?.branch ?? ''}年`
+          : `${t.lunarLabel} ${ld.monthName}${ld.dayName}`
       : null,
-    lunarMonthDay: ld ? (en ? `${ld.month}/${ld.day}` : `${ld.monthName}${ld.dayName}`) : '',
+    lunarMonthDay: ld
+      ? en
+        ? `${ld.month}/${ld.day}`
+        : classical
+          ? `岁次${yg?.stem ?? ''}${yg?.branch ?? ''}年 · ${ld.monthName}${ld.dayName}`
+          : `${ld.monthName}${ld.dayName}`
+      : '',
     lunarStrong: ld?.isFirst === true || ld?.isFifteenth === true,
     // Home hero may still cite prev→next; widget/watch only show the term ON its day.
     solarTermLabel: day.solarTermToday
@@ -374,9 +387,14 @@ export function buildDailyCardModel(
     fit,
     // Locale-facing verdict. Compact en widgets omit this category and lead with
     // the full For-you sentence; other surfaces may still use the localized word.
-    fitLabel: fit ? t.personal.fit[fit] : null,
-    fitSummary: fit ? t.personal.summary[fit] : null,
-    dayTip: dailyWidgetTip(date, locale),
+    fitLabel: fit ? (classical ? t.personal.fitClassical[fit] : t.personal.fit[fit]) : null,
+    // 原文模式判语换文言句（zh-only；en/ja 恒白话）。
+    fitSummary: fit
+      ? classical
+        ? t.personal.summaryClassical[fit]
+        : t.personal.summary[fit]
+      : null,
+    dayTip: classical ? classicalDailyTip(date, locale) : dailyWidgetTip(date, locale),
   }
 }
 
@@ -402,11 +420,15 @@ export function DailyCard({
   localeOverride?: Locale
 }) {
   const { t, locale: appLocale } = useStrings()
+  const { classical: classicalMode } = useVoiceMode()
   const locale = localeOverride ?? appLocale
   const strings = localeOverride ? getStrings(localeOverride) : t
+  // 「黄历原声」 ships zh-first: the classical register only rewrites
+  // zh-Hans / zh-Hant surfaces; en / ja stay on the contemporary voice.
+  const classical = classicalMode && (locale === 'zh-Hans' || locale === 'zh-Hant')
   const model = useMemo(
-    () => buildDailyCardModel(date, day, personalization, strings, locale),
-    [date, day, personalization, strings, locale]
+    () => buildDailyCardModel(date, day, personalization, strings, locale, classical),
+    [date, day, personalization, strings, locale, classical]
   )
   if (tier === 'glance') {
     return <GlanceTier model={model} phaseOverride={phaseOverride} locale={locale} />

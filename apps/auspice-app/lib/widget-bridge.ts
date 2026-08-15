@@ -25,8 +25,10 @@ import {
 import { type AuspiceDay, type AuspicePersonalization, fetchAuspiceDay } from '@/lib/api'
 import { getAuspiceBirthDate } from '@/lib/birth'
 import { localizeSolarTermCompact } from '@/lib/culture/names'
+import { nayinOf } from '@/lib/huangli-day'
 import { getStrings, type Locale } from '@/lib/i18n'
-import { resolveYijiDisplayMode } from '@/lib/yiji-display-mode'
+import { getVoiceMode } from '@/lib/voice-mode'
+import { resolveRegisterForLocale } from '@/lib/yiji-display-mode'
 
 const APP_GROUP = 'group.com.hexastral.yuun'
 const WINDOW_DAYS = 7
@@ -35,13 +37,14 @@ const WINDOW_DAYS = 7
  * Face chrome for the native widget, sourced from the app's i18n tables so
  * WidgetKit never has to own copy. en paints no 日签 label (body only).
  */
-function toWidgetChrome(locale: Locale): YuunWidgetChrome {
+function toWidgetChrome(locale: Locale, classical = false): YuunWidgetChrome {
   const t = getStrings(locale)
   const c = t.widgetChrome
   return {
     good: c.good,
     avoid: c.avoid,
-    forYou: c.forYou,
+    // 黄历模式：对你而言 → 于你（文言判级标题）。
+    forYou: classical ? t.personal.forYouClassical : c.forYou,
     tip: locale === 'en' ? '' : c.tip,
     lunarFallback: c.lunarFallback,
     emptyHint: c.emptyHint,
@@ -74,11 +77,25 @@ function toWidgetDay(
   t: Parameters<typeof buildDailyCardModel>[3],
   locale: Locale,
   includeFit: boolean,
-  yijiMode: YijiVocabularyMode
+  yijiMode: YijiVocabularyMode,
+  classical = false
 ): YuunWidgetDay {
   const m = buildDailyCardModel(date, day, includeFit ? (personalization ?? null) : null, t, locale)
   const en = locale === 'en'
   const chrome = compactChrome(locale)
+  // 黄历模式：对你而言判级/判语换文言（widget 与首页同口径）。
+  const fitLabel =
+    includeFit && m.fit
+      ? classical
+        ? t.personal.fitClassical[m.fit]
+        : t.personal.fit[m.fit]
+      : null
+  const fitSummary =
+    includeFit && m.fit
+      ? classical
+        ? t.personal.summaryClassical[m.fit]
+        : t.personal.summary[m.fit]
+      : null
   // en compact: keep 干支 + 宜/忌 glyphs + localized verbs; drop dense almanac extras.
   // Three verb budgets per surface: short = small (1 line), plain = medium
   // (2 lines in a narrow column), long = large (2 lines full width).
@@ -97,8 +114,8 @@ function toWidgetDay(
     jiShort: compactVerbs(m.avoidRaw, 2, locale, yijiMode),
     yiLong: compactVerbs(m.goodForRaw, verbBudget(locale, 'large'), locale, yijiMode),
     jiLong: compactVerbs(m.avoidRaw, verbBudget(locale, 'large'), locale, yijiMode),
-    fit: includeFit ? m.fitLabel : null,
-    fitSummary: includeFit ? m.fitSummary : null,
+    fit: fitLabel,
+    fitSummary: fitSummary,
     dayTip: m.dayTip,
     tipLabel: en ? null : chrome.tip,
     moonPhase: m.moonPhase,
@@ -107,6 +124,12 @@ function toWidgetDay(
     clashShengxiao: en ? undefined : m.clashShengxiao,
     // Year pillar stays on zh/ja; en medium already tight — omit 丙午年.
     ganzhiYear: en ? null : m.ganzhiYear,
+    // 黄历模式 extras — 撕页黄历 large 组件（值神/煞方/彭祖/纳音）。
+    dayGod: day.dayGod?.name ?? null,
+    evilDirection: day.evilDirection ?? null,
+    pengZuStem: day.pengZu?.stem ?? null,
+    pengZuBranch: day.pengZu?.branch ?? null,
+    nayin: nayinOf(day.ganZhi) || null,
   }
 }
 
@@ -115,7 +138,8 @@ export async function writeWidgetDays(
   days: YuunWidgetDay[],
   locale: Locale = 'zh-Hans'
 ): Promise<void> {
-  const data: YuunWidgetData = { days, chrome: toWidgetChrome(locale) }
+  const classical = (await getVoiceMode().catch(() => 'contemporary' as const)) === 'classical'
+  const data: YuunWidgetData = { days, chrome: toWidgetChrome(locale, classical), classical }
   const fresh = new Date()
   fresh.setDate(fresh.getDate() + WINDOW_DAYS)
   const freshIso = fresh.toISOString()
@@ -143,7 +167,8 @@ export async function syncWidgetWindow(
   includeFit: boolean
 ): Promise<void> {
   const birthDate = includeFit ? await getAuspiceBirthDate() : undefined
-  const yijiMode = await resolveYijiDisplayMode(locale)
+  const yijiMode = await resolveRegisterForLocale(locale)
+  const classical = (await getVoiceMode().catch(() => 'contemporary' as const)) === 'classical'
   const days: YuunWidgetDay[] = []
 
   for (let i = 0; i < WINDOW_DAYS; i++) {
@@ -151,7 +176,16 @@ export async function syncWidgetWindow(
     try {
       const payload = await fetchAuspiceDay(date, birthDate)
       days.push(
-        toWidgetDay(date, payload.day, payload.personalization, t, locale, includeFit, yijiMode)
+        toWidgetDay(
+          date,
+          payload.day,
+          payload.personalization,
+          t,
+          locale,
+          includeFit,
+          yijiMode,
+          classical
+        )
       )
     } catch {
       // Skip failed days; partial window is better than empty.
@@ -160,7 +194,7 @@ export async function syncWidgetWindow(
 
   if (days.length === 0) return
 
-  const data: YuunWidgetData = { days, chrome: toWidgetChrome(locale) }
+  const data: YuunWidgetData = { days, chrome: toWidgetChrome(locale, classical), classical }
   const fresh = new Date()
   fresh.setDate(fresh.getDate() + WINDOW_DAYS)
   const freshIso = fresh.toISOString()
@@ -188,9 +222,10 @@ export async function syncTodayWidget(
   locale: Locale,
   includeFit = false
 ): Promise<void> {
-  const yijiMode = await resolveYijiDisplayMode(locale)
+  const yijiMode = await resolveRegisterForLocale(locale)
+  const classical = (await getVoiceMode().catch(() => 'contemporary' as const)) === 'classical'
   // Seed today immediately so the widget updates before the rest of the window.
-  const today = toWidgetDay(date, day, personalization, t, locale, includeFit, yijiMode)
+  const today = toWidgetDay(date, day, personalization, t, locale, includeFit, yijiMode, classical)
   await writeWidgetDays([today], locale)
   void syncWidgetWindow(date, t, locale, includeFit)
 }

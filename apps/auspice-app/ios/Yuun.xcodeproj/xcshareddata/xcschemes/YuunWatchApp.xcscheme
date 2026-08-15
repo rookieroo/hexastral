@@ -61,6 +61,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "XX16BA89470096787304EEXX"
             BuildableName = "YuunWatchApp.app"
+            BlueprintName = "YuunWatchApp"
             ReferencedContainer = "container:Yuun.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -77,6 +78,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "XX16BA89470096787304EEXX"
             BuildableName = "YuunWatchApp.app"
+            BlueprintName = "YuunWatchApp"
             ReferencedContainer = "container:Yuun.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

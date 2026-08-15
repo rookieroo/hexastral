@@ -18,7 +18,7 @@ import { Platform } from 'react-native'
 
 import { getAuspiceBirthDate } from '@/lib/birth'
 import type { Locale } from '@/lib/i18n'
-import { resolveYijiDisplayMode } from '@/lib/yiji-display-mode'
+import { resolveRegisterForLocale } from '@/lib/yiji-display-mode'
 
 const APP_GROUP = 'group.com.hexastral.yuun'
 const CREDENTIAL_CACHE_KEY = 'auspice.watch.credential.v1'
@@ -163,7 +163,7 @@ export async function provisionYuunWatch(locale: Locale): Promise<void> {
   if (!shared) return
 
   const birthDate = (await getAuspiceBirthDate().catch(() => null)) ?? null
-  const yijiMode = await resolveYijiDisplayMode(locale)
+  const yijiMode = await resolveRegisterForLocale(locale)
   const prefs: YuunWatchPreferences = {
     locale: locale as WidgetLocale,
     birthDate,

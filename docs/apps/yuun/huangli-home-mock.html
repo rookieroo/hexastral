@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>黄历首页 · HTML 设计稿（对齐 m.168888 日页）</title>
+<style>
+  :root{
+    --paper:#f6f1e6; --card:#fffdf7; --ink:#2b2118; --dim:#8a7f70;
+    --line:#e3d9c6; --gold:#9a6b1f; --gold-soft:#f1e6cf; --green:#2e7d32; --green-soft:#e4f0e4;
+    --brown:#4a3324; --brown-soft:#ece4d8; --gray-soft:#eee9df;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{background:#ddd6c8; font-family:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif; color:var(--ink); padding:16px 8px 48px}
+  .phone{max-width:420px; margin:0 auto; background:var(--paper); border-radius:16px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,.18)}
+  .bar{display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--line); background:var(--card)}
+  .brand{display:flex; align-items:center; gap:10px}
+  .moon{width:30px; height:30px}
+  .brand-text{display:flex; flex-direction:column; line-height:1.15}
+  .wordmark{font-size:17px; font-weight:700; letter-spacing:.5px; color:var(--ink)}
+  .brand-sub{font-size:10px; letter-spacing:3px; color:var(--dim)}
+  .bar .tag{color:var(--dim); font-size:11px; letter-spacing:1px}
+  .wrap{padding:14px}
+
+  /* 日期块 */
+  .date-head{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 12px 12px; text-align:center}
+  .month-row{display:flex; justify-content:center; align-items:baseline; gap:6px; color:var(--dim); font-size:13px}
+  .month-row b{color:var(--ink); font-size:15px}
+  .week{color:var(--dim); font-size:12px; letter-spacing:2px; margin-top:2px}
+  .big-day{font-size:104px; line-height:1.12; font-weight:700; color:var(--ink); letter-spacing:2px}
+  .lunar{font-size:20px; color:var(--ink); letter-spacing:2px; margin-top:2px}
+  .pillars{font-size:14px; color:var(--dim); margin-top:6px; letter-spacing:1px}
+   .term{font-size:11px; color:var(--gold); margin-top:4px}
+
+  /* 宜忌 */
+  .yiji{display:flex; gap:10px; margin-top:12px}
+  .yiji-full{border:1px solid var(--line); border-radius:14px; background:var(--card); padding:14px 16px; margin-top:12px; text-align:center}
+  .yiji-full .line{display:flex; align-items:flex-start; gap:14px; text-align:left}
+  .yiji-full h3{font-size:17px; font-weight:700; letter-spacing:2px; line-height:28px}
+  .yiji-full h3.yi{color:var(--gold)} .yiji-full h3.ji{color:var(--brown)}
+  .yiji-full p{flex:1; font-size:15px; line-height:28px; letter-spacing:1px; color:var(--ink)}
+  .yiji-full .rule{height:1px; background:var(--line); margin:10px 0}
+  .yiji .col{flex:1; border:1px solid var(--line); border-radius:12px; background:var(--card); padding:10px 12px 14px; text-align:center}
+  .yiji .col h3{font-size:16px; letter-spacing:6px; margin-bottom:8px}
+  .yiji .yi h3{color:var(--gold)}
+  .yiji .ji h3{color:var(--brown)}
+  .yiji .col .verbs{font-size:15px; line-height:2; letter-spacing:1px}
+   .note-red{display:inline-block; background:var(--gold-soft); color:var(--brown); border-radius:6px; font-size:11px; padding:2px 8px; margin-bottom:8px; letter-spacing:.5px}
+
+  /* 信息表 */
+  table.info{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-top:12px}
+  table.info td{border-bottom:1px solid var(--line); padding:9px 12px; font-size:14px}
+  table.info tr:last-child td{border-bottom:none}
+  table.info td.k{color:var(--dim); font-size:12px; letter-spacing:2px; width:96px; white-space:nowrap}
+  table.info td.v{letter-spacing:.5px}
+  table.info td.v .sub{display:block; color:var(--dim); font-size:12px; letter-spacing:.5px; margin-top:2px}
+
+  /* 时辰吉凶 */
+  .sec-title{font-size:12px; letter-spacing:3px; color:var(--dim); margin:18px 2px 8px}
+  .hours{display:grid; grid-template-columns:repeat(4,1fr); gap:6px}
+  .hour{border:1px solid var(--line); border-radius:8px; background:var(--card); text-align:center; padding:7px 2px}
+  .hour .gz{font-size:13px; letter-spacing:1px}
+  .hour .luck{font-size:13px; font-weight:700; margin-top:2px}
+  .luck.good{color:var(--gold)}
+  .luck.bad{color:var(--brown)}
+
+  /* 财神 tiles */
+  .gods{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:6px}
+  .god{border:1px solid var(--line); border-radius:12px; background:var(--card); text-align:center; padding:10px 4px}
+  .god .n{font-size:11px; color:var(--dim); letter-spacing:2px}
+  .god .d{font-size:16px; font-weight:700; color:var(--gold); margin-top:4px; letter-spacing:1px}
+
+  /* 刑冲害合 */
+  .relation{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; font-size:14px; line-height:1.9; margin-top:6px}
+  .relation b{color:var(--brown)}
+
+  /* 时辰详情卡 */
+  .hcard{border:1px solid var(--line); border-radius:12px; background:var(--card); padding:12px 14px; margin-top:10px}
+  .hcard .top{display:flex; align-items:center; justify-content:space-between}
+  .hcard .top .t{font-size:15px; font-weight:700; letter-spacing:1px}
+  .hcard .top .range{color:var(--dim); font-size:12px}
+  .hcard .row{font-size:13px; color:var(--dim); margin-top:5px}
+  .hcard .row b{color:var(--ink)}
+  .hcard .yj{display:flex; gap:10px; margin-top:8px}
+  .hcard .yj div{flex:1; font-size:12.5px; line-height:1.8}
+  .hcard .yj .y{color:var(--gold)}
+  .hcard .yj .j{color:var(--brown)}
+
+  /* 数据可得性标注 */
+  .legend{display:flex; flex-wrap:wrap; gap:8px; font-size:11px; color:var(--dim); padding:10px 2px 2px}
+  .dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; vertical-align:baseline}
+  .dot.g{background:var(--gold)} .dot.a{background:var(--brown)} .dot.r{background:#8a7f70}
+  mark{background:transparent; position:relative}
+  .flag{display:inline-block; width:7px; height:7px; border-radius:50%; margin-left:5px; vertical-align:1px}
+  .flag.g{background:var(--gold)} .flag.a{background:var(--brown)} .flag.r{background:#8a7f70}
+  .foot{text-align:center; color:var(--dim); font-size:11px; padding:16px 0 6px; letter-spacing:1px}
+  .switcher{position:sticky; top:8px; z-index:9; display:flex; justify-content:center}
+  .switcher button{background:var(--card); border:1px solid var(--line); color:var(--ink); border-radius:999px; padding:6px 14px; font-size:12px; box-shadow:0 2px 8px rgba(0,0,0,.12)}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="switcher"><button onclick="document.body.classList.toggle('annotated')">标注数据可得性：开/关</button></div>
+
+<div class="phone">
+  <div class="bar">
+    <div class="brand">
+      <svg class="moon" viewBox="0 0 24 24" aria-label="Yuun">
+        <defs>
+          <linearGradient id="phase" x1="0" y1="0" x2="1" y2="0" gradientTransform="rotate(22 12 12)">
+            <stop offset="0" stop-color="#EDE6D8"/>
+            <stop offset="0.30" stop-color="#EDE6D8"/>
+            <stop offset="0.46" stop-color="#3C2415"/>
+            <stop offset="1" stop-color="#3C2415"/>
+          </linearGradient>
+        </defs>
+        <circle cx="12" cy="12" r="9" fill="url(#phase)" stroke="rgba(60,36,21,0.18)" stroke-width="0.5"/>
+      </svg>
+      <div class="brand-text">
+        <span class="wordmark">Yuun</span>
+        <span class="brand-sub">黄历 · 今日</span>
+      </div>
+    </div>
+    <span class="tag">冬月廿一 · 癸未日</span>
+  </div>
+
+  <div class="wrap">
+    <!-- ══ 日期块 ══ -->
+    <div class="date-head">
+      <div class="month-row"><b>2026年1月</b> <span>农历冬月</span></div>
+      <div class="week">星期五</div>
+      <div class="big-day">9<span class="flag g"></span></div>
+      <div class="lunar">二零二五年冬月廿一<span class="flag g"></span></div>
+      <div class="pillars">乙巳（蛇）年 己丑月 癸未日<span class="flag g"></span></div>
+      <div class="term">今日小寒后 · 无节气<span class="flag g"></span></div>
+    </div>
+
+    <!-- ══ 宜 / 忌（全宽平铺） ══ -->
+    <div class="yiji-full">
+      <div class="note-red">杨公忌日 大事勿用<span class="flag a"></span></div>
+      <div class="line"><h3 class="yi">宜</h3><p>破屋　坏垣<span class="flag g"></span></p></div>
+      <div class="rule"></div>
+      <div class="line"><h3 class="ji">忌</h3><p>余事勿取<span class="flag g"></span></p></div>
+    </div>
+
+    <!-- ══ 以下内容在首屏下方（滚动可见） ══ -->
+    <!-- ══ 信息表 ══ -->
+    <table class="info">
+      <tr><td class="k">五行</td><td class="v">杨柳木<span class="flag g"></span></td></tr>
+      <tr><td class="k">冲煞</td><td class="v">冲牛（丁丑）煞西<span class="flag g"></span></td></tr>
+      <tr><td class="k">值神</td><td class="v">玄武<span class="flag g"></span></td></tr>
+      <tr><td class="k">建除</td><td class="v">破日<span class="flag g"></span><span class="sub">万事不利，只宜破旧、拆除</span></td></tr>
+      <tr><td class="k">彭祖百忌</td><td class="v">癸不词讼 · 未不服药<span class="flag g"></span></td></tr>
+      <tr><td class="k">星宿</td><td class="v">亢宿（亢金龙）<span class="flag g"></span></td></tr>
+      <tr><td class="k">胎神</td><td class="v">房床厕外西北<span class="flag a"></span></td></tr>
+      <tr><td class="k">吉神宜趋</td><td class="v">天恩 要安 天贵 吉庆<span class="flag r"></span></td></tr>
+      <tr><td class="k">凶神宜忌</td><td class="v">月煞 月虚 月害 四忌<span class="flag r"></span></td></tr>
+      <tr><td class="k">日禄</td><td class="v">子命互禄<span class="flag r"></span></td></tr>
+    </table>
+
+
+    <!-- ══ 今天生辰八字五行 ══ -->
+    <div class="sec-title">今天生辰八字五行</div>
+    <table class="info">
+      <tr>
+        <td class="k" style="text-align:center">年柱<span class="flag g"></span></td>
+        <td class="k" style="text-align:center">月柱<span class="flag g"></span></td>
+        <td class="k" style="text-align:center">日柱<span class="flag g"></span></td>
+        <td class="k" style="text-align:center">时柱<span class="flag g"></span></td>
+      </tr>
+      <tr>
+        <td class="v" style="text-align:center;font-size:16px;letter-spacing:2px">乙巳</td>
+        <td class="v" style="text-align:center;font-size:16px;letter-spacing:2px">己丑</td>
+        <td class="v" style="text-align:center;font-size:16px;letter-spacing:2px">癸未</td>
+        <td class="v" style="text-align:center;font-size:16px;letter-spacing:2px">壬子</td>
+      </tr>
+      <tr>
+        <td class="v" style="text-align:center">覆灯火</td>
+        <td class="v" style="text-align:center">劈雳火</td>
+        <td class="v" style="text-align:center">杨柳木</td>
+        <td class="v" style="text-align:center">桑柘木</td>
+      </tr>
+    </table>
+    <div class="legend" style="padding:6px 2px 0">生辰八字：一天的干支历四柱（年、月、日、时），时柱取当日子时；每柱下为纳音五行。<span class="flag g"></span></div>
+    <!-- ══ 时辰吉凶 ══ -->
+    <div class="sec-title">时辰吉凶</div>
+    <div class="hours">
+      <div class="hour"><div class="gz">壬子时</div><div class="luck bad">凶<span class="flag g"></span></div></div>
+      <div class="hour"><div class="gz">癸丑时</div><div class="luck bad">凶<span class="flag g"></span></div></div>
+      <div class="hour"><div class="gz">甲寅时</div><div class="luck good">吉<span class="flag g"></span></div></div>
+      <div class="hour"><div class="gz">乙卯时</div><div class="luck good">吉<span class="flag g"></span></div></div>
+      <div class="hour"><div class="gz">丙辰时</div><div class="luck bad">凶<span class="flag g"></span></div></div>
+      <div class="hour"><div class="gz">丁巳时</div><div class="luck good">吉<span class="flag g"></span></div></div>
+      <div class="hour"><div class="gz">戊午时</div><div class="luck bad">凶<span class="flag g"></span></div></div>
+      <div class="hour"><div class="gz">己未时</div><div class="luck bad">凶<span class="flag g"></span></div></div>
+      <div class="hour"><div class="gz">庚申时</div><div class="luck good">吉<span class="flag g"></span></div></div>
+      <div class="hour"><div class="gz">辛酉时</div><div class="luck bad">凶<span class="flag g"></span></div></div>
+      <div class="hour"><div class="gz">壬戌时</div><div class="luck good">吉<span class="flag g"></span></div></div>
+      <div class="hour"><div class="gz">癸亥时</div><div class="luck good">吉<span class="flag g"></span></div></div>
+    </div>
+
+    <!-- ══ 财神 / 福神 / 喜神 / 阳贵 ══ -->
+    <div class="sec-title">今日吉神方位</div>
+    <div class="gods">
+      <div class="god"><div class="n">财神</div><div class="d">正南<span class="flag g"></span></div></div>
+      <div class="god"><div class="n">福神</div><div class="d">东北<span class="flag a"></span></div></div>
+      <div class="god"><div class="n">喜神</div><div class="d">东南<span class="flag g"></span></div></div>
+      <div class="god"><div class="n">阳贵</div><div class="d">东南<span class="flag a"></span></div></div>
+    </div>
+
+    <!-- ══ 刑冲害合 ══ -->
+    <div class="sec-title">生肖刑冲害合</div>
+    <div class="relation">
+      今日与<b>牛、狗</b>相刑，与<b>牛</b>相冲，与<b>鼠</b>相害，与<b>兔、猪</b>三合，与<b>马</b>六合。<span class="flag g"></span>
+    </div>
+
+    <!-- ══ 时辰详情（参考页黄历时辰吉凶查询区，示例 3 卡） ══ -->
+    <div class="sec-title">黄历时辰吉凶查询（示例）</div>
+    <div class="hcard">
+      <div class="top"><span class="t">子时</span><span class="range">23:00–00:59</span><span class="luck bad">凶</span></div>
+      <div class="row">干支：<b>壬子</b> · 星神：<b>天刑</b><span class="flag g"></span></div>
+      <div class="row">冲煞：冲马（丙午）煞南<span class="flag a"></span></div>
+      <div class="yj">
+        <div class="y">宜：出行 求财 见贵 纳采 嫁娶 入宅 开市 安葬 求嗣<span class="flag r"></span></div>
+        <div class="j">忌：赴任 祭祀 祈福 斋醮 开光<span class="flag r"></span></div>
+      </div>
+    </div>
+    <div class="hcard">
+      <div class="top"><span class="t">寅时</span><span class="range">03:00–04:59</span><span class="luck good">吉</span></div>
+      <div class="row">干支：<b>甲寅</b> · 星神：<b>金匮</b><span class="flag g"></span></div>
+      <div class="row">冲煞：冲猴（戊申）煞北<span class="flag a"></span></div>
+      <div class="yj">
+        <div class="y">宜：求嗣 纳采 嫁娶 修造 入宅 开市 交易 安葬<span class="flag r"></span></div>
+        <div class="j">忌：祭祀 祈福 斋醮 酬神<span class="flag r"></span></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span><i class="dot g"></i>现有接口可填（八字模块四柱+纳音引擎可算）</span>
+      <span><i class="dot a"></i>标准口诀表可补（需进引擎）</span>
+      <span><i class="dot r"></i>需神煞引擎（暂缺，不伪造）</span>
+    </div>
+
+    <div class="foot">黄历 · 文化参考，非预测 · 2026-01-09 数据对照参考页实测</div>
+  </div>
+</div>
+
+<style>
+  body:not(.annotated) .flag{display:none}
+  body:not(.annotated) .legend{display:none}
+</style>
+</body>
+</html>

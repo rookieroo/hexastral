@@ -129,10 +129,9 @@ describe('renderAuspicePush — daily hook (en slice)', () => {
     expect(msg?.data.hookKey).toBeUndefined()
   })
 
-  test('zh-Hans morning with null yiji_mode stays traditional; en null → modern', () => {
+  test('zh-Hans morning body stays CJK; en null mode → modern gloss', () => {
     const zh = renderAuspicePush('morning', ymd, mkSub({ locale: 'zh-Hans', yijiMode: null }))
     expect(zh?.body).toMatch(/宜/)
-    // Traditional zh keeps canonical 嫁娶 when present among top verbs, or other CJK.
     expect(zh?.body).toMatch(/[一-鿿]/)
 
     const en = renderAuspicePush(
@@ -142,6 +141,30 @@ describe('renderAuspicePush — daily hook (en slice)', () => {
     )
     // en + null mode → modern English glosses in the legacy body path.
     expect(en?.body).toMatch(/Good|Avoid/)
+  })
+
+  test('zh push 宜忌 follows the 黄历原声 voice switch', () => {
+    // classical → 原文动词（绝无白话词）；contemporary（默认）→ 白话动词（绝无原文词）。
+    const classical = renderAuspicePush(
+      'morning',
+      ymd,
+      mkSub({ locale: 'zh-Hans', voiceMode: 'classical' })
+    )
+    expect(classical?.body).toMatch(/宜/)
+    expect(classical?.body).not.toMatch(/结婚|开业|签约|搬家|入住|开工|就医/)
+
+    const contemporary = renderAuspicePush('morning', ymd, mkSub({ locale: 'zh-Hans' }))
+    expect(contemporary?.body).toMatch(/宜/)
+    expect(contemporary?.body).not.toMatch(/嫁娶|开市|立券|移徙|入宅/)
+
+    // 原文订阅者连「对你而言」现代标题都去掉 — 推送保持纯行话。
+    const signedClassical = renderAuspicePush(
+      'morning',
+      ymd,
+      mkSub({ locale: 'zh-Hans', voiceMode: 'classical', portfolioUserId: 'u1' })
+    )
+    expect(signedClassical?.title).not.toMatch(/对你而言|For you/)
+    expect(signedClassical?.title).toMatch(/[一-鿿]/)
   })
 
   test('en evening heads-up no longer repeats "Tomorrow" in the body', () => {
@@ -399,8 +422,19 @@ describe('GET /api/auspice/search', () => {
     expect([...scores].sort((a: number, b: number) => b - a)).toEqual(scores)
 
     // A 30-day window always contains a 嫁娶-favourable day, so the top pick is recommended
-    // and its reasoning surfaces the matched 宜 verb.
+    // and its reasoning surfaces the matched 宜 verb. Default register = 白话 (结婚);
+    // scoring payload stays canonical (嫁娶).
     expect(body.data.top[0].recommended).toBe(true)
+    expect(body.data.top[0].reasoning).toContain('宜结婚')
+    expect(body.data.top[0].day.goodFor).toContain('嫁娶')
+  })
+
+  test('voiceMode=classical renders 原文 verbs in reasoning (zh)', async () => {
+    const res = await auspiceRoutes.request(
+      '/search?event=wedding&from=2026-06-01&to=2026-06-30&voiceMode=classical'
+    )
+    expect(res.status).toBe(200)
+    const body = await res.json()
     expect(body.data.top[0].reasoning).toContain('宜嫁娶')
     expect(body.data.top[0].day.goodFor).toContain('嫁娶')
   })

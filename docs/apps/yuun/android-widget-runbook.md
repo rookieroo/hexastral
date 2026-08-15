@@ -35,6 +35,12 @@ Android exposes **one** resizable Glance widget. Layouts track live cell size
 
 Moon phase uses Unicode glyphs (not iOS PNG logos) until asset packaging lands.
 
+**黄历模式 large（2026-08）**：payload `data.classical=true` 且 locale 为 zh
+时，4×4 渲染撕页黄历纸页（顶行公历+星期 → 竖排行话/大日期+纳音/农历岁次 →
+冲煞彭祖 → 全宽宜忌（赭金/墨棕）→ 于你）；否则保持原 large 布局。字段来自
+widget-bridge 新写的 dayGod/evilDirection/pengZuStem/pengZuBranch/nayin 与
+chrome.forYou（文言「于你」）。
+
 1. Long-press Home → **Widgets** (or Apps → long-press Yuun → Widgets).
 2. Search **Yuun** / **黄历** / **Almanac** (label is locale-aware).
 3. Drag onto Home; resize for medium/large layouts.

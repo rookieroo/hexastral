@@ -16,7 +16,7 @@ import { ScrollView, Text, View } from 'react-native'
 import { Gesture, GestureDetector, Pressable } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
-
+import { AlmanacPage, almanacPalette } from '@/components/AlmanacPage'
 import { CalendarExpandPanel } from '@/components/CalendarExpandPanel'
 import { moonPhaseForIsoDate } from '@/components/DailyCard'
 import { DayView } from '@/components/DayView'
@@ -35,6 +35,7 @@ import { localizeCultureEntry, localizeSolarTermName } from '@/lib/culture'
 import { resolveCultureTargetId } from '@/lib/culture-preview'
 import { useDevMoonPhase } from '@/lib/dev-moon-phase'
 import { useStrings } from '@/lib/i18n-context'
+import { useVoiceMode } from '@/lib/voice-mode-context'
 
 const HOME_LOGO_SIZE = 28
 
@@ -62,6 +63,9 @@ export default function HomeScreen() {
   const { colors, spacing, mode } = useTheme()
   const { phase: devMoonPhase } = useDevMoonPhase()
   const { t, locale } = useStrings()
+  const { classical } = useVoiceMode()
+  // 黄历模式首页 — 四语（zh 原文 / ja·en 白话黄历布局）。
+  const classicalActive = classical
   const router = useRouter()
   const params = useLocalSearchParams<{ day?: string; focus?: string }>()
 
@@ -213,7 +217,13 @@ export default function HomeScreen() {
     })()
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bg }}>
+    <SafeAreaView
+      edges={['top']}
+      style={{
+        flex: 1,
+        backgroundColor: classicalActive ? almanacPalette(mode === 'dark').bg : colors.bg,
+      }}
+    >
       {/* Header outside the pan detector — RNGH Pan otherwise eats the Settings tap. */}
       <View
         style={{
@@ -224,24 +234,62 @@ export default function HomeScreen() {
           justifyContent: 'space-between',
         }}
       >
-        <View accessibilityLabel='Yuun'>
-          <PhaseLogo phase={devMoonPhase ?? todayMoonPhase} size={HOME_LOGO_SIZE} />
-        </View>
-        <Pressable
-          onPress={goToMe}
-          hitSlop={12}
-          accessibilityRole='button'
-          accessibilityLabel={t.settings}
-          style={({ pressed }) => ({
-            minWidth: 44,
-            minHeight: 44,
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: pressed ? 0.55 : 1,
-          })}
-        >
-          <SettingsIcon size={22} color={colors.text} strokeWidth={1.5} />
-        </Pressable>
+        {classicalActive ? (
+          /* 黄历模式 header — Yuun Logo + 字标（月历已内嵌于 AlmanacPage）。 */
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <PhaseLogo phase={devMoonPhase ?? todayMoonPhase} size={30} />
+            <View>
+              <Text
+                style={{
+                  color: almanacPalette(mode === 'dark').ink,
+                  fontSize: 17,
+                  fontWeight: '700',
+                }}
+              >
+                Yuun
+              </Text>
+              <Text
+                style={{
+                  color: almanacPalette(mode === 'dark').dim,
+                  fontSize: 10,
+                  letterSpacing: 3,
+                }}
+              >
+                黄历 · 今日
+              </Text>
+            </View>
+            <View style={{ flex: 1 }} />
+            <Text
+              style={{ color: almanacPalette(mode === 'dark').dim, fontSize: 11, letterSpacing: 1 }}
+            >
+              {dayData?.day.lunarDate
+                ? `${dayData.day.lunarDate.monthName}${dayData.day.lunarDate.dayName}`
+                : ''}
+              {dayData ? ` · ${dayData.day.ganZhi}日` : ''}
+            </Text>
+          </View>
+        ) : (
+          <>
+            <View accessibilityLabel='Yuun'>
+              <PhaseLogo phase={devMoonPhase ?? todayMoonPhase} size={HOME_LOGO_SIZE} />
+            </View>
+            <Pressable
+              onPress={goToMe}
+              hitSlop={12}
+              accessibilityRole='button'
+              accessibilityLabel={t.settings}
+              style={({ pressed }) => ({
+                minWidth: 44,
+                minHeight: 44,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.55 : 1,
+              })}
+            >
+              <SettingsIcon size={22} color={colors.text} strokeWidth={1.5} />
+            </Pressable>
+          </>
+        )}
       </View>
 
       <GestureDetector gesture={homeSwipe}>
@@ -254,17 +302,19 @@ export default function HomeScreen() {
             }}
             showsVerticalScrollIndicator={false}
           >
-            <DualTzBanner />
+            {classicalActive ? null : <DualTzBanner />}
 
-            <CalendarExpandPanel
-              selectedDay={selectedDay}
-              todayIso={todayIso}
-              onSelectDay={setSelectedDay}
-              locale={locale}
-              dayLabels={weekLabels}
-              expandLabel={t.openMonth}
-              collapseLabel={t.exploreCollapse}
-            />
+            {classicalActive ? null : (
+              <CalendarExpandPanel
+                selectedDay={selectedDay}
+                todayIso={todayIso}
+                onSelectDay={setSelectedDay}
+                locale={locale}
+                dayLabels={weekLabels}
+                expandLabel={t.openMonth}
+                collapseLabel={t.exploreCollapse}
+              />
+            )}
 
             <View
               style={{ paddingHorizontal: spacing.xl, gap: spacing.lg }}
@@ -282,14 +332,19 @@ export default function HomeScreen() {
                   </Button>
                 </View>
               ) : dayData ? (
-                <DayView
-                  payload={dayData}
-                  pushHook={pushHook}
-                  festivalChip={festivalChip}
-                  onPersonalSectionLayout={(y) => {
-                    personalOffsetRef.current = y
-                  }}
-                />
+                classicalActive ? (
+                  /* 黄历模式首页 — 独立新页面（真实黄历排版），不基于现代首页改造。 */
+                  <AlmanacPage payload={dayData} locale={locale} />
+                ) : (
+                  <DayView
+                    payload={dayData}
+                    pushHook={pushHook}
+                    festivalChip={festivalChip}
+                    onPersonalSectionLayout={(y) => {
+                      personalOffsetRef.current = y
+                    }}
+                  />
+                )
               ) : null}
             </View>
           </ScrollView>

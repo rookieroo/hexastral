@@ -112,6 +112,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "XXC0EB6E690187D335F7F6XX"
             BuildableName = "YuunWatch.appex"
+            BlueprintName = "YuunWatch"
             ReferencedContainer = "container:Yuun.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

@@ -18,6 +18,7 @@ import { useStrings } from '@/lib/i18n-context'
 import { isIapEnabled } from '@/lib/iap-enabled'
 import type { LuckyGuide } from '@/lib/luckyGuide'
 import { ELEMENT_COLORS } from '@/lib/shichen-content'
+import { useVoiceMode } from '@/lib/voice-mode-context'
 
 function pad2(n: number) {
   return String(n).padStart(2, '0')
@@ -42,8 +43,14 @@ export function PersonalCard({
   pushHook?: { title: string; lens: string } | null
 }) {
   const { colors, spacing } = useTheme()
-  const { t } = useStrings()
+  const { t, locale } = useStrings()
+  const { classical } = useVoiceMode()
   const router = useRouter()
+  // 原文模式：对你而言判语换文言句（zh-only；en/ja 恒白话）。
+  const classicalActive = classical && locale.startsWith('zh')
+  const summary = classicalActive
+    ? t.personal.summaryClassical[data.fit]
+    : t.personal.summary[data.fit]
   const fitColor =
     data.fit === '吉' ? colors.success : data.fit === '凶' ? colors.danger : colors.secondary
   const hasWhy = locked && data.reasons.length > 0
@@ -84,10 +91,10 @@ export function PersonalCard({
       ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <Text style={{ color: colors.secondary, fontSize: 13, letterSpacing: 1, flex: 1 }}>
-          {t.personal.forYou}
+          {classicalActive ? t.personal.forYouClassical : t.personal.forYou}
         </Text>
         <Text style={{ color: fitColor, fontSize: 15, fontWeight: '700', letterSpacing: 1 }}>
-          {t.personal.fit[data.fit]}
+          {classicalActive ? t.personal.fitClassical[data.fit] : t.personal.fit[data.fit]}
         </Text>
       </View>
 
@@ -95,9 +102,7 @@ export function PersonalCard({
           hook hero already carries the day's one-line read (en home), so the screen
           doesn't say the same thing twice. */}
       {hideSummaryLine ? null : (
-        <Text style={{ color: colors.text, fontSize: 15, lineHeight: 22 }}>
-          {t.personal.summary[data.fit]}
-        </Text>
+        <Text style={{ color: colors.text, fontSize: 15, lineHeight: 22 }}>{summary}</Text>
       )}
 
       {/* 用神 → 吉色/吉方/吉时 — the actionable daily glance, keyed off the user's

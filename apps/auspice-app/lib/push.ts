@@ -28,7 +28,8 @@ import type { AuspicePerson, PersonCalendar } from './people'
 import { getAuspiceProActive } from './pro'
 import { syncAuspiceServerPush, unregisterAuspiceServerPush } from './serverPush'
 import { isServerPushActive } from './serverPushFlag'
-import { resolveYijiDisplayMode, type YijiVocabularyMode } from './yiji-display-mode'
+import { getVoiceMode } from './voice-mode'
+import { resolveRegisterForLocale, type YijiVocabularyMode } from './yiji-display-mode'
 import { displayYijiVerb } from './yiji-vocab'
 
 const ENABLED_KEY = 'auspice.push.enabled'
@@ -306,7 +307,9 @@ function dailyContent(
   payload: Awaited<ReturnType<typeof fetchAuspiceDay>>,
   _isPro: boolean,
   yijiMode: YijiVocabularyMode,
-  deviceId: string
+  deviceId: string,
+  /** 「黄历原声」 — classical zh swaps the For-you prose for the 文言 advice. */
+  classical = false
 ): { title: string; body: string } {
   const d = payload.day
   const sep = locale === 'en' ? ', ' : '、'
@@ -337,10 +340,13 @@ function dailyContent(
   }
   // For-you line when birth is set (verdict + one-line summary). Pro still gates
   // deeper personalization elsewhere; push mirrors the free takeaway on the card.
+  // Classical: the 文言 advice replaces the modern summary prose.
   const pers = payload.personalization
   if (pers) {
     if (special) body += ` · ${special}`
-    body += ` · ${t.personal.forYou}${colon}${t.personal.fit[pers.fit]} — ${t.personal.summary[pers.fit]}`
+    body += classical
+      ? ` · ${t.personal.forYou}${colon}${t.personal.fit[pers.fit]} — ${t.timelineAdviceClassical[pers.fit]}`
+      : ` · ${t.personal.forYou}${colon}${t.personal.fit[pers.fit]} — ${t.personal.summary[pers.fit]}`
   }
   return { title, body: withPushDisclaimer(locale, body) }
 }
@@ -379,9 +385,12 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
   // Read entitlement once per reschedule pass. SDK-unconfigured paths (Expo
   // Go, missing key) safely return false → free-tier body.
   const isPro = await getAuspiceProActive()
-  const yijiMode = await resolveYijiDisplayMode(opts.locale)
+  const yijiMode = await resolveRegisterForLocale(opts.locale)
   // Stable device id seeds the local repetition-guard variation.
   const deviceId = await getAuspiceDeviceId().catch(() => '')
+  const classical =
+    (await getVoiceMode().catch(() => 'contemporary')) === 'classical' &&
+    opts.locale.startsWith('zh')
 
   for (let i = 0; i < WINDOW_DAYS; i++) {
     const when = eightAm(i)
@@ -396,7 +405,8 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
         await fetchAuspiceDay(dateStr, opts.birthDate),
         isPro,
         yijiMode,
-        deviceId
+        deviceId,
+        classical
       )
     } catch {
       // keep the generic fallback — a push that opens the app is still useful
@@ -465,8 +475,11 @@ export async function fireTestDailyPush(
   const t = getStrings(opts.locale)
   const dateStr = localYmd(new Date())
   const isPro = opts.isPro ?? (await getAuspiceProActive())
-  const yijiMode = await resolveYijiDisplayMode(opts.locale)
+  const yijiMode = await resolveRegisterForLocale(opts.locale)
   const deviceId = await getAuspiceDeviceId().catch(() => '')
+  const classical =
+    (await getVoiceMode().catch(() => 'contemporary')) === 'classical' &&
+    opts.locale.startsWith('zh')
   let content: { title: string; body: string } = { title: t.appName, body: t.today }
   try {
     content = dailyContent(
@@ -475,7 +488,8 @@ export async function fireTestDailyPush(
       await fetchAuspiceDay(dateStr, opts.birthDate),
       isPro,
       yijiMode,
-      deviceId
+      deviceId,
+      classical
     )
   } catch {
     // keep the generic fallback — a push that opens the app is still useful

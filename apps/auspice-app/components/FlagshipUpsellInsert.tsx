@@ -93,6 +93,10 @@ const COPY: Record<Flagship, Record<Locale, Copy>> = {
 export function FlagshipUpsellInsert({ flagship }: { flagship: Flagship }) {
   const { colors, spacing } = useTheme()
   const { locale } = useStrings()
+  // Kanyu (feng) 尚未上架且远在波次之外 — hide the card entirely: a
+  // "coming soon" funnel to a not-yet-existing flagship reads as a dead end in
+  // the 择时 entry. Remove this gate when Kanyu ships (COPY entry stays ready).
+  if (flagship === 'feng') return null
   const copy = COPY[flagship][locale]
   const link = FLAGSHIP_LINKS[flagship]
   const live = FLAGSHIP_LIVE[flagship]

@@ -4,8 +4,15 @@
 
 import type { Locale } from '../i18n'
 
-/** Six pillars of the in-app culture hub + home topics grid. */
-export type CultureCategoryKey = 'festivals' | 'jieqi' | 'shichen' | 'ganzhi' | 'sizhu' | 'ziwei'
+/** Seven pillars of the in-app culture hub + home topics grid. */
+export type CultureCategoryKey =
+  | 'festivals'
+  | 'jieqi'
+  | 'shichen'
+  | 'ganzhi'
+  | 'sizhu'
+  | 'ziwei'
+  | 'huangli'
 
 export type LocalizedText = Record<Locale, string>
 

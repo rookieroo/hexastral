@@ -59,6 +59,21 @@ export interface Strings {
   searching: string
   loadFailed: string
   retry: string
+  /** 现代场景词 — 折叠区第二组（面试→见贵·求财 等服务端映射）。 */
+  modernEventsTitle: string
+  modernEventLabels: Record<string, string>
+  /**
+   * 「黄历原声」文案层 — 择时屏 chrome 的白话↔原文对（zh-only 内容；
+   * en/ja 无原文，取值与白话相同）。2026-08 文案物料双轨。
+   */
+  pickEventClassical: string
+  searchClassical: string
+  recommendedClassical: string
+  noResultsClassical: string
+  searchingClassical: string
+  eventWindowLabelClassical: string
+  specializedActiveClassical: string
+  modernEventsTitleClassical: string
   // me
   settings: string
   language: string
@@ -68,23 +83,12 @@ export interface Strings {
   /** 节假日 / 调休 heads-up toggle label + hint. */
   holidayHeadsUp: string
   holidayHeadsUpHint: string
-  yijiModeTitle: string
-  yijiModeHint: string
-  yijiModeModern: string
-  yijiModeTraditional: string
-  eventAliasSection: string
-  eventAliases: {
-    相亲: string
-    读书: string
-    进修: string
-    面试: string
-    体检: string
-    发布: string
-    上线: string
-    谈判: string
-    AI: string
-    游戏: string
-  }
+  /** 「黄历原声」 voice-mode switch — zh-only preference; en/ja 无此开关（只有白话）。 */
+  voiceModeTitle: string
+  voiceModeHint: string
+  voiceModeName: string
+  /** 搜索窗口标注 — {from} / {to} 替换为日期。 */
+  eventWindowLabel: string
   privacy: string
   terms: string
   // navigation / discovery
@@ -286,18 +290,11 @@ export interface Strings {
   timelineCurrentBadge: string
   /** Age-range label fragment — pass {age} as a template token. */
   timelineAgeFrom: string
-  /** Paywall CTA shown beneath the gated sections for Free users. */
-  timelineProLocked: string
-  /** Free upsell under a current/future 流年 reading — advertises the Pro 流月
-   *  (monthly) weave that free users don't see, and notes its scope. */
-  timelineLiuyueUpsell: string
   /** Contextual drill-in under the node reading → the 八字 explainer (大运/流年). */
   timelineAboutLuck: string
   /** 择吉 deep-link shown when a future 流年 is selected — routes to /event with
    *  prefilled year-window. `{year}` is the gregorian year. */
   timelineZejiCta: string
-  /** Caption telling Free users they see the current position + next 6 months. */
-  timelineFreePreviewNote: string
   /** Settings toggle label for the Pro 人生节点提醒 (month-start / 大运 push). */
   timelineRemindToggle: string
   /** Hint under the 人生节点提醒 toggle. */
@@ -308,6 +305,8 @@ export interface Strings {
   timelineRemindNeedPush: string
   /** Short 对你而言 advice per fit verdict — shown on timeline rows + node reminders. */
   timelineAdvice: Record<PersonalFit, string>
+  /** 「黄历原声」文言建议 — classical register per-grade advice (zh-only effective). */
+  timelineAdviceClassical: Record<PersonalFit, string>
   /** Period-specific element-favorability note ({el} = the period's 五行). Surfaces
    *  the 用神/忌神 signal that the generic per-grade advice omits. */
   timelinePeriodElement: { favorable: string; unfavorable: string }
@@ -427,6 +426,8 @@ export interface Strings {
   glossarySizhu: string
   /** Section: 紫微星盘 (Ziwei chart). */
   glossaryZiwei: string
+  /** Section: 黄历行话 (建除/值神/星宿/彭祖/纳音 — 正统通书内容，文化 hub 常驻). */
+  glossaryHuangli: string
   // Birth-info form (single-page, in Me — Sprint 3 chunk 8)
   birthDateLabel: string
   /** Solar / Lunar toggle on the Birth-info form. Stored as solar; lunar is
@@ -453,13 +454,22 @@ export interface Strings {
   birthCityHint: string
   birthSave: string
   birthSaved: string
+  /** 择日事项 — 白话注册表（开关 OFF 默认）。 */
   events: Record<AuspiceEvent, string>
+  /** 择日事项 — 黄历原声注册表（开关 ON；en/ja 无原文，与 events 相同）。 */
+  eventsClassical: Record<AuspiceEvent, string>
   officers: Record<DayOfficer, string>
   personal: {
     forYou: string
+    /** 文言判级标题 — 「黄历原声」开启时替换 forYou（于你/於你）。 */
+    forYouClassical: string
     fit: Record<PersonalFit, string>
+    /** 文言判级 — 「黄历原声」开启时替换 fit 词（宜进/守常/宜慎）。 */
+    fitClassical: Record<PersonalFit, string>
     /** Free one-line fortune read per verdict — the natural takeaway. The per-reason "why" stays Pro. */
     summary: Record<PersonalFit, string>
+    /** 文言判语 — 「黄历原声」开启时替换 summary（zh-only 内容；en/ja 复用白话）。 */
+    summaryClassical: Record<PersonalFit, string>
     /** Quiet CTA that opens the Pro reading ("see why"). */
     why: string
     /** Pro-tier CTA on 对你而言 → opens the LLM deep reading of the day. */
@@ -664,12 +674,33 @@ const zhHans: Strings = {
   pickEvent: '选择事项',
   from: '起',
   to: '止',
-  search: '查询',
+  search: '看日子',
   recommended: '推荐',
   noResults: '此区间未找到合适的日子',
   searching: '正在推算…',
   loadFailed: '加载失败',
   retry: '重试',
+  modernEventsTitle: '现代场景',
+  // 黄历原声文案层（白话 ↔ 原文）
+  pickEventClassical: '择事',
+  searchClassical: '择吉日',
+  recommendedClassical: '首荐',
+  noResultsClassical: '此期未见合宜之日',
+  searchingClassical: '正在择吉…',
+  eventWindowLabelClassical: '择期 · {from} – {to}',
+  specializedActiveClassical: '建除相宜 已启',
+  modernEventsTitleClassical: '今事',
+  modernEventLabels: {
+    面试: '面试',
+    相亲: '相亲',
+    体检: '体检',
+    发布: '发布',
+    谈判: '谈判',
+    读书: '读书',
+    换工作: '换工作',
+    装修: '装修',
+    买车: '买车',
+  },
   settings: '设置',
   language: '语言',
   dailyPush: '每日提醒',
@@ -677,23 +708,11 @@ const zhHans: Strings = {
   eveningPushHint: '仅当明天值得留意时（节气/节日）于晚 8 点提醒。',
   holidayHeadsUp: '节假日提醒',
   holidayHeadsUpHint: '法定节假日 / 调休前一晚提醒你，别记错闹钟（中国大陆）。',
-  yijiModeTitle: '现代场景词',
-  yijiModeHint: '默认随语言：中文传统黄历词，英文现代词。手动切换后不再随语言变化。',
-  yijiModeModern: '现代场景词',
-  yijiModeTraditional: '传统黄历词',
-  eventAliasSection: '热门',
-  eventAliases: {
-    相亲: '相亲',
-    读书: '读书',
-    进修: '进修',
-    面试: '面试',
-    体检: '体检',
-    发布: '发布',
-    上线: '上线',
-    谈判: '谈判',
-    AI: 'AI',
-    游戏: '游戏',
-  },
+  voiceModeTitle: '表述风格',
+  voiceModeHint:
+    '打开黄历模式：首页切换为撕页黄历（岁次纪年、建除星宿、嫁娶动土），宜忌、判词、推送同步改用原文行话，大尺寸小组件变为黄历组件；关闭则为白话现代版（结婚、开业、入住）。仅中文可用，简体为大陆通书形态，繁体为历书正体。',
+  voiceModeName: '黄历模式',
+  eventWindowLabel: '搜索窗口 · {from} – {to}',
   privacy: '隐私政策',
   terms: '使用条款',
   openMonth: '月历',
@@ -810,6 +829,7 @@ const zhHans: Strings = {
   glossaryGanzhi: '天干地支',
   glossarySizhu: '四柱八字',
   glossaryZiwei: '紫微星盘',
+  glossaryHuangli: '黄历行话',
   personalEmptyBody: '添加生辰即可看到「对你而言」的个性化解读',
   personalEmptyCta: '设置生辰',
   shichenWheelActive: '现在',
@@ -821,12 +841,8 @@ const zhHans: Strings = {
   timelineLiuyueNote: '只显示今年流月。重要时点的提醒可在「设置」开启推送。',
   timelineCurrentBadge: '当前',
   timelineAgeFrom: '{age} 岁起',
-  timelineProLocked: '解锁完整人生时间线',
-  timelineLiuyueUpsell: '→ 逐月流月详情 · Pro（本年及未来）',
   timelineAboutLuck: '什么是大运·流年',
   timelineZejiCta: '→ {year}年的吉日窗口',
-  timelineFreePreviewNote:
-    '免费版显示当前大运、今年流年与未来 6 个月流月；解锁 Pro 查看完整人生时间线。',
   timelineRemindToggle: '人生节点提醒',
   timelineRemindHint: '每月初与大运转换时，提醒你查看本月流月与人生时间线。',
   timelineRemindNeedBirth: '请先填写完整生辰（含性别），才能开启人生节点提醒。',
@@ -835,6 +851,11 @@ const zhHans: Strings = {
     吉: '此月能量偏顺，可考虑主动推进（文化参考，非建议）。',
     平: '此月能量平稳，宜按部就班、稳中求进（文化参考）。',
     凶: '此月能量偏逆，宜多休息、少硬撑（文化参考，非建议）。',
+  },
+  timelineAdviceClassical: {
+    吉: '诸事宜早，不宜迟疑。',
+    平: '守常即可，静待其时。',
+    凶: '事宜缓行，静以观变。',
   },
   timelinePeriodElement: {
     favorable: '{el}行正是你的用神，此运整体有助力。',
@@ -936,10 +957,22 @@ const zhHans: Strings = {
   birthSave: '保存',
   birthSaved: '已保存',
   events: {
+    wedding: '结婚',
+    business: '开业',
+    signing: '签约',
+    move: '搬家',
+    'move-in': '入住',
+    travel: '出行',
+    burial: '安葬',
+    groundbreaking: '开工',
+    medical: '就医',
+    study: '入学',
+  },
+  eventsClassical: {
     wedding: '嫁娶',
     business: '开市',
-    signing: '签约',
-    move: '搬迁',
+    signing: '立券',
+    move: '移徙',
     'move-in': '入宅',
     travel: '出行',
     burial: '安葬',
@@ -963,11 +996,18 @@ const zhHans: Strings = {
   },
   personal: {
     forYou: '对你而言',
+    forYouClassical: '于你',
     fit: { 吉: '可留意', 平: '平稳', 凶: '宜谨慎' },
+    fitClassical: { 吉: '宜进', 平: '守常', 凶: '宜慎' },
     summary: {
       吉: '今日五行对你偏顺（文化参考）——适合按自己的节奏推进想做的事。',
       平: '今日起伏不大（文化参考）——按计划稳步推进即可。',
       凶: '今日宜守不宜攻（文化参考）——低调收敛、避免冒进。',
+    },
+    summaryClassical: {
+      吉: '吉。今日五行相顺，诸事宜早，不宜迟疑。',
+      平: '平。诸事平稳，守常即可。',
+      凶: '凶。宜守不宜攻，收敛静待，不宜冒进。',
     },
     why: '了解原因',
     deepRead: '深入解读',
@@ -1130,11 +1170,32 @@ const zhHant: Strings = {
   solarTerm: '節氣',
   eventSearch: '選擇日子',
   pickEvent: '選擇事項',
-  search: '查詢',
+  search: '看日子',
   recommended: '推薦',
   noResults: '此區間未找到合適的日子',
   searching: '正在推算…',
   loadFailed: '載入失敗',
+  // 黄历原声文案层（正體）
+  pickEventClassical: '擇事',
+  searchClassical: '擇吉日',
+  recommendedClassical: '首薦',
+  noResultsClassical: '此期未見合宜之日',
+  searchingClassical: '正在擇吉…',
+  eventWindowLabelClassical: '擇期 · {from} – {to}',
+  specializedActiveClassical: '建除相宜 已啟',
+  modernEventsTitleClassical: '今事',
+  modernEventsTitle: '現代場景',
+  modernEventLabels: {
+    面试: '面試',
+    相亲: '相親',
+    体检: '體檢',
+    发布: '發布',
+    谈判: '談判',
+    读书: '讀書',
+    换工作: '換工作',
+    装修: '裝修',
+    买车: '買車',
+  },
   settings: '設定',
   language: '語言',
   dailyPush: '每日提醒',
@@ -1142,23 +1203,11 @@ const zhHant: Strings = {
   eveningPushHint: '僅當明天值得留意時（節氣/節日）於晚 8 點提醒。',
   holidayHeadsUp: '節假日提醒',
   holidayHeadsUpHint: '法定節假日 / 調休前一晚提醒你，別記錯鬧鐘（中國大陸）。',
-  yijiModeTitle: '現代場景詞',
-  yijiModeHint: '預設隨語言：中文傳統黃曆詞，英文現代詞。手動切換後不再隨語言變化。',
-  yijiModeModern: '現代場景詞',
-  yijiModeTraditional: '傳統黃曆詞',
-  eventAliasSection: '熱門',
-  eventAliases: {
-    相亲: '相親',
-    读书: '讀書',
-    进修: '進修',
-    面试: '面試',
-    体检: '體檢',
-    发布: '發布',
-    上线: '上線',
-    谈判: '談判',
-    AI: 'AI',
-    游戏: '遊戲',
-  },
+  voiceModeTitle: '表述風格',
+  voiceModeHint:
+    '打開黃曆模式：首頁切換為撕頁黃曆（歲次紀年、建除星宿、嫁娶動土），宜忌、判詞、推送同步改用原文行話，大尺寸小組件變為黃曆組件；關閉則為白話現代版（結婚、開業、入住）。僅中文可用，簡體為大陸通書形態，繁體為曆書正體。',
+  voiceModeName: '黃曆模式',
+  eventWindowLabel: '搜尋窗口 · {from} – {to}',
   privacy: '隱私政策',
   terms: '使用條款',
   openMonth: '月曆',
@@ -1275,6 +1324,7 @@ const zhHant: Strings = {
   glossaryGanzhi: '天干地支',
   glossarySizhu: '四柱八字',
   glossaryZiwei: '紫微星盤',
+  glossaryHuangli: '黃曆行話',
   personalEmptyBody: '添加生辰即可看到「對你而言」的個性化解讀',
   personalEmptyCta: '設定生辰',
   shichenWheelActive: '現在',
@@ -1286,12 +1336,8 @@ const zhHant: Strings = {
   timelineLiuyueNote: '只顯示今年流月。重要時點的提醒可在「設定」開啟推播。',
   timelineCurrentBadge: '當前',
   timelineAgeFrom: '{age} 歲起',
-  timelineProLocked: '解鎖完整人生時間線',
-  timelineLiuyueUpsell: '→ 逐月流月詳情 · Pro（本年及未來）',
   timelineAboutLuck: '什麼是大運·流年',
   timelineZejiCta: '→ {year}年的吉日窗口',
-  timelineFreePreviewNote:
-    '免費版顯示當前大運、今年流年與未來 6 個月流月；解鎖 Pro 查看完整人生時間線。',
   timelineRemindToggle: '人生節點提醒',
   timelineRemindHint: '每月初與大運轉換時，提醒你查看當月流月與人生時間線。',
   timelineRemindNeedBirth: '請先填寫完整生辰（含性別），才能開啟人生節點提醒。',
@@ -1300,6 +1346,11 @@ const zhHant: Strings = {
     吉: '今月能量偏順，可考慮主動推進（文化參考，非建議）。',
     平: '今月能量平穩，宜按部就班、穩中求進（文化參考）。',
     凶: '今月能量偏逆，宜多休息、少硬撐（文化參考，非建議）。',
+  },
+  timelineAdviceClassical: {
+    吉: '諸事宜早，不宜遲疑。',
+    平: '守常即可，靜待其時。',
+    凶: '事宜緩行，靜以觀變。',
   },
   timelinePeriodElement: {
     favorable: '{el}行正是你的用神，此運整體有助力。',
@@ -1401,10 +1452,22 @@ const zhHant: Strings = {
   birthSave: '保存',
   birthSaved: '已保存',
   events: {
+    wedding: '結婚',
+    business: '開業',
+    signing: '簽約',
+    move: '搬家',
+    'move-in': '入住',
+    travel: '出行',
+    burial: '安葬',
+    groundbreaking: '開工',
+    medical: '就醫',
+    study: '入學',
+  },
+  eventsClassical: {
     wedding: '嫁娶',
     business: '開市',
-    signing: '簽約',
-    move: '搬遷',
+    signing: '立券',
+    move: '移徙',
     'move-in': '入宅',
     travel: '出行',
     burial: '安葬',
@@ -1414,11 +1477,18 @@ const zhHant: Strings = {
   },
   personal: {
     forYou: '對你而言',
+    forYouClassical: '於你',
     fit: { 吉: '可留意', 平: '平穩', 凶: '宜謹慎' },
+    fitClassical: { 吉: '宜進', 平: '守常', 凶: '宜慎' },
     summary: {
       吉: '今日五行對你偏順（文化參考）——適合按自己的節奏推進想做的事。',
       平: '今日起伏不大（文化參考）——按計畫穩步推進即可。',
       凶: '今日宜守不宜攻（文化參考）——低調收斂、避免冒進。',
+    },
+    summaryClassical: {
+      吉: '吉。今日五行相順，諸事宜早，不宜遲疑。',
+      平: '平。諸事平穩，守常即可。',
+      凶: '凶。宜守不宜攻，收斂靜待，不宜冒進。',
     },
     why: '了解原因',
     deepRead: '深入解讀',
@@ -1604,12 +1674,33 @@ const ja: Strings = {
   pickEvent: '用件を選ぶ',
   from: '開始',
   to: '終了',
-  search: '検索',
+  search: '吉日を見る',
   recommended: 'おすすめ',
   noResults: 'この期間に適した日は見つかりません',
   searching: '計算中…',
   loadFailed: '読み込み失敗',
   retry: '再試行',
+  modernEventsTitle: '現代シーン',
+  modernEventLabels: {
+    面试: '面接',
+    相亲: 'お見合い',
+    体检: '健康診断',
+    发布: 'リリース',
+    谈判: '交渉',
+    读书: '読書',
+    换工作: '転職',
+    装修: 'リフォーム',
+    买车: '車の購入',
+  },
+  // ja 无黄历原声（不翻译原文）— 文案层复用白话。
+  pickEventClassical: '用件を選ぶ',
+  searchClassical: '吉日を見る',
+  recommendedClassical: 'おすすめ',
+  noResultsClassical: 'この期間に適した日は見つかりません',
+  searchingClassical: '計算中…',
+  eventWindowLabelClassical: '検索範囲 · {from} – {to}',
+  specializedActiveClassical: '専門日時参考 適用中',
+  modernEventsTitleClassical: '現代シーン',
   settings: '設定',
   language: '言語',
   dailyPush: '毎日の通知',
@@ -1617,24 +1708,11 @@ const ja: Strings = {
   eveningPushHint: '明日が特別な日（祝日・二十四節気）のときだけ、夜8時にお知らせ。',
   holidayHeadsUp: '祝日リマインド',
   holidayHeadsUpHint: '法定祝日 / 振替出勤の前夜に通知（中国本土）。',
-  yijiModeTitle: '現代シーン語',
-  yijiModeHint:
-    '既定は言語に従います：日本語・中国語は伝統の黄暦語、英語は現代語。手動で選ぶと言語切替に追従しません。',
-  yijiModeModern: '現代',
-  yijiModeTraditional: '伝統',
-  eventAliasSection: '人気',
-  eventAliases: {
-    相亲: 'お見合い',
-    读书: '読書',
-    进修: 'スキルアップ',
-    面试: '面接',
-    体检: '健康診断',
-    发布: '発表',
-    上线: 'リリース',
-    谈判: '交渉',
-    AI: 'AI',
-    游戏: 'ゲーム',
-  },
+  voiceModeTitle: '表現スタイル',
+  voiceModeHint:
+    '黄暦モード：ホームが黄暦ページに切り替わり、宜忌・判詞・プッシュも原文の行話になります。現在は簡体/繁体中国語のみ対応。',
+  voiceModeName: '黄暦モード',
+  eventWindowLabel: '検索範囲 · {from} – {to}',
   privacy: 'プライバシー',
   terms: '利用規約',
   openMonth: 'カレンダー',
@@ -1756,6 +1834,7 @@ const ja: Strings = {
   glossaryGanzhi: '十干十二支',
   glossarySizhu: '四柱推命',
   glossaryZiwei: '紫微斗数',
+  glossaryHuangli: '黄暦の用語',
   personalEmptyBody: '生年月日を入力すると「あなたへ」の個別化が表示されます',
   personalEmptyCta: '生年月日を設定',
   shichenWheelActive: '今',
@@ -1767,17 +1846,18 @@ const ja: Strings = {
   timelineLiuyueNote: '表示は今年の流月のみ。重要な時点の通知は「設定」で有効化できます。',
   timelineCurrentBadge: '現在',
   timelineAgeFrom: '{age} 歳から',
-  timelineProLocked: '人生タイムラインを全期間ひらく',
-  timelineLiuyueUpsell: '→ 月ごとの流月 · Pro（今年から先）',
   timelineAboutLuck: '大運·流年とは',
   timelineZejiCta: '→ {year}年の吉日候補',
-  timelineFreePreviewNote:
-    '無料版では現在の大運・今年の流年・今後 6 か月の流月を表示。Pro で全期間をひらけます。',
   timelineRemindToggle: '人生の節目リマインド',
   timelineRemindHint: '毎月初めと大運の変わり目に、今月の流月と人生タイムラインをお知らせ。',
   timelineRemindNeedBirth: '人生の節目リマインドには、生年月日と性別の登録が必要です。',
   timelineRemindNeedPush: 'リマインドを受け取るには通知の許可が必要です。',
   timelineAdvice: {
+    吉: '今月のエネルギーは追い風寄り。積極的に動く参考になり得ます（助言ではありません）。',
+    平: '今月は穏やか。着実に進める文化上の参考です。',
+    凶: '今月は抑え気味。休息を大切に（文化参考、助言ではありません）。',
+  },
+  timelineAdviceClassical: {
     吉: '今月のエネルギーは追い風寄り。積極的に動く参考になり得ます（助言ではありません）。',
     平: '今月は穏やか。着実に進める文化上の参考です。',
     凶: '今月は抑え気味。休息を大切に（文化参考、助言ではありません）。',
@@ -1893,11 +1973,34 @@ const ja: Strings = {
     medical: '治療',
     study: '入学',
   },
+  // ja 无黄历原声（不翻译原文）— 白话注册表复用。
+  eventsClassical: {
+    wedding: '結婚',
+    business: '開業',
+    signing: '契約',
+    move: '引越し',
+    'move-in': '入居',
+    travel: '旅行',
+    burial: '葬儀',
+    groundbreaking: '起工',
+    medical: '治療',
+    study: '入学',
+  },
   officers: zhHans.officers,
   personal: {
     forYou: 'あなたへ',
+    // ja 无黄历原声（不翻译原文）— 复用白话。
+    forYouClassical: 'あなたへ',
     fit: { 吉: '好機', 平: '平穏', 凶: '慎重に' },
+    // ja 无黄历原声（不翻译原文）— 复用白话。
+    fitClassical: { 吉: '好機', 平: '平穏', 凶: '慎重に' },
     summary: {
+      吉: '今日は流れが良い読み（文化参考）——やりたいことを進めるのに向いています。',
+      平: '今日は起伏が少ない読み（文化参考）——計画どおり着実に進めれば十分です。',
+      凶: '今日は攻めより守り（文化参考）——控えめに、無理は避けましょう。',
+    },
+    // ja 无黄历原声（不翻译原文）— 复用白话。
+    summaryClassical: {
       吉: '今日は流れが良い読み（文化参考）——やりたいことを進めるのに向いています。',
       平: '今日は起伏が少ない読み（文化参考）——計画どおり着実に進めれば十分です。',
       凶: '今日は攻めより守り（文化参考）——控えめに、無理は避けましょう。',
@@ -2075,12 +2178,33 @@ const en: Strings = {
   pickEvent: 'Pick an event',
   from: 'From',
   to: 'To',
-  search: 'Search',
+  search: 'Pick a day',
   recommended: 'Recommended',
   noResults: 'No suitable day found in this window',
   searching: 'Calculating…',
   loadFailed: 'Failed to load',
   retry: 'Retry',
+  modernEventsTitle: 'Modern life',
+  modernEventLabels: {
+    面试: 'Interview',
+    相亲: 'Blind date',
+    体检: 'Checkup',
+    发布: 'Launch',
+    谈判: 'Negotiate',
+    读书: 'Reading',
+    换工作: 'New job',
+    装修: 'Renovation',
+    买车: 'Buy a car',
+  },
+  // en has no classical register (no translations) — copy layer reuses vernacular.
+  pickEventClassical: 'Pick an event',
+  searchClassical: 'Pick a day',
+  recommendedClassical: 'Recommended',
+  noResultsClassical: 'No suitable day found in this window',
+  searchingClassical: 'Calculating…',
+  eventWindowLabelClassical: 'Search window · {from} – {to}',
+  specializedActiveClassical: 'Specialized timing reference on',
+  modernEventsTitleClassical: 'Modern life',
   settings: 'Settings',
   language: 'Language',
   dailyPush: 'Daily reminder',
@@ -2088,24 +2212,11 @@ const en: Strings = {
   eveningPushHint: 'An 8pm heads-up — only when tomorrow is notable (a festival or solar term).',
   holidayHeadsUp: 'Holiday heads-up',
   holidayHeadsUpHint: 'Night-before alert for public holidays / makeup workdays (mainland China).',
-  yijiModeTitle: 'Modern scene words',
-  yijiModeHint:
-    'Default follows language: English uses modern labels; Chinese/Japanese use traditional. A manual choice sticks.',
-  yijiModeModern: 'Modern',
-  yijiModeTraditional: 'Traditional',
-  eventAliasSection: 'Popular',
-  eventAliases: {
-    相亲: 'Dating',
-    读书: 'Reading',
-    进修: 'Upskill',
-    面试: 'Interview',
-    体检: 'Checkup',
-    发布: 'Launch',
-    上线: 'Go live',
-    谈判: 'Negotiate',
-    AI: 'AI',
-    游戏: 'Gaming',
-  },
+  voiceModeTitle: 'Voice',
+  voiceModeHint:
+    'Classic modern: the home becomes a traditional almanac page — 歲次 year counts, 建除 officers, lunar mansions and classical wording across 宜忌, verdicts and push. Simplified / Traditional Chinese only for now.',
+  voiceModeName: 'Classic modern',
+  eventWindowLabel: 'Search window · {from} – {to}',
   privacy: 'Privacy',
   terms: 'Terms',
   openMonth: 'Calendar',
@@ -2228,6 +2339,7 @@ const en: Strings = {
   glossaryGanzhi: 'Stems & branches',
   glossarySizhu: 'Four pillars',
   glossaryZiwei: 'Ziwei chart',
+  glossaryHuangli: 'Almanac jargon',
   personalEmptyBody: 'Add your birth info to unlock the "For you" personalization',
   personalEmptyCta: 'Set birth info',
   shichenWheelActive: 'Now',
@@ -2240,18 +2352,19 @@ const en: Strings = {
     "Only this year's months are shown. Enable reminders for key moments in Settings.",
   timelineCurrentBadge: 'Now',
   timelineAgeFrom: 'From age {age}',
-  timelineProLocked: 'Unlock the full life timeline',
-  timelineLiuyueUpsell: '→ Monthly detail (流月) · Pro — this year & ahead',
   timelineAboutLuck: 'What are 大运 & 流年?',
   timelineZejiCta: '→ Best dates in {year}',
-  timelineFreePreviewNote:
-    'Free shows your current decade, this year, and the next 6 months. Unlock Pro for the full life timeline.',
   timelineRemindToggle: 'Timeline reminders',
   timelineRemindHint: 'A nudge at each month start and 大运 shift to check your timeline.',
   timelineRemindNeedBirth:
     'Add your full birth details (including gender) to enable timeline reminders.',
   timelineRemindNeedPush: 'Notification permission is required for timeline reminders.',
   timelineAdvice: {
+    吉: 'This month reads supportive — a cultural reference for initiative, not advice.',
+    平: 'Steady energy this month — a cultural reference for a measured pace.',
+    凶: 'This month reads counter — rest and avoid overexerting (cultural reference, not advice).',
+  },
+  timelineAdviceClassical: {
     吉: 'This month reads supportive — a cultural reference for initiative, not advice.',
     平: 'Steady energy this month — a cultural reference for a measured pace.',
     凶: 'This month reads counter — rest and avoid overexerting (cultural reference, not advice).',
@@ -2370,6 +2483,19 @@ const en: Strings = {
     medical: 'Medical',
     study: 'Start school',
   },
+  // en has no 黄历原声 register (no classical translations) — vernacular only.
+  eventsClassical: {
+    wedding: 'Wedding',
+    business: 'Open business',
+    signing: 'Sign contract',
+    move: 'Relocate',
+    'move-in': 'Move in',
+    travel: 'Travel',
+    burial: 'Burial',
+    groundbreaking: 'Break ground',
+    medical: 'Medical',
+    study: 'Start school',
+  },
   officers: {
     建: 'Establish',
     除: 'Remove',
@@ -2386,8 +2512,18 @@ const en: Strings = {
   },
   personal: {
     forYou: 'For you',
+    // en has no classical register — vernacular only.
+    forYouClassical: 'For you',
     fit: { 吉: 'Favorable', 平: 'Neutral', 凶: 'Caution' },
+    // en has no classical register (no translations) — vernacular only.
+    fitClassical: { 吉: 'Favorable', 平: 'Neutral', 凶: 'Caution' },
     summary: {
+      吉: "Today's chart reads supportive (cultural reference) — a steady day to move on what you have in mind.",
+      平: 'An even day on the chart (cultural reference) — keep to your plan at a measured pace.',
+      凶: "Today's chart reads cautious (cultural reference) — hold back and avoid overextending.",
+    },
+    // en has no 黄历原声 register (no classical translations) — vernacular only.
+    summaryClassical: {
       吉: "Today's chart reads supportive (cultural reference) — a steady day to move on what you have in mind.",
       平: 'An even day on the chart (cultural reference) — keep to your plan at a measured pace.',
       凶: "Today's chart reads cautious (cultural reference) — hold back and avoid overextending.",

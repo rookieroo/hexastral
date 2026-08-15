@@ -7,7 +7,7 @@
 import { useTheme } from '@zhop/core-ui'
 import { ChevronDownIcon, ChevronRightIcon } from '@zhop/hexastral-icons/action'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
-import { type Href, useRouter } from 'expo-router'
+import { useRouter } from 'expo-router'
 import { Share2 } from 'lucide-react-native'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { Text, useWindowDimensions, View } from 'react-native'
@@ -347,6 +347,9 @@ export function DayView({
           ) : null}
         </View>
       ) : null}
+
+      {/* 历书行话（建除/值神/星宿/彭祖/纳音）已迁至文化 hub 的「黄历行话」分区
+          （2026-08：正统通书内容放 culture，不在首页直接展开）。 */}
 
       <ExplainSheet
         date={date}

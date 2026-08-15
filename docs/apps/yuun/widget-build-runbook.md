@@ -2,6 +2,12 @@
 
 RN + native scaffold for Yuun home-screen / Lock Screen / Watch companion + complications.
 
+
+**黄历模式 large（2026-08）**：`data.classical=true`（zh）时 `systemLarge` 渲染
+撕页黄历（双线框纸页 + 竖排条 + 大日期 + 全宽宜忌 + 于你，赭金 #9A6B1F /
+墨棕 #4A3324，暗色 #D9B36A/#CDBBA7）；布局常量走 widget-spec.json
+`family.large.almanac.*`。SharedDay 新增 dayGod/evilDirection/pengZuStem/
+pengZuBranch/nayin 字段（decodeIfPresent，向后兼容）。
 ## Architecture
 
 - **App-level sync**: [`hooks/useYuunWidgetSync.ts`](../../apps/auspice-app/hooks/useYuunWidgetSync.ts) (RootLayout — AppState / locale / birth), not Home-only

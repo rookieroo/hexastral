@@ -29,6 +29,7 @@ import type { Locale } from './i18n'
 import type { AuspicePerson } from './people'
 import { getAuspiceProActive } from './pro'
 import { isServerPushActive, setServerPushActive } from './serverPushFlag'
+import { getVoiceMode } from './voice-mode'
 import { resolveYijiDisplayMode } from './yiji-display-mode'
 
 const BDAY_MIGRATED_KEY = 'auspice.bday.serverMigrated.v1'
@@ -52,6 +53,8 @@ export interface ServerPushProfile extends Partial<ServerPushPrefs> {
   isPro: boolean
   /** Device-scoped 宜忌 display mode; omit → server derives from locale. */
   yijiMode?: 'modern' | 'traditional'
+  /** App-wide voice mode — classical (黄历原声) keeps the push pure 行话. */
+  voiceMode?: 'contemporary' | 'classical'
 }
 
 /**
@@ -97,6 +100,7 @@ export async function registerAuspiceServerPush(p: ServerPushProfile): Promise<b
         timelineRemindOn: p.timelineRemindOn ?? true,
         isPro: p.isPro,
         ...(p.yijiMode ? { yijiMode: p.yijiMode } : {}),
+        ...(p.voiceMode ? { voiceMode: p.voiceMode } : {}),
         ...(portfolioUserId ? { u: portfolioUserId } : {}),
       }),
     })
@@ -129,6 +133,7 @@ export async function syncAuspiceServerPush(
   const info = await getAuspiceBirthInfo().catch(() => null)
   const isPro = await getAuspiceProActive().catch(() => false)
   const yijiMode = await resolveYijiDisplayMode(locale as Locale).catch(() => undefined)
+  const voiceMode = await getVoiceMode().catch(() => 'contemporary' as const)
   return registerAuspiceServerPush({
     locale,
     birthDate: info?.solarDate,
@@ -136,6 +141,7 @@ export async function syncAuspiceServerPush(
     gender: info?.gender ? (info.gender === '男' ? 'M' : 'F') : undefined,
     isPro,
     yijiMode,
+    voiceMode,
     ...prefs,
   })
 }

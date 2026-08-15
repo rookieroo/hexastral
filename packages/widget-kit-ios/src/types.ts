@@ -98,6 +98,12 @@ export interface YuunWidgetDay {
   jiLong?: string | null
   /** Toned Mandarin 副标 for the 干支 day; en only, null elsewhere. */
   ganZhiPinyin?: string | null
+  /** 黄历模式 extras — 撕页黄历 large 组件用（值神/煞方/彭祖/纳音）。 */
+  dayGod?: string | null
+  evilDirection?: string | null
+  pengZuStem?: string | null
+  pengZuBranch?: string | null
+  nayin?: string | null
 }
 
 /**
@@ -141,6 +147,8 @@ export interface YuunWidgetData {
   days: YuunWidgetDay[]
   /** Absent on payloads written by older app builds. */
   chrome?: YuunWidgetChrome
+  /** 黄历模式 ON（zh）→ large 组件渲染撕页黄历；缺省 false = 现有布局。 */
+  classical?: boolean
 }
 
 /** @deprecated Use YuunWidgetData. Kept as alias for older imports. */

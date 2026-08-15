@@ -24,8 +24,10 @@ import {
   localizeCultureEntry,
   localizeSolarTermName,
 } from '@/lib/culture'
+import { classicalEntryFor } from '@/lib/culture/classical-entries'
 import { getFestivalContent, JIEQI_PINYIN } from '@/lib/festival-content'
 import { useStrings } from '@/lib/i18n-context'
+import { useVoiceMode } from '@/lib/voice-mode-context'
 
 /** Reverse of JIEQI_PINYIN — built once at module load (24 entries). */
 const PINYIN_TO_JIEQI: Readonly<Record<string, string>> = Object.fromEntries(
@@ -81,6 +83,7 @@ function sectionIndexLabel(index: number): string {
 export default function FestivalDetailScreen() {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
+  const { classical } = useVoiceMode()
   const params = useLocalSearchParams<{ id: string }>()
   const id = Array.isArray(params.id) ? params.id[0] : params.id
 
@@ -124,6 +127,13 @@ export default function FestivalDetailScreen() {
   const tagline = content?.tagline?.[locale]
   const summary = useMemo(() => (id ? cultureSummary(id, locale) : null), [id, locale])
   const wikiUrl = useMemo(() => (id ? getCultureEntryWikipediaUrl(id, locale) : null), [id, locale])
+  // 「黄历原声」 — classical register leads with the 典籍 original (三候/诗句),
+  // zh only; en/ja and contemporary keep the modern explanatory masthead.
+  const classicalActive = classical && (locale === 'zh-Hans' || locale === 'zh-Hant')
+  const classicalEntry = useMemo(
+    () => (classicalActive && id ? classicalEntryFor(id, locale) : null),
+    [classicalActive, id, locale]
+  )
 
   const heroDate = festival?.solarDate ?? solarTerm?.date ?? null
   const heroSubtitle = festival?.lunarLabel
@@ -188,6 +198,34 @@ export default function FestivalDetailScreen() {
 
           {tagline ? (
             <Text style={{ color: colors.secondary, fontSize: 15, lineHeight: 22 }}>{tagline}</Text>
+          ) : null}
+
+          {/* 「黄历原声」典籍置顶 — the original leads; modern prose follows. */}
+          {classicalEntry ? (
+            <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
+              <Text
+                style={{
+                  color: colors.text,
+                  fontSize: 19,
+                  lineHeight: 32,
+                  letterSpacing: 2,
+                  textAlign: 'center',
+                  fontWeight: '300',
+                }}
+              >
+                {classicalEntry.text}
+              </Text>
+              <Text
+                style={{
+                  color: colors.dim,
+                  fontSize: 12,
+                  letterSpacing: 1,
+                  textAlign: 'center',
+                }}
+              >
+                —— {classicalEntry.source}
+              </Text>
+            </View>
           ) : null}
 
           {heroDate ? (

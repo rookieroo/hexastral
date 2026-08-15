@@ -85,7 +85,7 @@ import {
 import { pushTypeById } from '@/lib/pushRegistry'
 import { isServerPushActive } from '@/lib/serverPushFlag'
 import { TWELVE_SHICHEN } from '@/lib/shichen-content'
-import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
+import { useVoiceMode } from '@/lib/voice-mode-context'
 
 const LOCALES: { key: Locale; label: string }[] = [
   { key: 'zh-Hans', label: '简体中文' },
@@ -164,7 +164,7 @@ function SectionLabel({ children }: { children: string }) {
 export default function MeScreen() {
   const { colors, spacing } = useTheme()
   const { t, locale, setLocale, followSystem, isOverridden } = useStrings()
-  const { mode: yijiMode, setMode: setYijiMode } = useYijiDisplayMode()
+  const { classical, setMode: setVoiceMode } = useVoiceMode()
   const router = useRouter()
   // Discover (flagship funnel) is collapsed by default so Me stays quiet —
   // matches the ming-pan 生态 pattern (ADR-0018: no ad slots on funnel surfaces).
@@ -665,18 +665,14 @@ export default function MeScreen() {
       : []),
   ]
 
-  const toggleYijiMode = (modern: boolean) => {
-    void (async () => {
-      await setYijiMode(modern ? 'modern' : 'traditional')
+  /** 「黄历模式」 — 四语：zh 切原文语体（宜忌/判词/择日/推送全部文言）；
+   *  en/ja 切白话黄历布局（首页/大组件变黄历，文言仍 zh-only）。
+   *   原文注册表；同时刷新 widget 与服务器推送注册（推送按订阅者语体渲染）。 */
+  const toggleVoiceMode = (on: boolean) => {
+    void setVoiceMode(on ? 'classical' : 'contemporary').then(() => {
       requestYuunWidgetSync(locale, true)
-      if (await isPushEnabled()) {
-        await refreshDailyPush({
-          locale,
-          birthDate: birthValid ? birth.solarDate : undefined,
-        }).catch(() => {})
-        await syncServerPush(locale).catch(() => {})
-      }
-    })()
+      void syncServerPush(locale).catch(() => {})
+    })
   }
 
   // Android ships home widgets only — relabel the widget surface entry accordingly.
@@ -1046,41 +1042,38 @@ export default function MeScreen() {
 
         <NotificationsSection rows={pushToggles} />
 
-        <View>
-          <SectionLabel>{t.yijiModeTitle}</SectionLabel>
-          <View
-            style={{
-              backgroundColor: colors.card,
-              borderRadius: 14,
-              paddingVertical: spacing.md,
-              paddingHorizontal: spacing.lg,
-              gap: spacing.sm,
-            }}
-          >
+        {/* 黄历模式 — 四语开关（zh 原文 / ja·en 白话黄历布局，文言仍 zh-only）。 */}
+        {
+          <View>
+            <SectionLabel>{t.voiceModeTitle}</SectionLabel>
             <View
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: spacing.md,
+                backgroundColor: colors.card,
+                borderRadius: 14,
+                paddingVertical: spacing.md,
+                paddingHorizontal: spacing.lg,
+                gap: spacing.sm,
               }}
             >
-              <View style={{ flex: 1, gap: 4 }}>
-                <Text style={{ color: colors.text, fontSize: 15 }}>
-                  {yijiMode === 'modern' ? t.yijiModeModern : t.yijiModeTraditional}
-                </Text>
-                <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
-                  {t.yijiModeHint}
-                </Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: spacing.md,
+                }}
+              >
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text style={{ color: colors.text, fontSize: 15 }}>{t.voiceModeName}</Text>
+                  <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
+                    {t.voiceModeHint}
+                  </Text>
+                </View>
+                <Toggle value={classical} onValueChange={toggleVoiceMode} accent={colors.accent} />
               </View>
-              <Toggle
-                value={yijiMode === 'modern'}
-                onValueChange={toggleYijiMode}
-                accent={colors.accent}
-              />
             </View>
           </View>
-        </View>
+        }
 
         {/* ── Calendars & sync ── */}
         <View>

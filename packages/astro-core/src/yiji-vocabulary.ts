@@ -455,6 +455,13 @@ export const YIJI_SEARCH_ALIASES: Record<string, YijiEvent | readonly string[]> 
   发布: 'business',
   上线: 'business',
   谈判: 'signing',
+  // 现代职场 / 生活场景 → 传统宜忌动词（换工作≈见贵求财，装修≈修造，买车≈交易）
+  换工作: ['见贵', '求财'],
+  跳槽: ['见贵', '求财'],
+  求职: ['见贵', '求财'],
+  入职: ['见贵', '求财'],
+  装修: ['修造'],
+  买车: ['交易'],
   AI: ['入学', '求财'],
   游戏: ['祈福', '沐浴'],
   // English aliases
@@ -465,6 +472,8 @@ export const YIJI_SEARCH_ALIASES: Record<string, YijiEvent | readonly string[]> 
   checkup: 'medical',
   launch: 'business',
   negotiate: 'signing',
+  'new job': ['见贵', '求财'],
+  renovate: ['修造'],
   gaming: ['祈福', '沐浴'],
 }
 

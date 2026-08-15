@@ -45,6 +45,8 @@ import {
 } from '@/lib/push'
 import { migrateBirthdaysToServerOnce } from '@/lib/serverPush'
 import { useAppTheme } from '@/lib/theme'
+import { seedVoiceModeDefault } from '@/lib/voice-mode'
+import { VoiceModeProvider } from '@/lib/voice-mode-context'
 import { YijiModeProvider } from '@/lib/yiji-mode-context'
 
 function SatelliteGrowthMount() {
@@ -69,9 +71,11 @@ export default function RootLayout() {
         <CoreUIProvider brand='cycle' mode={mode} accentVariant='ink'>
           <LocaleProvider>
             <YijiModeProvider>
-              <AuspiceErrorBoundary>
-                <RootLayoutInner />
-              </AuspiceErrorBoundary>
+              <VoiceModeProvider>
+                <AuspiceErrorBoundary>
+                  <RootLayoutInner />
+                </AuspiceErrorBoundary>
+              </VoiceModeProvider>
             </YijiModeProvider>
           </LocaleProvider>
         </CoreUIProvider>
@@ -84,6 +88,11 @@ function RootLayoutInner() {
   const { colors, isDark } = useAppTheme()
   const { locale } = useStrings()
   const router = useRouter()
+
+  // 首次启动 seed — zh 新安装默认黄历模式（老用户/en/ja 不动）。
+  useEffect(() => {
+    void seedVoiceModeDefault(locale)
+  }, [locale])
 
   // WidgetKit + Watch App Group — any route, not Home-only.
   useYuunWidgetSync(locale)

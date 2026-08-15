@@ -36,12 +36,20 @@ data class YuunWidgetDay(
   val officer: String?,
   val mansion: String?,
   val clashShengxiao: String?,
+  /** 黄历模式 extras — 撕页黄历 large 组件用。 */
+  val dayGod: String?,
+  val evilDirection: String?,
+  val pengZuStem: String?,
+  val pengZuBranch: String?,
+  val nayin: String?,
 )
 
 data class ParsedWidgetPayload(
   val locale: String,
   val chrome: YuunWidgetChrome,
   val today: YuunWidgetDay?,
+  /** 黄历模式 ON（zh）→ large 组件渲染撕页黄历。 */
+  val classical: Boolean,
 )
 
 object WidgetPayloadParser {
@@ -50,12 +58,13 @@ object WidgetPayloadParser {
   fun parse(json: String?, fallbackLocale: String): ParsedWidgetPayload {
     val emptyChrome = defaultChrome(fallbackLocale)
     if (json.isNullOrBlank()) {
-      return ParsedWidgetPayload(fallbackLocale, emptyChrome, null)
+      return ParsedWidgetPayload(fallbackLocale, emptyChrome, null, false)
     }
     return try {
       val root = JSONObject(json)
       val locale = root.optString("locale", fallbackLocale)
       val data = root.optJSONObject("data") ?: JSONObject()
+      val classical = data.optBoolean("classical", false)
       val chromeObj = data.optJSONObject("chrome")
       val chrome =
         if (chromeObj != null) {
@@ -84,9 +93,9 @@ object WidgetPayloadParser {
       if (today == null && days.length() > 0) {
         today = dayFromJson(days.getJSONObject(0))
       }
-      ParsedWidgetPayload(locale, chrome, today)
+      ParsedWidgetPayload(locale, chrome, today, classical)
     } catch (_: Exception) {
-      ParsedWidgetPayload(fallbackLocale, emptyChrome, null)
+      ParsedWidgetPayload(fallbackLocale, emptyChrome, null, false)
     }
   }
 
@@ -123,6 +132,11 @@ object WidgetPayloadParser {
       officer = d.optStringOrNull("officer"),
       mansion = d.optStringOrNull("mansion"),
       clashShengxiao = d.optStringOrNull("clashShengxiao"),
+      dayGod = d.optStringOrNull("dayGod"),
+      evilDirection = d.optStringOrNull("evilDirection"),
+      pengZuStem = d.optStringOrNull("pengZuStem"),
+      pengZuBranch = d.optStringOrNull("pengZuBranch"),
+      nayin = d.optStringOrNull("nayin"),
     )
   }
 

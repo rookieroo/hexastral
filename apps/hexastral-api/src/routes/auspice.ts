@@ -29,6 +29,7 @@ import {
   type HeavenlyStem,
   hourGanZhi,
   lunarToSolar,
+  OFFICER_YIJI,
   type PersonalAlmanacSubject,
   personalAlmanacOverlay,
   resolveYijiSearchVerbs,
@@ -37,6 +38,7 @@ import {
   solarToLunar,
   YIJI_EVENT_VERBS,
   YIJI_EVENTS,
+  type YijiVocabularyMode,
 } from '@zhop/astro-core'
 import {
   type Branch as CorpusBranch,
@@ -1243,11 +1245,14 @@ const searchQuerySchema = z.object({
   to: z.string().regex(DATE_RE, 'to must be YYYY-MM-DD'),
   /** Optional BCP-47 for reasoning verb display; scoring stays canonical. */
   locale: z.enum(['zh-Hans', 'zh-Hant', 'ja', 'en']).optional(),
+  /** 「黄历原声」语体 — zh-only: classical → 原文动词, contemporary → 白话动词。 */
+  voiceMode: z.enum(['contemporary', 'classical']).optional(),
 })
 
 const specializedQuerySchema = z.object({
   from: z.string().regex(DATE_RE, 'from must be YYYY-MM-DD'),
   to: z.string().regex(DATE_RE, 'to must be YYYY-MM-DD'),
+  voiceMode: z.enum(['contemporary', 'classical']).optional(),
 })
 
 /**
@@ -1311,14 +1316,24 @@ function scoreDay(almanac: DailyAlmanac, verbs: readonly string[], boosts?: Even
   }
 }
 
+/** 判词语体：zh 跟随「黄历原声」开关（classical→原文动词 / contemporary→白话动词），
+ *  非中文只有白话（locale 默认 gloss，不翻译原文）。 */
+function reasoningYijiMode(locale: string, voiceMode?: string): YijiVocabularyMode {
+  if (locale.startsWith('zh')) {
+    return voiceMode === 'classical' ? 'traditional' : 'modern'
+  }
+  return defaultYijiModeForLocale(locale)
+}
+
 function reasoning(
   almanac: DailyAlmanac,
   matchedGood: string[],
   matchedBad: string[],
   officerBoost?: number,
-  locale = 'zh-Hans'
+  locale = 'zh-Hans',
+  voiceMode?: string
 ): string {
-  const mode = defaultYijiModeForLocale(locale)
+  const mode = reasoningYijiMode(locale, voiceMode)
   const fmt = (v: string) => formatYijiVerb(v, locale, mode)
   const parts = [`${almanac.todayGanZhi}日`, `${almanac.dayOfficer}日`, `${almanac.mansion.name}宿`]
   if (matchedGood.length > 0) parts.push(`宜${matchedGood.map(fmt).join('、')}`)
@@ -1329,6 +1344,15 @@ function reasoning(
   return parts.join(' · ')
 }
 
+/** All canonical 宜忌 verbs — the free-text substring match pool for custom
+ *  events (e.g. 输入「搬家入宅」→ 匹配「入宅」「移徙」). */
+const ALL_SEARCH_VERBS: readonly string[] = [
+  ...new Set([
+    ...Object.values(EVENT_VERBS).flat(),
+    ...Object.values(OFFICER_YIJI).flatMap((o) => [...o.good, ...o.bad]),
+  ]),
+]
+
 /** Shared ranking pipeline for both /search (generic) and the 4 specialized routes. */
 function runSearch(
   event: AuspiceEvent | string,
@@ -1336,7 +1360,8 @@ function runSearch(
   toStr: string,
   specialized: boolean,
   locale = 'zh-Hans',
-  verbsOverride?: readonly string[]
+  verbsOverride?: readonly string[],
+  voiceMode?: string
 ) {
   const fromDate = ymdToDate(parseYmd(fromStr))
   const toDate = ymdToDate(parseYmd(toStr))
@@ -1385,7 +1410,8 @@ function runSearch(
         matchedGood,
         matchedBad,
         specialized ? officerBoost : undefined,
-        locale
+        locale,
+        voiceMode
       ),
       day: {
         ganZhi: almanac.todayGanZhi,
@@ -1414,16 +1440,27 @@ auspiceRoutes.get('/search', (c) => {
     from: c.req.query('from'),
     to: c.req.query('to'),
     locale: c.req.query('locale') || undefined,
+    voiceMode: c.req.query('voiceMode') || undefined,
   })
-  const resolved = resolveYijiSearchVerbs(parsed.event)
-  if (!resolved) {
-    throw new HTTPException(400, { message: `unknown event: ${parsed.event}` })
-  }
   const locale = parsed.locale ?? 'zh-Hans'
-  // Stable event ids keep the same response `event`; aliases echo the request key.
-  const eventKey = resolved.event ?? parsed.event
+  // 自定义自由文本: alias 词库 → 宜忌动词子串匹配 → 通用评分（永不 400）。
+  // Free text must always produce results — the whole point of custom events.
+  const resolved = resolveYijiSearchVerbs(parsed.event)
+  let eventKey: string
+  let verbs: readonly string[] | null
+  if (resolved) {
+    eventKey = resolved.event ?? parsed.event
+    verbs = resolved.verbs
+  } else {
+    const matched = ALL_SEARCH_VERBS.filter((v) => parsed.event.includes(v))
+    eventKey = parsed.event // echo the request key
+    verbs = matched.length > 0 ? matched : [] // [] = 通用好日子评分 (scoreDay baseline)
+  }
   const specialized = false
-  return jsonOk(c, runSearch(eventKey, parsed.from, parsed.to, specialized, locale, resolved.verbs))
+  return jsonOk(
+    c,
+    runSearch(eventKey, parsed.from, parsed.to, specialized, locale, verbs, parsed.voiceMode)
+  )
 })
 
 // ── Specialized 择日 routes (Sprint 2 deliverable #3) ─────────────
@@ -1437,32 +1474,80 @@ auspiceRoutes.get('/wedding', (c) => {
   const parsed = specializedQuerySchema.parse({
     from: c.req.query('from'),
     to: c.req.query('to'),
+    voiceMode: c.req.query('voiceMode') || undefined,
   })
-  return jsonOk(c, runSearch('wedding', parsed.from, parsed.to, /* specialized */ true))
+  return jsonOk(
+    c,
+    runSearch(
+      'wedding',
+      parsed.from,
+      parsed.to,
+      /* specialized */ true,
+      'zh-Hans',
+      undefined,
+      parsed.voiceMode
+    )
+  )
 })
 
 auspiceRoutes.get('/move-in', (c) => {
   const parsed = specializedQuerySchema.parse({
     from: c.req.query('from'),
     to: c.req.query('to'),
+    voiceMode: c.req.query('voiceMode') || undefined,
   })
-  return jsonOk(c, runSearch('move-in', parsed.from, parsed.to, /* specialized */ true))
+  return jsonOk(
+    c,
+    runSearch(
+      'move-in',
+      parsed.from,
+      parsed.to,
+      /* specialized */ true,
+      'zh-Hans',
+      undefined,
+      parsed.voiceMode
+    )
+  )
 })
 
 auspiceRoutes.get('/business', (c) => {
   const parsed = specializedQuerySchema.parse({
     from: c.req.query('from'),
     to: c.req.query('to'),
+    voiceMode: c.req.query('voiceMode') || undefined,
   })
-  return jsonOk(c, runSearch('business', parsed.from, parsed.to, /* specialized */ true))
+  return jsonOk(
+    c,
+    runSearch(
+      'business',
+      parsed.from,
+      parsed.to,
+      /* specialized */ true,
+      'zh-Hans',
+      undefined,
+      parsed.voiceMode
+    )
+  )
 })
 
 auspiceRoutes.get('/travel', (c) => {
   const parsed = specializedQuerySchema.parse({
     from: c.req.query('from'),
     to: c.req.query('to'),
+    voiceMode: c.req.query('voiceMode') || undefined,
   })
-  return jsonOk(c, runSearch('travel', parsed.from, parsed.to, /* specialized */ true))
+  return jsonOk(
+    c,
+    runSearch(
+      'travel',
+      parsed.from,
+      parsed.to,
+      /* specialized */ true,
+      'zh-Hans',
+      undefined,
+      parsed.voiceMode
+    )
+  )
 })
 
 // ── POST /explain — 深度解读 (C.4): the ONLY LLM in Auspice ─────
@@ -2440,6 +2525,8 @@ interface AuspicePushSubRow {
   portfolioUserId?: string | null
   /** Null/undefined → derive from locale via defaultYijiModeForLocale. */
   yijiMode?: string | null
+  /** App-wide voice mode — classical (古黄历) suppresses the corpus hook line. */
+  voiceMode?: string | null
   /** Hash of the last rendered daily push — the no-verbatim-repeat guard. */
   lastBodyKey?: string | null
 }
@@ -2451,7 +2538,13 @@ function pushPersonalTier(sub: AuspicePushSubRow): 'public' | 'signed' | 'pro' {
   return 'public'
 }
 
+/** 推送宜忌语体 — 与客户端同一规则：zh 跟随「黄历原声」开关
+ *  (classical → 原文动词 / contemporary 或未设置 → 白话动词)；
+ *  非中文没有原文，用注册表的 yijiMode 字段或 locale 默认 gloss。 */
 function resolvePushYijiMode(sub: AuspicePushSubRow): 'modern' | 'traditional' {
+  if (sub.locale.startsWith('zh')) {
+    return sub.voiceMode === 'classical' ? 'traditional' : 'modern'
+  }
   if (sub.yijiMode === 'modern' || sub.yijiMode === 'traditional') return sub.yijiMode
   return defaultYijiModeForLocale(sub.locale)
 }
@@ -2817,11 +2910,15 @@ export function renderAuspicePush(
   const special = day.festivalToday?.name ?? day.solarTermToday?.name ?? null
   const dayId = `${day.ganZhi}${L.daySuffix}`
   const pers = showPersonal ? personalization : null
-  const title = pers
-    ? `${dayId} · ${L.forYou}${L.fit[pers.fit] ?? pers.fit}`
-    : special
-      ? `${dayId} · ${special}`
-      : dayId
+  // Classical (黄历原声) subscribers keep the push pure 行话 — no 对你而言 verdict
+  // title and no modern reason codes; the body stays 干支/宜忌/冲煞/值神/彭祖 + disclaimer.
+  const classicalZh = sub.voiceMode === 'classical' && sub.locale.startsWith('zh')
+  const title =
+    pers && !classicalZh
+      ? `${dayId} · ${L.forYou}${L.fit[pers.fit] ?? pers.fit}`
+      : special
+        ? `${dayId} · ${special}`
+        : dayId
   // Rotating 冲煞 clause for CJK locales — content variety on top of the 宜忌 list
   // (en keeps the minimal gloss path). The day-signature (干支/建除/宿) can repeat
   // across a subscription's lifetime; the per-device variation + this clause keep
@@ -2844,13 +2941,15 @@ export function renderAuspicePush(
   // TITLE keeps the 干支-day convention (the hook supplements, not replaces); the
   // line rotates by day so the body reads fresh even when 宜忌 top-verbs repeat.
   const hookLine =
-    !sub.locale.startsWith('en') && showPersonal && dailyHook ? dailyHook.title : null
+    !classicalZh && !sub.locale.startsWith('en') && showPersonal && dailyHook
+      ? dailyHook.title
+      : null
   let body = `${L.yi} ${yi} · ${L.ji} ${ji}`
   if (clashClause) body += ` · ${clashClause}`
   if (extraClause) body += ` · ${extraClause}`
   if (pers && special) body += ` · ${special}`
   if (hookLine) body += ` · ${hookLine}`
-  if (tier === 'pro' && pers?.reasons?.length) {
+  if (tier === 'pro' && !classicalZh && pers?.reasons?.length) {
     body += ` · ${pers.reasons.slice(0, 2).join(' · ')}`
   }
   // Compliance tail — mirrors the app's local-fallback disclaimer (Terms §3).
@@ -2891,6 +2990,8 @@ const pushRegisterSchema = z.object({
   u: z.string().max(128).optional(),
   /** Device-scoped 宜忌 display; omit/null → derive from locale on render. */
   yijiMode: z.enum(['modern', 'traditional']).optional(),
+  /** 「古黄历」 — contemporary | classical (zh classical suppresses hook prose). */
+  voiceMode: z.enum(['contemporary', 'classical']).optional(),
 })
 
 auspiceRoutes.post('/push/register', async (c) => {
@@ -2923,6 +3024,7 @@ auspiceRoutes.post('/push/register', async (c) => {
       isPro,
       portfolioUserId,
       yijiMode: b.yijiMode ?? null,
+      voiceMode: b.voiceMode ?? null,
       lastActiveAt: now,
       createdAt: now,
     })
@@ -2945,6 +3047,7 @@ auspiceRoutes.post('/push/register', async (c) => {
         isPro,
         portfolioUserId,
         yijiMode: b.yijiMode ?? null,
+        voiceMode: b.voiceMode ?? null,
         lastActiveAt: now,
       },
     })
@@ -2990,6 +3093,7 @@ auspiceRoutes.get('/push/targets', async (c) => {
       holidayOn: auspicePushSubs.holidayOn,
       relationshipOn: auspicePushSubs.relationshipOn,
       yijiMode: auspicePushSubs.yijiMode,
+      voiceMode: auspicePushSubs.voiceMode,
       lastBodyKey: auspicePushSubs.lastBodyKey,
     })
     .from(auspicePushSubs)

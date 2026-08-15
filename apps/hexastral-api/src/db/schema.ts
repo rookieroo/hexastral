@@ -1535,6 +1535,11 @@ export const auspicePushSubs = sqliteTable(
      */
     yijiMode: text('yiji_mode'),
     /**
+     * App-wide voice mode (`contemporary` | `classical`) — the 「古黄历」 switch.
+     * Classical zh subscribers get the pure 行话 push (no corpus hook line).
+     */
+    voiceMode: text('voice_mode'),
+    /**
      * Hash of the last rendered daily push (title+body). The no-verbatim-repeat
      * guard compares against it at render time and walks the deterministic
      * variant space when the body would repeat. Null = never sent.

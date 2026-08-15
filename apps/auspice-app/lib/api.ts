@@ -456,7 +456,8 @@ export function searchAuspiceDays(
   event: AuspiceEvent | string,
   from: string,
   to: string,
-  locale?: 'zh-Hans' | 'zh-Hant' | 'ja' | 'en'
+  locale?: 'zh-Hans' | 'zh-Hant' | 'ja' | 'en',
+  voiceMode?: 'contemporary' | 'classical'
 ): Promise<AuspiceSearchPayload> {
   const q = new URLSearchParams({
     event,
@@ -464,6 +465,8 @@ export function searchAuspiceDays(
     to,
   })
   if (locale) q.set('locale', locale)
+  // 判词语体跟随「黄历原声」开关（server 对 zh 应用同样的注册表规则）。
+  if (voiceMode) q.set('voiceMode', voiceMode)
   return getJson<AuspiceSearchPayload>(`/api/auspice/search?${q.toString()}`)
 }
 
@@ -482,10 +485,13 @@ export type SpecializedCycleEvent = 'wedding' | 'move-in' | 'business' | 'travel
 export function fetchAuspiceSpecialized(
   event: SpecializedCycleEvent,
   from: string,
-  to: string
+  to: string,
+  voiceMode?: 'contemporary' | 'classical'
 ): Promise<AuspiceSearchPayload> {
   const q = `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
-  return getJson<AuspiceSearchPayload>(`/api/auspice/${event}${q}`)
+  return getJson<AuspiceSearchPayload>(
+    `/api/auspice/${event}${q}${voiceMode ? `&voiceMode=${voiceMode}` : ''}`
+  )
 }
 
 // ── Life Timeline (Sprint 4 — ADR-0020) ────────────────────────────────────

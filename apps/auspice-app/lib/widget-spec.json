@@ -2,11 +2,23 @@
   "version": 1,
   "_note": "Single source of truth for home-widget layout specs. Consumed by: RN preview (apps/auspice-app/lib/widget-spec.ts), Kotlin Glance (packages/widget-kit-android .../WidgetSpec.kt — GENERATED), Swift WidgetKit (apps/auspice-app/targets/widget/WidgetSpec.swift — GENERATED). After editing, run `bun run widget-spec:gen` and commit the generated files; `widget-spec:check` (in preflight) fails on drift.",
   "boxSizesPt": {
-    "small": { "w": 158, "h": 158 },
-    "medium": { "w": 338, "h": 158 },
-    "large": { "w": 338, "h": 354 }
+    "small": {
+      "w": 158,
+      "h": 158
+    },
+    "medium": {
+      "w": 338,
+      "h": 158
+    },
+    "large": {
+      "w": 338,
+      "h": 354
+    }
   },
-  "cornerRadiusPt": { "ios": 22, "android": 16 },
+  "cornerRadiusPt": {
+    "ios": 22,
+    "android": 16
+  },
   "family": {
     "small": {
       "padding": 12,
@@ -15,7 +27,10 @@
       "ganZhiFont": 22,
       "ganZhiMinScale": 0.75,
       "lunarFont": 10,
-      "forYou": { "ios": false, "android": true },
+      "forYou": {
+        "ios": false,
+        "android": true
+      },
       "forYouFont": 12,
       "yijiFont": 11,
       "goodLines": 2,
@@ -34,7 +49,10 @@
       "termMaxLines": 2,
       "termMaxWidth": 58,
       "hairlineMargin": 9,
-      "forYou": { "ios": false, "android": true },
+      "forYou": {
+        "ios": false,
+        "android": true
+      },
       "forYouFont": 12,
       "yijiFont": 12,
       "goodLines": 2,
@@ -54,13 +72,24 @@
       "yijiFont": 14,
       "goodLines": 2,
       "avoidLines": 2,
-      "forYou": { "ios": true, "android": true },
+      "forYou": {
+        "ios": true,
+        "android": true
+      },
       "forYouFont": 12,
       "forYouSummaryFont": 12,
       "forYouSummaryLines": 3,
       "tipLabelFont": 9,
       "tipFont": 12,
-      "tipLines": 3
+      "tipLines": 3,
+      "almanac": {
+        "padding": 14,
+        "vPadding": 8,
+        "dayFont": 72,
+        "stripFont": 11,
+        "metaFont": 10,
+        "yijiFont": 13
+      }
     }
   }
 }

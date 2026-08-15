@@ -44,10 +44,16 @@ struct SharedDay: Codable {
   let yiLong: String?
   let jiLong: String?
   let ganZhiPinyin: String?
+  let dayGod: String?
+  let evilDirection: String?
+  let pengZuStem: String?
+  let pengZuBranch: String?
+  let nayin: String?
 
   enum CodingKeys: String, CodingKey {
     case date, ganZhi, elementColor, lunar, solarTerm, yi, ji, fit, fitSummary, dayTip, tipLabel, moonPhase
     case officer, mansion, clashShengxiao, ganzhiYear, yiShort, jiShort, yiLong, jiLong, ganZhiPinyin
+    case dayGod, evilDirection, pengZuStem, pengZuBranch, nayin
   }
 
   init(
@@ -56,7 +62,9 @@ struct SharedDay: Codable {
     officer: String? = nil, mansion: String? = nil, clashShengxiao: String? = nil,
     ganzhiYear: String? = nil, yiShort: String? = nil, jiShort: String? = nil,
     yiLong: String? = nil, jiLong: String? = nil, ganZhiPinyin: String? = nil,
-    fitSummary: String? = nil, dayTip: String? = nil, tipLabel: String? = nil
+    fitSummary: String? = nil, dayTip: String? = nil, tipLabel: String? = nil,
+    dayGod: String? = nil, evilDirection: String? = nil, pengZuStem: String? = nil,
+    pengZuBranch: String? = nil, nayin: String? = nil
   ) {
     self.date = date
     self.ganZhi = ganZhi
@@ -79,6 +87,11 @@ struct SharedDay: Codable {
     self.yiLong = yiLong
     self.jiLong = jiLong
     self.ganZhiPinyin = ganZhiPinyin
+    self.dayGod = dayGod
+    self.evilDirection = evilDirection
+    self.pengZuStem = pengZuStem
+    self.pengZuBranch = pengZuBranch
+    self.nayin = nayin
   }
 
   init(from decoder: Decoder) throws {
@@ -104,6 +117,11 @@ struct SharedDay: Codable {
     yiLong = try c.decodeIfPresent(String.self, forKey: .yiLong)
     jiLong = try c.decodeIfPresent(String.self, forKey: .jiLong)
     ganZhiPinyin = try c.decodeIfPresent(String.self, forKey: .ganZhiPinyin)
+    dayGod = try c.decodeIfPresent(String.self, forKey: .dayGod)
+    evilDirection = try c.decodeIfPresent(String.self, forKey: .evilDirection)
+    pengZuStem = try c.decodeIfPresent(String.self, forKey: .pengZuStem)
+    pengZuBranch = try c.decodeIfPresent(String.self, forKey: .pengZuBranch)
+    nayin = try c.decodeIfPresent(String.self, forKey: .nayin)
   }
 }
 
@@ -128,6 +146,7 @@ struct SharedChrome: Decodable {
 private struct EnvelopeData: Decodable {
   let days: [SharedDay]
   let chrome: SharedChrome?
+  let classical: Bool?
 }
 
 private struct Envelope: Decodable {
@@ -192,6 +211,15 @@ private func loadChrome() -> SharedChrome? {
         let env = try? JSONDecoder().decode(Envelope.self, from: data)
   else { return nil }
   return env.data.chrome
+}
+
+/// 黄历模式 flag — large 组件切换撕页黄历布局（zh-only）。
+private func loadClassical() -> Bool {
+  guard let defaults = UserDefaults(suiteName: APP_GROUP),
+        let data = defaultsJSON(suite: defaults, key: ENVELOPE_KEY),
+        let env = try? JSONDecoder().decode(Envelope.self, from: data)
+  else { return false }
+  return env.data.classical == true
 }
 
 /// 月相 caption under the logo. Names come exclusively from App i18n.
@@ -578,7 +606,8 @@ struct AuspiceWidgetEntryView: View {
         switch family {
         case .systemSmall: small(d)
         case .systemMedium: medium(d)
-        case .systemLarge: large(d)
+        case .systemLarge:
+          if loadClassical() { almanacLarge(d) } else { large(d) }
         case .accessoryCircular: circular(d)
         case .accessoryRectangular: rectangular(d)
         default: medium(d)
@@ -962,6 +991,174 @@ struct AuspiceWidgetEntryView: View {
       }
     }
     .padding(WidgetSpec.largePadding)
+  }
+
+  /// 黄历模式 large — 撕页黄历纸页：双线框 + 竖排条 + 大日期 + 全宽宜忌 + 于你。
+  private func almanacLarge(_ d: SharedDay) -> some View {
+    let gold = palette.scheme == .light ? color("#9A6B1F") : color("#D9B36A")
+    let brown = palette.scheme == .light ? color("#4A3324") : color("#CDBBA7")
+
+    /// 竖排文本 — 逐字成行。
+    func vchars(_ s: String, size: CGFloat, color: Color) -> some View {
+      VStack(spacing: 0) {
+        ForEach(Array(s.enumerated()), id: \.offset) { _, ch in
+          Text(String(ch))
+            .font(.system(size: size))
+            .tracking(1)
+            .foregroundColor(color)
+        }
+      }
+    }
+
+    /// 当日数字（组件大日期）。
+    let dayNum: String = {
+      guard let dt = parseYmd(d.date) else { return "—" }
+      return String(Calendar(identifier: .gregorian).component(.day, from: dt))
+    }()
+    let clashLine = d.clashShengxiao.map { "冲\($0)煞\(d.evilDirection ?? "")" } ?? ""
+    let pengzuLine =
+      d.pengZuStem.map { stem in
+        d.pengZuBranch.map { "彭祖 \(stem) \($0)" } ?? "彭祖 \(stem)"
+      } ?? ""
+
+    return VStack(spacing: 0) {
+      VStack(spacing: 6) {
+        HStack {
+          Text(solarMonthDay(d))
+            .font(.system(size: WidgetSpec.largeAlmanacMetaFont, weight: .medium))
+            .tracking(1)
+            .foregroundColor(palette.secondary)
+          Spacer()
+          Text(weekdayChip(d))
+            .font(.system(size: WidgetSpec.largeAlmanacMetaFont))
+            .tracking(2)
+            .foregroundColor(palette.secondary)
+        }
+
+        HStack(alignment: .center, spacing: 6) {
+          if isEn {
+            VStack(spacing: 2) {
+              Text(dayNum)
+                .font(.system(size: WidgetSpec.largeAlmanacDayFont, weight: .bold))
+                .tracking(1)
+                .foregroundColor(palette.text)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+              Text("\(d.ganZhi) · \(lunarOnly(d))")
+                .font(.system(size: WidgetSpec.largeAlmanacMetaFont))
+                .foregroundColor(palette.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity)
+          } else {
+          VStack(spacing: 0) {
+            vchars("\(d.ganZhi)日", size: WidgetSpec.largeAlmanacStripFont, color: palette.text)
+          }
+          VStack(spacing: 0) {
+            vchars(
+              (d.officer.map { "\($0)日" } ?? ""),
+              size: WidgetSpec.largeAlmanacStripFont,
+              color: palette.text
+            )
+          }
+          VStack(spacing: 0) {
+            vchars(
+              (d.dayGod.map { "值神\($0)" } ?? ""),
+              size: WidgetSpec.largeAlmanacStripFont,
+              color: palette.text
+            )
+          }
+          VStack(spacing: 0) {
+            vchars(d.mansion ?? "", size: WidgetSpec.largeAlmanacStripFont, color: palette.text)
+          }
+          Spacer(minLength: 2)
+          VStack(spacing: 2) {
+            Text(dayNum)
+              .font(.system(size: WidgetSpec.largeAlmanacDayFont, weight: .bold))
+              .tracking(1)
+              .foregroundColor(palette.text)
+              .lineLimit(1)
+              .minimumScaleFactor(0.7)
+            if !isEn, let nayin = d.nayin, !nayin.isEmpty {
+              Text(nayin)
+                .font(.system(size: WidgetSpec.largeAlmanacMetaFont))
+                .foregroundColor(gold)
+                .lineLimit(1)
+            }
+          }
+          Spacer(minLength: 2)
+          VStack(spacing: 0) {
+            vchars(
+              lunarOnly(d),
+              size: WidgetSpec.largeAlmanacStripFont,
+              color: palette.text
+            )
+          }
+          VStack(spacing: 0) {
+            vchars(
+              d.ganzhiYear ?? "",
+              size: WidgetSpec.largeAlmanacStripFont,
+              color: palette.text
+            )
+          }
+          }
+        }
+
+        if !clashLine.isEmpty || !pengzuLine.isEmpty {
+          Text([clashLine, pengzuLine].filter { !$0.isEmpty }.joined(separator: " · "))
+            .font(.system(size: WidgetSpec.largeAlmanacMetaFont))
+            .foregroundColor(palette.secondary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+        }
+
+        Rectangle().fill(palette.separator).frame(height: 0.5)
+
+        yiJiRow(
+          label: goodLabel.isEmpty ? "宜" : goodLabel,
+          text: yiText(d, variant: .long),
+          labelColor: gold,
+          textColor: palette.text,
+          yiSize: WidgetSpec.largeAlmanacYijiFont,
+          maxLines: 3,
+          scale: 0.8
+        )
+        yiJiRow(
+          label: avoidLabel.isEmpty ? "忌" : avoidLabel,
+          text: jiText(d, variant: .long),
+          labelColor: brown,
+          textColor: palette.secondary,
+          yiSize: WidgetSpec.largeAlmanacYijiFont,
+          maxLines: 3,
+          scale: 0.8
+        )
+
+        if let fit = d.fit, !fit.isEmpty {
+          Rectangle().fill(palette.separator).frame(height: 0.5)
+          HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(forYouLabel.isEmpty ? "于你" : forYouLabel)
+              .font(.system(size: WidgetSpec.largeAlmanacMetaFont, weight: .bold))
+              .tracking(1)
+              .foregroundColor(palette.secondary)
+              .lineLimit(1)
+            Text(fit)
+              .font(.system(size: WidgetSpec.largeAlmanacYijiFont, weight: .bold))
+              .foregroundColor(gold)
+              .lineLimit(1)
+          }
+          if let summary = d.fitSummary, !summary.isEmpty {
+            Text(summary)
+              .font(.system(size: WidgetSpec.largeAlmanacMetaFont))
+              .foregroundColor(palette.secondary)
+              .lineLimit(2)
+          }
+        }
+      }
+      .padding(.horizontal, WidgetSpec.largeAlmanacPadding)
+      .padding(.vertical, WidgetSpec.largeAlmanacVPadding)
+    }
+    // 无外框 — 双线框在圆角小组件里突兀，内容直接贴合系统容器。
   }
 
   private func circular(_ d: SharedDay) -> some View {

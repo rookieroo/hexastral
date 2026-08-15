@@ -37,6 +37,7 @@ import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
 import type { AuspicePerson } from '@/lib/people'
 import { type RelVerdict, relationship } from '@/lib/relationship'
+import { useVoiceMode } from '@/lib/voice-mode-context'
 import { RelationshipSeal } from './RelationshipSeal'
 
 interface PrelimCopy {
@@ -233,6 +234,98 @@ const L: Record<Locale, PrelimCopy> = {
   },
 }
 
+/**
+ * 「黄历原声」文言 copy set (zh only) — the same structure, the almanac's voice:
+ * 合参/相生相克/六合三合 as 命理行话, verdicts as 合参曰 statements. Cultural
+ * reference register — same non-prediction posture as the contemporary copy.
+ */
+const LC: Record<'zh-Hans' | 'zh-Hant', PrelimCopy> = {
+  'zh-Hans': {
+    title: '八字合参',
+    zodiacLine: {
+      合: '生肖相合，气类相投。',
+      冲: '生肖相冲，宜以让化之。',
+      平: '生肖平和，各安其分。',
+    },
+    dayMasterLabel: '日主',
+    yearBranchLabel: '年支',
+    monthBranchLabel: '月支',
+    dayBranchLabel: '日支',
+    wuxingName: { 相生: '相生', 被生: '被生', 比和: '比和', 相克: '相克', 被克: '被克' },
+    branchName: {
+      六合: '六合',
+      三合: '三合',
+      比和: '比和',
+      无关: '无关',
+      刑: '相刑',
+      害: '相害',
+      冲: '相冲',
+    },
+    dayMasterLine: {
+      相生: '尔之生彼，气脉相承。',
+      被生: '彼之生尔，如沐春晖。',
+      比和: '日主比和，声气相通。',
+      相克: '尔克于彼，宜以容化之。',
+      被克: '彼克于尔，宜以言和之。',
+    },
+    branchLine: {
+      六合: '六合相得，天作之合。',
+      三合: '三合成局，同气连枝。',
+      比和: '支同气合，两心相印。',
+      无关: '各安其位，无所拘牵。',
+      刑: '相刑之地，宜慎其行。',
+      害: '相害之形，宜徐图之。',
+      冲: '相冲之势，亦冲亦合。',
+    },
+    harmonious: '合参曰：诸柱相合，气脉相生，相契也。',
+    neutral: '合参曰：有合有冲，两不相胜，平和也。',
+    friction: '合参曰：冲刑并见，宜以静化之，磨合也。',
+    yearMissing: '补全生年，方可合参八字。',
+  },
+  'zh-Hant': {
+    title: '八字合參',
+    zodiacLine: {
+      合: '生肖相合，氣類相投。',
+      冲: '生肖相沖，宜以讓化之。',
+      平: '生肖平和，各安其分。',
+    },
+    dayMasterLabel: '日主',
+    yearBranchLabel: '年支',
+    monthBranchLabel: '月支',
+    dayBranchLabel: '日支',
+    wuxingName: { 相生: '相生', 被生: '被生', 比和: '比和', 相克: '相剋', 被克: '被剋' },
+    branchName: {
+      六合: '六合',
+      三合: '三合',
+      比和: '比和',
+      无关: '無關',
+      刑: '相刑',
+      害: '相害',
+      冲: '相沖',
+    },
+    dayMasterLine: {
+      相生: '爾之生彼，氣脈相承。',
+      被生: '彼之生爾，如沐春暉。',
+      比和: '日主比和，聲氣相通。',
+      相克: '爾剋於彼，宜以容化之。',
+      被克: '彼剋於爾，宜以言和之。',
+    },
+    branchLine: {
+      六合: '六合相得，天作之合。',
+      三合: '三合成局，同氣連枝。',
+      比和: '支同氣合，兩心相印。',
+      无关: '各安其位，無所拘牽。',
+      刑: '相刑之地，宜慎其行。',
+      害: '相害之形，宜徐圖之。',
+      冲: '相沖之勢，亦沖亦合。',
+    },
+    harmonious: '合參曰：諸柱相合，氣脈相生，相契也。',
+    neutral: '合參曰：有合有沖，兩不相勝，平和也。',
+    friction: '合參曰：沖刑並見，宜以靜化之，磨合也。',
+    yearMissing: '補全生年，方可合參八字。',
+  },
+}
+
 /** Solar YYYY-MM-DD for the person, or null when the 八字 can't be derived
  *  (sentinel year 0000, or a 农历 date without a usable year). */
 function personSolarDate(person: AuspicePerson): string | null {
@@ -367,7 +460,12 @@ export function BaziPreliminarySheet({
 }) {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
-  const l = L[locale]
+  const { classical } = useVoiceMode()
+  // 「黄历原声」 — zh classical register swaps in the 文言 copy set.
+  const l =
+    classical && (locale === 'zh-Hans' || locale === 'zh-Hant')
+      ? LC[locale === 'zh-Hant' ? 'zh-Hant' : 'zh-Hans']
+      : L[locale]
 
   const rel = useMemo(
     () => (self?.solarDate && person ? relationship(self.solarDate, person.solarDate) : null),

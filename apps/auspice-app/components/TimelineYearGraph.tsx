@@ -8,11 +8,10 @@
  * floating popover; the old one overlapped the year column and only carried a
  * 流月 toggle, see 2026-06 feedback).
  *
- * 流年 is the finest grain by default. 流月 is a PRO unlock woven in as a git
+ * 流年 is the finest grain by default. 流月 is woven in as a git
  * SUB-BRANCH that peels off the 流年, runs its 12 months, and merges into the next
- * year (殊途同归) — the same weave make-if uses. For Pro, selecting a year opens
- * its 流月 directly (the caller toggles `liuyueOpen`); Free 流月 stays locked
- * behind the screen's main unlock CTA.
+ * year (殊途同归) — the same weave make-if uses. Deterministic for EVERY tier:
+ * selecting a year opens its 流月 (the caller toggles `liuyueOpen`).
  *
  * Skia draws lines + nodes; labels + tap targets + popover are absolutely
  * positioned RN views in the same coordinate space.
@@ -98,7 +97,6 @@ export function TimelineYearGraph({
   fitColor,
   nowLabel = '今',
   lang = 'zh',
-  isPro,
   liuyue = null,
   liuyueOpen = false,
   selectedMonth = null,
@@ -114,18 +112,16 @@ export function TimelineYearGraph({
   nowLabel?: string
   /** UI locale — 干支 only in zh; other languages show year + age. */
   lang?: string
-  /** Pro gates the 流月 weave (selecting a year opens it). */
-  isPro: boolean
   /** The selected year's 12 流月 (computed upstream), or null. */
   liuyue?: LiuyueCell[] | null
-  /** Whether the selected year's 流月 sub-branch is woven open (Pro). */
+  /** Whether the selected year's 流月 sub-branch is woven open (deterministic for every tier). */
   liuyueOpen?: boolean
   selectedMonth?: number | null
   onSelectMonth?: (month: number) => void
 }) {
   const cjk = lang.startsWith('zh')
-  // Layout — years at ROW; the selected year's 流月 (if open+Pro) insert MROW rows.
-  const open = isPro && liuyueOpen && liuyue != null && selectedYearIndex != null
+  // Layout — years at ROW; the selected year's 流月 insert MROW rows (all tiers).
+  const open = liuyueOpen && liuyue != null && selectedYearIndex != null
   let y = TOP
   const yearY: number[] = []
   const monthRows: { m: LiuyueCell; y: number }[] = []

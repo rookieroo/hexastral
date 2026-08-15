@@ -25,6 +25,12 @@ Yuun is a Chinese almanac (中华黄历) with Today-first navigation and a three
 - Anonymous local birth preview + sign-in CTA; sync when multi-device on
 - Calendar feed: free `/calendar.ics` · Pro `/calendar/p/:token` (signed personal feed)
 - 亲友: Free cap 3; Pro unlimited
+- **Timeline (2026-08)**: the deterministic life is FREE for every tier — all 大运 /
+  流年 / 流月 + 对你而言 readings, zero LLM. Pro adds interpretation depth only:
+  per-node LLM deep-read, MonthlyDepth card, 印证 (event pinning). No paywall rows
+  on the page.
+- **Make-if (what-if)**: Pro-only end to end — Library entry hidden while IAP is
+  off (no dead "coming soon" wall); deep links land on a neutral coming-soon note.
 - Notifications: server Expo push (anonymous = public; signed-in = personal; Pro = tips); timeline node (Pro)
 - Paywall: Coming soon when IAP off; Apple + Google + RC when `EXPO_PUBLIC_IAP_ENABLED=true`
 - Root `AuspiceErrorBoundary`; `supportsTablet: false`; marketing `1.0.0`

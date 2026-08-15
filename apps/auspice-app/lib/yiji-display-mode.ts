@@ -9,6 +9,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { defaultYijiModeForLocale, type YijiVocabularyMode } from '@zhop/astro-core'
 import type { Locale } from './i18n'
+import { getVoiceMode } from './voice-mode'
 
 export const YIJI_MODE_STORAGE_KEY = 'auspice.yiji.displayMode'
 
@@ -75,6 +76,29 @@ export function resolveYijiDisplayModeSync(
 ): YijiVocabularyMode {
   if (isYijiVocabularyMode(override)) return override
   return defaultYijiModeForLocale(locale)
+}
+
+/**
+ * The ONE register derivation for 黄历术语 (2026-06 convergence):
+ * - zh follows the 「黄历原声」 voice switch: classical → traditional 文言
+ *   verbs, contemporary → modern 白话 scene words.
+ * - non-zh has no switch and no 原文 — always the locale's vernacular gloss
+ *   (defaultYijiModeForLocale), never a classical translation.
+ *
+ * Used by 宜忌 blocks, Today faces, widget/watch verbs, and the local push
+ * fallback; the server applies the same rule for /search 判词 + daily push.
+ */
+export function resolveRegisterSync(locale: Locale, classical: boolean): YijiVocabularyMode {
+  if (locale.startsWith('zh')) return classical ? 'traditional' : 'modern'
+  return defaultYijiModeForLocale(locale)
+}
+
+export async function resolveRegisterForLocale(locale: Locale): Promise<YijiVocabularyMode> {
+  if (locale.startsWith('zh')) {
+    const voice = await getVoiceMode().catch(() => 'contemporary' as const)
+    return voice === 'classical' ? 'traditional' : 'modern'
+  }
+  return resolveYijiDisplayMode(locale)
 }
 
 export function subscribeYijiModeOverride(listener: Listener): () => void {

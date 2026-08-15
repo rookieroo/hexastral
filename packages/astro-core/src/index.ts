@@ -69,6 +69,8 @@ export {
   analyzeBranchCombinations,
   analyzeCombinations,
   analyzeStemCombinations,
+  branchRelationSummary,
+  type BranchRelationSummary,
 } from './combinations'
 // 基础常量
 export {

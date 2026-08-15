@@ -5,6 +5,7 @@ import {
   analyzeBranchCombinations,
   analyzeCombinations,
   analyzeStemCombinations,
+  branchRelationSummary,
 } from '../combinations'
 import type { EarthlyBranch, HeavenlyStem } from '../types'
 
@@ -519,5 +520,30 @@ describe('combinations (合化)', () => {
       const r2 = analyzeBranchAgainstNatal('申', natal, noWaterStems)
       expect(r2!.status).toBe('合而不化')
     })
+  })
+})
+
+describe('branchRelationSummary — 黄历日页刑冲害合', () => {
+  it('未日 matches the 168888 reference sentence (冲牛 · 六合马 · 三合兔猪 · 害鼠 · 刑牛狗)', () => {
+    const s = branchRelationSummary('未')
+    expect(s.clash).toBe('丑')
+    expect(s.combine).toBe('午')
+    expect([...s.triple].sort()).toEqual(['亥', '卯'])
+    expect(s.harm).toBe('子')
+    expect([...s.punish].sort()).toEqual(['丑', '戌'])
+  })
+
+  it('子日: 冲午 · 六合丑 · 三合申辰 · 害未 · 刑卯', () => {
+    const s = branchRelationSummary('子')
+    expect(s.clash).toBe('午')
+    expect(s.combine).toBe('丑')
+    expect([...s.triple].sort()).toEqual(['申', '辰'])
+    expect(s.harm).toBe('未')
+    expect([...s.punish]).toEqual(['卯'])
+  })
+
+  it('自刑支 (辰) 把自身计入 punish', () => {
+    const s = branchRelationSummary('辰')
+    expect(s.punish).toContain('辰')
   })
 })

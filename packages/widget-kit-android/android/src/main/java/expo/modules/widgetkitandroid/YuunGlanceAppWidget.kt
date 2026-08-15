@@ -77,6 +77,9 @@ private object YuunColors {
   val secondary = ColorProvider(day = Color(0xFF71717A), night = Color(0xFFA1A1AA))
   val tertiary = ColorProvider(day = Color(0xFFA1A1AA), night = Color(0xFF71717A))
   val separator = ColorProvider(day = Color(0xFFE4E4E7), night = Color(0xFF27272A))
+  /** 黄历模式 — 赭金（宜/吉）/ 墨棕（忌/凶），与 App 同口径。 */
+  val gold = ColorProvider(day = Color(0xFF9A6B1F), night = Color(0xFFD9B36A))
+  val brown = ColorProvider(day = Color(0xFF4A3324), night = Color(0xFFCDBBA7))
 }
 
 private enum class WidgetFamily {
@@ -196,7 +199,13 @@ private fun YuunWidgetContent(
     }
     WidgetFamily.Large -> {
       padH = WidgetSpec.LARGE_PADDING.dp
-      padV = WidgetSpec.LARGE_PADDING.dp
+      // 黄历模式：上下收紧贴合组件，横向保持系统圆角留白。
+      padV =
+        if (parsed.classical && !isEnglish(parsed.locale)) {
+          WidgetSpec.LARGE_ALMANAC_V_PADDING.dp
+        } else {
+          WidgetSpec.LARGE_PADDING.dp
+        }
     }
   }
 
@@ -217,7 +226,12 @@ private fun YuunWidgetContent(
     when (family) {
       WidgetFamily.Small -> SmallLayout(day, parsed)
       WidgetFamily.Medium -> MediumLayout(day, parsed)
-      WidgetFamily.Large -> LargeLayout(day, parsed)
+      WidgetFamily.Large ->
+        if (parsed.classical) {
+          AlmanacLargeLayout(day, parsed)
+        } else {
+          LargeLayout(day, parsed)
+        }
     }
   }
 }
@@ -508,4 +522,203 @@ private fun YiJiStacked(
       maxLines = avoidLines,
     )
   }
+}
+
+
+/**
+ * 黄历模式 large — 撕页黄历纸页：顶行公历+星期 → 左竖排行话 / 大日期+纳音 /
+ * 右竖排农历岁次 → 冲煞彭祖 → 全宽宜忌（金/棕）→ 于你。Glance 无原生竖排，
+ * 逐字 Column 模拟；边框用单线（Glance border 仅发丝级）。
+ */
+@Composable
+private fun AlmanacLargeLayout(
+  day: YuunWidgetDay,
+  parsed: ParsedWidgetPayload,
+) {
+  Column(modifier = GlanceModifier.fillMaxSize()) {
+    Row(modifier = GlanceModifier.fillMaxWidth()) {
+      Text(
+        text = if (isEnglish(parsed.locale)) calendarRow(day, parsed.chrome, parsed.locale) else gregorianOf(day),
+        style =
+          TextStyle(
+            color = YuunColors.secondary,
+            fontSize = WidgetSpec.LARGE_ALMANAC_META_FONT.sp,
+            fontWeight = FontWeight.Medium,
+          ),
+        maxLines = 1,
+      )
+      Spacer(GlanceModifier.defaultWeight())
+      if (!isEnglish(parsed.locale)) {
+        Text(
+          text = weekdayOf(day),
+          style =
+            TextStyle(
+              color = YuunColors.secondary,
+              fontSize = WidgetSpec.LARGE_ALMANAC_META_FONT.sp,
+            ),
+          maxLines = 1,
+        )
+      }
+    }
+    Spacer(GlanceModifier.height(6.dp))
+    if (isEnglish(parsed.locale)) {
+      // en：无竖排（拉丁字不竖排）— 大日期 + 干支·农历一行。
+      Column(
+        modifier = GlanceModifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+      ) {
+        Text(
+          text = dayNumOf(day),
+          style =
+            TextStyle(
+              color = YuunColors.text,
+              fontSize = WidgetSpec.LARGE_ALMANAC_DAY_FONT.sp,
+              fontWeight = FontWeight.Bold,
+            ),
+          maxLines = 1,
+        )
+        Text(
+          text = "${day.ganZhi} · ${day.lunar}",
+          style =
+            TextStyle(
+              color = YuunColors.secondary,
+              fontSize = WidgetSpec.LARGE_ALMANAC_META_FONT.sp,
+            ),
+          maxLines = 1,
+        )
+      }
+    } else {
+    Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+      VChars(text = "${day.ganZhi}日", size = WidgetSpec.LARGE_ALMANAC_STRIP_FONT)
+      VChars(text = day.officer?.let { "${it}日" } ?: "", size = WidgetSpec.LARGE_ALMANAC_STRIP_FONT)
+      VChars(text = day.dayGod?.let { "值神${it}" } ?: "", size = WidgetSpec.LARGE_ALMANAC_STRIP_FONT)
+      VChars(text = day.mansion ?: "", size = WidgetSpec.LARGE_ALMANAC_STRIP_FONT)
+      Spacer(GlanceModifier.defaultWeight())
+      Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+          text = dayNumOf(day),
+          style =
+            TextStyle(
+              color = YuunColors.text,
+              fontSize = WidgetSpec.LARGE_ALMANAC_DAY_FONT.sp,
+              fontWeight = FontWeight.Bold,
+            ),
+          maxLines = 1,
+        )
+        if (!day.nayin.isNullOrBlank()) {
+          Text(
+            text = day.nayin,
+            style =
+              TextStyle(
+                color = YuunColors.gold,
+                fontSize = WidgetSpec.LARGE_ALMANAC_META_FONT.sp,
+              ),
+            maxLines = 1,
+          )
+        }
+      }
+      Spacer(GlanceModifier.defaultWeight())
+      VChars(text = day.lunar, size = WidgetSpec.LARGE_ALMANAC_STRIP_FONT)
+      VChars(text = day.ganzhiYear ?: "", size = WidgetSpec.LARGE_ALMANAC_STRIP_FONT)
+    }
+    }
+    val clash = day.clashShengxiao?.let { "冲${it}煞${day.evilDirection.orEmpty()}" } ?: ""
+    val pengzu =
+      day.pengZuStem?.let { stem ->
+        day.pengZuBranch?.let { "彭祖 $stem $it" } ?: "彭祖 $stem"
+      } ?: ""
+    if (clash.isNotBlank() || pengzu.isNotBlank()) {
+      Spacer(GlanceModifier.height(6.dp))
+      Text(
+        text = listOf(clash, pengzu).filter { it.isNotBlank() }.joinToString(" · "),
+        style =
+          TextStyle(
+            color = YuunColors.secondary,
+            fontSize = WidgetSpec.LARGE_ALMANAC_META_FONT.sp,
+          ),
+        maxLines = 1,
+      )
+    }
+    Spacer(GlanceModifier.height(8.dp))
+    Hairline()
+    Spacer(GlanceModifier.height(8.dp))
+    // RemoteViews 每 Column ≤10 直接子节点 — 宜忌合列、于你合列。
+    Column(modifier = GlanceModifier.fillMaxWidth()) {
+      Text(
+        text = "${parsed.chrome.good.ifBlank { "宜" }} ${day.yiLong ?: day.yi}",
+        style =
+          TextStyle(
+            color = YuunColors.text,
+            fontSize = WidgetSpec.LARGE_ALMANAC_YIJI_FONT.sp,
+          ),
+        maxLines = 3,
+      )
+      Spacer(GlanceModifier.height(2.dp))
+      Text(
+        text = "${parsed.chrome.avoid.ifBlank { "忌" }} ${day.jiLong ?: day.ji}",
+        style =
+          TextStyle(
+            color = YuunColors.secondary,
+            fontSize = WidgetSpec.LARGE_ALMANAC_YIJI_FONT.sp,
+          ),
+        maxLines = 3,
+      )
+    }
+    if (!day.fit.isNullOrBlank()) {
+      Column(modifier = GlanceModifier.fillMaxWidth()) {
+        Spacer(GlanceModifier.height(8.dp))
+        Hairline()
+        Spacer(GlanceModifier.height(8.dp))
+        ForYouLine(day = day, parsed = parsed, withSummary = true)
+      }
+    }
+  }
+}
+
+/** 竖排文本 — Glance 无原生竖排，逐字成行。 */
+@Composable
+private fun VChars(
+  text: String,
+  size: Int,
+) {
+  if (text.isBlank()) return
+  Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    text.forEach { ch ->
+      Text(
+        text = ch.toString(),
+        style = TextStyle(color = YuunColors.text, fontSize = size.sp),
+        maxLines = 1,
+      )
+    }
+  }
+}
+
+/** 当日公历行（7月28日）。 */
+private fun gregorianOf(day: YuunWidgetDay): String {
+  val parts = day.date.split("-")
+  if (parts.size < 3) return day.date
+  val month = parts[1].toIntOrNull() ?: return day.date
+  val dom = parts[2].toIntOrNull() ?: return day.date
+  return "${month}月${dom}日"
+}
+
+private fun dayNumOf(day: YuunWidgetDay): String {
+  val parts = day.date.split("-")
+  if (parts.size < 3) return "—"
+  return (parts[2].toIntOrNull()?.toString()) ?: "—"
+}
+
+/** 星期（周日为一周之始，与通书一致）。 */
+private fun weekdayOf(day: YuunWidgetDay): String {
+  val parts = day.date.split("-")
+  if (parts.size < 3) return ""
+  val y = parts[0].toIntOrNull() ?: return ""
+  val m = parts[1].toIntOrNull() ?: return ""
+  val d = parts[2].toIntOrNull() ?: return ""
+  val cal = java.util.Calendar.getInstance()
+  cal.clear()
+  cal.set(y, m - 1, d)
+  val wd = cal.get(java.util.Calendar.DAY_OF_WEEK) // 1=Sun
+  val names = arrayOf("星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六")
+  return names[wd - 1]
 }

@@ -97,6 +97,14 @@ ${ints('LARGE_FOR_YOU_SUMMARY_LINES', L.forYouSummaryLines)}
 ${ints('LARGE_TIP_LABEL_FONT', L.tipLabelFont)}
 ${ints('LARGE_TIP_FONT', L.tipFont)}
 ${ints('LARGE_TIP_LINES', L.tipLines)}
+
+    // Large — 黄历模式 (撕页黄历)
+${ints('LARGE_ALMANAC_PADDING', L.almanac.padding)}
+${ints('LARGE_ALMANAC_V_PADDING', L.almanac.vPadding)}
+${ints('LARGE_ALMANAC_DAY_FONT', L.almanac.dayFont)}
+${ints('LARGE_ALMANAC_STRIP_FONT', L.almanac.stripFont)}
+${ints('LARGE_ALMANAC_META_FONT', L.almanac.metaFont)}
+${ints('LARGE_ALMANAC_YIJI_FONT', L.almanac.yijiFont)}
 }
 `
 }
@@ -164,6 +172,14 @@ ${int('largeForYouSummaryLines', L.forYouSummaryLines)}
 ${cg('largeTipLabelFont', L.tipLabelFont)}
 ${cg('largeTipFont', L.tipFont)}
 ${int('largeTipLines', L.tipLines)}
+
+    // Large — 黄历模式 (撕页黄历)
+${cg('largeAlmanacPadding', L.almanac.padding)}
+${cg('largeAlmanacVPadding', L.almanac.vPadding)}
+${cg('largeAlmanacDayFont', L.almanac.dayFont)}
+${cg('largeAlmanacStripFont', L.almanac.stripFont)}
+${cg('largeAlmanacMetaFont', L.almanac.metaFont)}
+${cg('largeAlmanacYijiFont', L.almanac.yijiFont)}
 }
 `
 
