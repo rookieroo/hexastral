@@ -106,8 +106,8 @@ export function AlmanacGlossary({ locale }: { locale: Locale }) {
         </Text>
       </View>
 
-      {/* 择日宜忌释义 — 维基百科「黄历」条目 + 常用动词补充（zh-only）。 */}
-      {locale === 'zh-Hans' || locale === 'zh-Hant' ? (
+      {/* 择日宜忌释义 — 维基百科「黄历」条目 + 常用动词补充（四语：
+          原文 + 拼音/读音 + 一句话白话解释）。 */}
         <View style={{ gap: spacing.md }}>
           {YIJI_MEANING_GROUPS.map((g) => (
             <View key={g.title} style={{ gap: 6 }}>
@@ -128,7 +128,6 @@ export function AlmanacGlossary({ locale }: { locale: Locale }) {
             </View>
           ))}
         </View>
-      ) : null}
     </View>
   )
 }
