@@ -19,7 +19,7 @@ Yuun is a Chinese almanac (中华黄历) with Today-first navigation and a three
 ## State (July 2026+)
 
 **Code complete (Today-first IA + launch harden):**
-- **Today** (`/(tabs)/`): WeekStrip + yi/ji + For you; swipe right → Calendar, left → Settings
+- **Today** (`/(tabs)/`): WeekStrip + yi/ji + For you; calendar expands inline (chevron under the strip); swipe left → Settings
 - **Calendar** / **Settings** modular groups
 - For-you: free verdict + summary; Pro = per-reason (locked until IAP enabled)
 - Anonymous local birth preview + sign-in CTA; sync when multi-device on

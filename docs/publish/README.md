@@ -13,7 +13,7 @@
 >
 > Canonical IAP mapping: [apps/hexastral-api/src/config/products.ts](../../apps/hexastral-api/src/config/products.ts).
 > RevenueCat walkthrough: [docs/setup/revenuecat-entitlements.md](../setup/revenuecat-entitlements.md).
-> Brand decision: [ADR-0024](../decisions/0024-app-brand-naming.md).
+> Brand decision: ADR-0024.
 
 Last updated: 2026-07-31.
 

@@ -3,6 +3,11 @@
 > **用途**：把「还缺什么」一次性列清——环境变量、控制台手工配置、部署顺序、提审前验收。  
 > **代码侧（2026-07-26）**：Yuun / Yuel **提审相关代码债已基本关完**（服务端 Pro、push 可靠性、品牌文案、carry-over UX 等）。阻塞项几乎全是 **密钥 / ASC / RevenueCat / EAS** 未填实。  
 > **提审顺序**（ADR-0019）：先 **Yuun**（Reference，风险低）→ 过审当天再提 **Yuel**（Lifestyle）。Syel 可并行准备控制台，正式 Submit 仍建议在 Yuun+Yuel 之后。
+>
+> **⚠️ No-IAP 首发（2026-08）**：银行/税务未就绪前按 no-IAP 免费版提交——
+> `EXPO_PUBLIC_IAP_ENABLED=false`，§3.3 订阅产品、§4 RevenueCat、§5.1/5.2 的 RC key
+> **全部跳过**（占位符 `REPLACE_*` 是预期状态）；Paywall 显示 Coming soon。
+> 银行就绪后按 [release-config-gate.md](../apps/yuun/release-config-gate.md) 翻转，并**随新版本**提交首个订阅。
 
 最后更新：2026-07-26。相关文档：
 

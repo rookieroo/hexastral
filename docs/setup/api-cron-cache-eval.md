@@ -10,8 +10,8 @@
 
 1. **P0 — `svc-notify` weekly purge cron** — was `0 3 * * *` (daily) vs code `0 3 * * 0` (never matched; Cloudflare also rejects weekday `0`). Fixed to wrangler+code `0 3 * * SUN` (Quartz 1=Sun).
 2. **P0 — Push timezone exact-match + representative pool → silent miss for common IANA zones** (`Asia/Hong_Kong`, `Singapore`, `Taipei`, …). Same root cause as the Yuun push audit: register stores real IANA; cron only queries pool representatives.
-3. **P1 — Legacy `runHourlyFortunePush` (omnibus / `push_tokens` + `daily_almanac`) still runs every hour** alongside Auspice/Kindred/FaceOracle. If omnibus has few/no live tokens this is mostly empty API pages; if tokens remain, users may still get HexAstral-branded fortune pushes from a retired app path.
-4. **P1 — Fortune queue consumer uses UTC `today` for almanac lookup**, not the user’s local date carried on the message → wrong/missing row near timezone edges → fallback copy still sent (wasted + wrong content).
+3. ~~**P1 — Legacy `runHourlyFortunePush` (omnibus / `push_tokens` + `daily_almanac`) still runs every hour**~~ — **RESOLVED 2026-08**: removed from the `scheduled()` task list (the function definition still exists in `svc-notify/src/index.ts` as dead code — flagged unused by biome; delete it). Hourly cron now runs only the 7 satellite runners.
+4. **P1 — Fortune queue consumer uses UTC `today` for almanac lookup**, not the user’s local date carried on the message → wrong/missing row near timezone edges → fallback copy still sent (wasted + wrong content). (Legacy queue; moot once the consumer is deleted with the omnibus path.)
 5. **Caches are mostly intentional and sound for pre-PMF** (Auspice Cache API, explain GUARD_KV, charts D1, geocode/feng R2). Highest mismatch risk is **bonds timeline deliberately uncached** (OK while N small) and **signal today** miss path that can lazy-build + LLM under burst.
 
 ---
@@ -32,12 +32,11 @@
 
 | Runner | Local hour | API | Send path |
 |---|---|---|---|
-| `runHourlyFortunePush` morning | 08 | `/api/notify/push-targets` | Queue → Expo |
-| `runHourlyFortunePush` evening | 20 | same | Queue → Expo |
 | `runAuspicePush` morning/evening | 08 / 20 | `/api/auspice/push/targets` | Direct Expo |
 | `runAuspiceTimelinePush` | 09 + month-start | `/api/auspice/timeline/push/targets` | Direct Expo |
-| `runKindredPush` | 19 | `/api/kindred/push/targets` | Direct Expo |
-| `runFaceoraclePush` | 09 | `/api/physiognomy/push/targets` | Direct Expo |
+| `runKindredPush` | 10 | `/api/kindred/push/targets` | Direct Expo |
+| `runKindredTimelinePush` | 09 | `/api/kindred/timeline/push/targets` | Direct Expo |
+| `runFaceoraclePush` | 09 / 21 | `/api/physiognomy/push/targets` | Direct Expo |
 
 **Empty-hour cost (inferred):** ~36 TZ × 7 filter passes of `Intl` formatting; no API if no zone matches. Cheap CPU, still 24 Worker invocations/day × dual trigger at 03:00.
 

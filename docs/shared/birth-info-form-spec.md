@@ -1,9 +1,10 @@
 # `<BirthInfoForm>` — spec for the unified core-ui birth-info entry
 
-> **Status**: design spec (decisions locked); implementation = Phase J.1.1.
+> **Status**: design spec (decisions locked); implementation = Phase J.1.1（已落地为 `@zhop/core-ui` birth-info 组件，Yuun/Yuel/Feng 共用）.
 > **Created**: 2026-05-19.
-> **Decision records**: [ADR-0008](decisions/0008-three-layer-architecture.md) (three-layer rule), [phase-j-plan.md §1.1](phase-j-plan.md#11--birth-info-entry-continue-y4).
+> **Decision records**: ADR-0008 (three-layer rule) · phase-j-plan §1.1 — 两份原文均已从仓库移除，结论保留在本 spec。
 > **Audit input**: comparative read of hexastral-app `(birth)/*`, yuan-app `(onboarding)/*`, yuan-app `fill-other.tsx`, feng-app `(new-site)/*` (2026-05-19 session transcript).
+> 注：yuan-app 现为 kindred-app（Yuel）；hexastral-app 为已退役 omnibus。
 
 ## 0. Goals
 

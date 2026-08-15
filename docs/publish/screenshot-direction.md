@@ -67,8 +67,8 @@ with it. Same honest register as S5: "a study, not a prediction."
 
 | # | Screen | Visual notes |
 | --- | --- | --- |
-| S1 | **Today home** (yi/ji first) | Week strip + 宜忌 chips + For you card (verdict visible). **`ja` variant must show the 六曜 badge** above 宜忌. Title-only header; **bottom text hints** for Calendar (left) and Settings (right) — no header icons. |
-| S2 | **Calendar secondary** (`/calendar`) | Full month grid: 阳历 + 农历 + 节气 + 节日; a festival day highlighted; Today pill / left-swipe back visible. |
+| S1 | **Today home** (yi/ji first) | Week strip + 宜忌 chips + For you card (verdict visible). **`ja` variant must show the 六曜 badge** above 宜忌. Title-only header; **header Settings icon** drill-in (no bottom tab bar). |
+| S2 | **Calendar expanded inline on Today** | Month grid expanded in place under the week strip: 阳历 + 农历 + 节气 + 节日; a festival day highlighted; collapse chevron visible. |
 | S3 | 24 solar terms (Settings → Library → `/glossary`) | Glossary or festival detail — one 节气 expanded into food/poetry/wellness depth. |
 | S4 | Family events | Member list with an upcoming 农历 birthday + reminder toggle. The diaspora hook. |
 | S5 | Ba Zi life timeline (Pro) | The 大运/流年 git-graph with one what-if branch. Caption MUST carry "reflection, not prediction." |

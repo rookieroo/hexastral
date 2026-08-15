@@ -11,11 +11,11 @@ Legend: **PASS** = claim matches shipped code · **FIX ASO** = store copy wrong 
 
 | ASO / screenshot claim | Code evidence | Status |
 |------------------------|---------------|--------|
-| 4 tab (Today / Calendar / Festivals / Me) | `app/(tabs)/_layout.tsx` — stack only; Calendar = swipe → `/calendar`; Settings = swipe → `/(tabs)/me`; festivals = Settings → Library → `/glossary` | **FIX ASO** → rewritten |
-| S1 header Calendar + Settings icons | `app/(tabs)/index.tsx` — title only; bottom text hints + swipes | **FIX ASO** → screenshot-direction updated |
+| 4 tab (Today / Calendar / Festivals / Me) | `app/(tabs)/_layout.tsx` — stack only (Today + Me); Calendar = inline expand on Today (`CalendarExpandPanel`, chevron under week strip); Settings = swipe left → `/(tabs)/me`; festivals = Settings → Library → `/glossary` | **FIX ASO** → rewritten |
+| S1 header Calendar + Settings icons | `app/(tabs)/index.tsx` — title only; header Settings icon drill-in | **FIX ASO** → screenshot-direction updated |
 | S3「节庆 tab」 | `/glossary` via `components/settings/LibrarySection.tsx` | **FIX ASO** |
 | Subtitle Almanac / Good·Avoid · 宜忌 | `aso-metadata.json` subtitle; home `suitable`/`avoid` | **PASS** (2026-07-29) |
-| Swipe right → Calendar, left → Settings | `index.tsx` gestures; `calendar.tsx` left-swipe back | **PASS** |
+| Calendar expands inline on Today; swipe left → Settings | `index.tsx` — `CalendarExpandPanel` chevron expand; `SWIPE_TO_ME` gesture preserved; swipe right intentionally inert (no 负一屏) | **PASS** |
 
 ---
 

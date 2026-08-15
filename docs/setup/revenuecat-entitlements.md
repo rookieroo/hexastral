@@ -11,7 +11,8 @@
 > **Reconciled 2026-06-25.** This doc previously listed `feng_pro` / `hexastral_pro`
 > entitlements and standalone `feng_pro_*` / `hexastral_pro_*` subscription products.
 > Those names are **defunct** — they never existed in the live catalog. The real
-> per-app entitlements are `kindred_pro` (Yuel) and `auspice_pro` (Yuun); `fate_pro`
+> per-app entitlements are `kindred_pro` (Yuel), `auspice_pro` (Yuun),
+> `coincast_pro` (Yaul) and `faceoracle_pro` (Syel); `fate_pro`
 > is universe-only (no standalone product); `universe_pro` is **deferred to Phase 2**.
 > See §1 and §7.
 

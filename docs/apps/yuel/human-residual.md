@@ -11,7 +11,7 @@ SSOT links: **可执行总控台** [launch-checklist.md](../../publish/launch-ch
 
 - [ ] Portal: Sign in with Apple on both; Yuun App Groups `group.com.hexastral.yuun`
 - [ ] ASC records: Yuun Reference · Yuel Lifestyle · content rating **12+** both
-- [ ] Yuun IAP: `auspice_pro_monthly` / `auspice_pro_annual` + RC entitlement `auspice_pro`
+- [ ] Yuun IAP: `auspice_pro_monthly` / `auspice_pro_annual` + RC entitlement `auspice_pro` — **no-IAP 首发阶段跳过**（`EXPO_PUBLIC_IAP_ENABLED=false`，银行就绪后随新版本提交）
 - [ ] Yuel IAP MVP (3 keys): `kindred_pro_monthly` / `kindred_pro_annual` + `hexastral_compatibility`
 - [ ] Nutrition labels + 4-locale ASO + screenshots
 - [ ] Fill `ascAppId` in both `eas.json`; production `appl_*` via EAS secrets

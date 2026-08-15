@@ -3,9 +3,9 @@
 > **Status**: **Server/engine batch SHIPPED** (BT.0–BT.4, BT.6) — `bun test` + `bun typecheck` green (astro-core 626, hexastral-api 92, repo-wide 737 pass). **BT.5 (yuan-app screen + 本地推送 + 录入表单) deferred to device/EAS batch.** MVP-scope per founder call (2026-05-22).
 > **Last updated**: 2026-05-22 (post-implementation).
 > **Builds on**: [monetization-and-capabilities-plan.md](monetization-and-capabilities-plan.md) §2 (Capability A — Timeline) B-yuan line ·
-> [ADR-0012](decisions/0012-matrix-freemium-monetization.md) (Kindred = 订阅旗舰, value = Timeline + 多层 chat) ·
-> [ADR-0013](decisions/0013-iap-system-architecture.md) (entitlement gate).
-> **Decision of record**: [ADR-0014](decisions/0014-bonds-timeline-architecture.md) ✅ written (BT.0) — captures the 3 load-bearing calls below.
+> ADR-0012 (Kindred = 订阅旗舰, value = Timeline + 多层 chat) ·
+> ADR-0013 (entitlement gate).
+> **Decision of record**: ADR-0014 ✅ written (BT.0) — captures the 3 load-bearing calls below.
 
 ## ▶ Current status & handover — a fresh session START HERE
 
@@ -127,7 +127,7 @@ BT.2 (schema) ──────┘                       BT.6 (闸) ──┘
 
 ## 5. Open questions — **ALL RESOLVED (2026-05-22)**
 
-- **Q1 ADR-0014 要不要单写**: ✅ **写了** — [ADR-0014](decisions/0014-bonds-timeline-architecture.md).
+- **Q1 ADR-0014 要不要单写**: ✅ **写了** — ADR-0014.
 - **Q2 缓存载体**: ✅ **不缓存, compute-on-read.** 创始人确认「纯计算不需缓存」。每请求纯函数重算(亚毫秒), 无 KV、无 cron → 永不陈旧, 消除 §7 失效点风险。日后 compute 成本显现再加 per-user KV。
 - **Q3 free-taste 边界**: ✅ **当前年 + 全部(≤3 免费 resonance)bond, 无推送.** 创始人确认 3 个免费 bond 已够慷慨且奖励裂变(拉来 3 段关系的用户本年全看到)。Pro = 前瞻全轴(+15y) + 主动推送(护城河)。*注: 这放宽了原「仅第 1 个 bond」建议。*
 - **Q4 本我本命层**: ✅ **确认 boundary** — 关系引擎已含本我大运的关系化表述, 不并入 fate 单人 timeline。explain 也统一走关系框架(`POST /api/bonds/timeline/explain`), 不接 fate `getTimelineNodes`。fate_pro=命运 / kindred_pro=关系, 各自表述。

@@ -3,7 +3,7 @@
 > **Status**: POSITIONING PLAN (2026-06-08). Founder decision: **reposition Kindred
 > as the US compatibility app** (English-first). Auspice stays the diaspora / East-Asia
 > almanac. Same `astro-core` (BaZi/ZiWei) engine, two front doors.
-> Partially reverses [synastry-in-auspice-plan.md](synastry-in-auspice-plan.md)'s
+> Partially reverses synastry-in-auspice-plan.md's (原文已移除)
 > "freeze Kindred": Kindred is unfrozen FOR THE US (its own go-to-market), but the
 > Auspice→Kindred cross-app funnel stays off (different audiences).
 

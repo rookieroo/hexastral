@@ -37,14 +37,20 @@ that resolve at runtime; if a downstream service is being redeployed, callers
 retry transparently.
 
 ```bash
-cd services/svc-admin-notify && bun deploy
-cd services/svc-astro && bun deploy
-cd services/svc-signal && bun deploy
-cd services/svc-notify && bun deploy
-cd services/svc-geocode && bun deploy
-cd services/svc-mailer && bun deploy
-cd services/svc-tail && bun deploy
+cd services/svc-admin-notify && bun run deploy
+cd services/svc-astro && bun run deploy
+cd services/svc-signal && bun run deploy
+cd services/svc-notify && bun run deploy
+cd services/svc-geocode && bun run deploy
+cd services/svc-mailer && bun run deploy
+cd services/svc-tail && bun run deploy
+cd services/svc-feng && bun run deploy
+cd services/svc-ad-convert && bun run deploy
 ```
+
+> Note: use `bun run deploy` — bare `bun deploy` is a reserved Bun subcommand on
+> newer Bun versions. All 9 services set `"workers_dev": false` (internal-only
+> via service bindings; no public `*.workers.dev` URL).
 
 ### 2. API (with DB migration)
 
@@ -55,25 +61,26 @@ and migration files are in sync.
 cd apps/hexastral-api
 bun db:generate          # generate any pending drizzle migration
 bun db:migrate:prod      # apply migrations to remote D1 (review SQL first)
-bun deploy               # deploy worker to Cloudflare
+bun run deploy           # deploy worker to Cloudflare
 ```
 
 ### 3. Web
 
 ```bash
-cd apps/hexastral-web && bun deploy
-cd apps/useone-tech    && bun deploy
+cd apps/hexastral-web && bun run deploy
+cd apps/useone-tech    && bun run deploy
 ```
 
 ## iOS Release (EAS)
 
 ```bash
-cd apps/hexastral-app
+cd apps/auspice-app
 eas build --profile production --platform ios
 eas submit --platform ios
 ```
 
-Same pattern for satellite apps (`coin-cast-app`, `xingqi-app`).
+Same pattern for the other satellite apps (`kindred-app`, `feng-app`,
+`coin-cast-app`, `xingqi-app`). `hexastral-app` is retired — do not build it.
 
 ## Secrets and Config Checklist
 

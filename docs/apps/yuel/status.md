@@ -5,9 +5,9 @@ records **what's done** and **what's next**, and points to the ADRs / plan docs
 rather than restating them._
 
 **Master context:** [ROADMAP.md](../../ROADMAP.md) · solo-first frame
-[ADR-0021](../../decisions/0021-kindred-v2-solo-first-mingpan-frame.md) · bonds
-timeline [ADR-0014](../../decisions/0014-bonds-timeline-architecture.md) · make-if
-insight layer [ADR-0023](../../decisions/0023-timeline-makeif-insight-layer.md).
+ADR-0021 · bonds
+timeline ADR-0014 · make-if
+insight layer ADR-0023.
 
 **Push / report fuel SSOT:** [push-fuel-contract.md](./push-fuel-contract.md) ·
 [push-retention-playbook.md](../../setup/push-retention-playbook.md).
@@ -42,7 +42,7 @@ them, so read this banner first.
   `.app` domains registered (UseONE); both 🟢 cleared (knockout). Launch storefronts
   FIXED: **US · JP · SG · MY · TH**. App display names already flipped
   (`app.json`: Yuel / Yuun); in-app wordmarks + ASO being propagated. Refs:
-  [ADR-0024](../../decisions/0024-app-brand-naming.md) · [brand-aso-gtm-plan.md](../../publish/brand-aso-gtm-plan.md)
+  ADR-0024 · [brand-aso-gtm-plan.md](../../publish/brand-aso-gtm-plan.md)
   · [trademark-clearance-and-filing.md](../../publish/trademark-clearance-and-filing.md).
   - The doc body below still says "Kindred"/"Auspice" — treat as the old names.
 - **Timeline deep-read BUILT, deploy-gated.** The **流月/流年/大运 three-dimension
@@ -58,9 +58,7 @@ them, so read this banner first.
    node push. Nothing below the API tier takes effect until this runs.
 2. **HUMAN legal** — counsel's live USPTO phonetic sweep on YUEL/YUUN (cl 9/42),
    then file (ITU/use) — runs PARALLEL to App Review, never gates publishing.
-3. **HUMAN App Store Connect** — create `hexastral_personal` ($4.99) → unblocks
-   **#8** (the only open in-app monetization gap; client+server wiring spec is
-   ready, see #8 below — ship as one pass once the product exists).
+3. **HUMAN App Store Connect** — create `hexastral_personal` ($4.99) → **optional post-launch**（MVP 决定：ASC 暂不建，客户端按钮 null-guard 不渲染；见 publish/README §7）
 4. **HUMAN launch ops** — Apple portal capabilities, ASC records + metadata +
    screenshots, RevenueCat products/entitlements, privacy labels (see
    [launch-checklist.md](../../publish/launch-checklist.md) · [launch.md](./launch.md) · [../yuun/launch.md](../yuun/launch.md)).
@@ -484,8 +482,8 @@ from auspice's git-graph.
 Kindred's _relationship × time_ surface. Detailed in
 [bonds-timeline-plan.md](bonds-timeline-plan.md) ·
 [timeline-makeif-gitgraph.md](timeline-makeif-gitgraph.md) ·
-[ADR-0014](decisions/0014-bonds-timeline-architecture.md) ·
-[ADR-0023](decisions/0023-timeline-makeif-insight-layer.md).
+ADR-0014 ·
+ADR-0023.
 
 - ✅ **合盘 timeline (流年/大运)** — the ego-centric multi-bond axis (`composeBondsTimeline`
   + `GET /api/bonds/timeline` + `app/(timeline)/index.tsx`), privacy-projected (D2),

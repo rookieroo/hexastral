@@ -13,12 +13,12 @@ Compliance register: cultural reference and personal reflection only; not predic
 | Surface | Route | Role |
 |---------|-------|------|
 | **Today** | `/(tabs)/` | Week strip + yi/ji + For you (push anchor) |
-| **Calendar** | `/calendar` | Full month grid (secondary) |
+| **Calendar** | inline on Today | Chevron under the week strip expands the full month grid in place (`CalendarExpandPanel`); week strip itself swipes horizontally across days |
 | **Settings** | `/(tabs)/me` | Profile, Library, Notifications, Calendars, Legal |
-| Swipe right on Today | → Calendar | `slide_from_left` animation |
 | Swipe left on Today | → Settings | ADR-0018 `SWIPE_TO_ME` preserved |
+| Swipe right on Today | (inert) | No `/calendar` 负一屏 — calendar is inline, not a swipe target |
 
-No bottom tab bar. Today header: title only. Bottom hints (text only): **Calendar on the left, Settings on the right** — matching where each screen enters from.
+No bottom tab bar. Today header: title only + Settings icon drill-in.
 
 ## Today zones
 
@@ -48,4 +48,4 @@ See [pre-submit-smoke.md](./pre-submit-smoke.md).
 
 ## ASC / screenshots
 
-S1 = Today yi/ji + For you + swipe hints. S2 = Calendar month grid. 6-shot deck — no Widget/Watch. See [screenshot-direction.md](../../publish/screenshot-direction.md) §1.
+S1 = Today yi/ji + For you. S2 = Calendar month grid (inline-expanded on Today). 6-shot deck — no Widget/Watch. See [screenshot-direction.md](../../publish/screenshot-direction.md) §1.

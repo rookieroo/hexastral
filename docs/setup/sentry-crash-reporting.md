@@ -11,7 +11,8 @@
   - `initCrashReporting({ app, dsn?, disabled? })` — call once at app boot
   - `setCrashUserContext(userId | null)` — tag user after sign-in
   - `captureCrashError(error, extra?)` — manually report a swallowed error
-- Wired into `apps/fate-app/app/_layout.tsx` as the canonical example
+- **No app is wired yet (2026-08)** — `apps/` has zero `initCrashReporting`
+  call sites; follow §2 when enabling per app.
 - Peer dep declared (optional) in `packages/satellite-runtime/package.json`
 - **Graceful no-op**: when `EXPO_PUBLIC_SENTRY_DSN` is unset or
   `@sentry/react-native` is not installed, the wrapper degrades to no-op
@@ -21,7 +22,7 @@
 
 ## 2. Per-app install (one-time, per satellite)
 
-For each of `fate`, `cycle`, `yuan`, `feng`:
+For each of `auspice (Yuun)`, `kindred (Yuel)`, `feng`, `coin-cast`, `xingqi`:
 
 ```bash
 cd apps/<app>-app
@@ -29,7 +30,7 @@ bun add @sentry/react-native
 ```
 
 Then add `initCrashReporting({ app: '<app>' })` at the top of `app/_layout.tsx`
-above any React imports — see fate-app for the pattern.
+above any React imports.
 
 **Don't initialize multiple times** — `initCrashReporting` is idempotent,
 but for clarity keep it to one call site per app.
@@ -42,10 +43,11 @@ but for clarity keep it to one call site per app.
    https://sentry.io/signup/
 2. Create **one project per app** (recommended) or one project with `app`
    tag (cheaper at scale):
-   - `fate-app` · platform: React Native
-   - `cycle-app` · React Native
-   - `yuan-app` · React Native
-   - `feng-app` · React Native
+   - `auspice` (Yuun) · React Native
+   - `kindred` (Yuel) · React Native
+   - `feng` · React Native
+   - `coin-cast` · React Native
+   - `xingqi` · React Native
 3. Copy each project's **DSN** (looks like `https://<key>@<org>.ingest.sentry.io/<project_id>`)
 4. Create a **CLI auth token** at Settings → Account → Auth Tokens with
    scope `project:releases` (needed for source-map upload)

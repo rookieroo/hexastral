@@ -19,11 +19,11 @@ Run on a **production-profile** build before App Store submit. Each step maps to
 
 ## 2. Calendar navigation
 
-1. On Today, **swipe right** → `/calendar` (slides from left).
+1. On Today, tap the **chevron under the week strip** → month grid **expands inline**.
 2. Month grid shows solar + lunar + 节气 + festivals.
-3. **Swipe left** on Calendar → returns to Today.
+3. Swipe the week strip horizontally → adjacent days; collapse the grid back to Today.
 
-**ASO:** Swipe right for month calendar.
+**ASO:** Month calendar on Today (inline expand).
 
 ---
 

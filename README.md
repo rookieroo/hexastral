@@ -143,7 +143,7 @@ bun check-deps               # version consistency across workspaces
 ## Deployment
 
 CI runs validation only (typecheck / lint / test / check-deps on every PR). All
-production deploys happen **locally** via wrangler / EAS — see [deploy.md](deploy.md).
+production deploys happen **locally** via wrangler / EAS — see [docs/deploy.md](docs/deploy.md).
 
 ```bash
 # API (with DB migration)
@@ -167,5 +167,5 @@ cd apps/yuan-app && eas build --profile production --platform ios
 - [docs/ROADMAP.md](docs/ROADMAP.md) — launch scope (Yuun · Yuel · Feng · CoinCast)
 - [docs/publish/README.md](docs/publish/README.md) — App Store / human-only checklist
 - [docs/decisions/0024-app-brand-naming.md](docs/decisions/0024-app-brand-naming.md) — Yuun / Yuel brand naming
-- [deploy.md](deploy.md) — Local deploy runbook
+- [docs/deploy.md](docs/deploy.md) — Local deploy runbook
 - [apps/hexastral-api/README.md](apps/hexastral-api/README.md) — API deployment
