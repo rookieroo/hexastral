@@ -677,8 +677,10 @@ function LargeWidget({ model, phaseOverride, chrome, locale, strings }: SubProps
   )
 }
 
-/** 黄历模式大组件预览 — 跟随开关，与原生黄历 large 同构（纸页 + 大日期 +
- *  竖排行话（en 横排）+ 全宽宜忌 + 于你）。 */
+/** 黄历模式大组件预览 — 数值直接取 widget-spec.json 的
+ *  `family.large.almanac.*`（与原生 Swift/Glance 同一 SSOT），排版同构：
+ *  顶行公历+星期 → 竖排行话/大日期+纳音/农历岁次（en 横排）→ 冲煞彭祖 →
+ *  赭金/墨棕全宽宜忌 → 于你 → 落款。padding：水平 14、垂直 8（同原生）。 */
 function AlmanacLargePreview({
   day,
   model,
@@ -691,89 +693,164 @@ function AlmanacLargePreview({
   const { mode } = useTheme()
   const P = almanacPalette(mode === 'dark')
   const C = almanacCopy(locale)
+  const L = compactChrome(locale)
+  const A = WIDGET_SPEC.family.large.almanac
   const register = resolveRegisterSync(locale, true)
   const d = new Date(`${model.date}T00:00:00`)
-  const dayBranch = model.ganZhi[1] ?? ''
   const yiN = 6
   const fit = model.fitLabel
   const fitSummary = model.fitSummary
+  const clashText =
+    day.clash && day.evilDirection ? C.clashText(day.clash.clashAnimal, day.evilDirection) : ''
+  const pengzuText = day.pengZu ? C.pengzuText(day.pengZu.stem, day.pengZu.branch) : ''
+  const colophon =
+    locale === 'en'
+      ? 'Almanac · cultural reference'
+      : locale === 'ja'
+        ? '黄暦 · 文化参考'
+        : '黄历 · 文化参考'
   return (
-    <View style={{ flex: 1, padding: 10, gap: 4 }}>
+    <View style={{ flex: 1, paddingHorizontal: A.padding, paddingVertical: A.vPadding }}>
       <View
-        style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+        }}
       >
-        <Text style={{ color: P.ink, fontSize: 10 }} numberOfLines={1}>
-          {C.gregorian(d)}
+        <Text style={{ color: P.ink, fontSize: A.metaFont }} numberOfLines={1}>
+          {C.gregorianShort(d)}
         </Text>
-        <Text style={{ color: P.dim, fontSize: 9, letterSpacing: 1 }} numberOfLines={1}>
-          {C.weekday(d)}
+        <Text style={{ color: P.dim, fontSize: A.metaFont, letterSpacing: 1 }} numberOfLines={1}>
+          {C.weekdayChip(d)}
         </Text>
       </View>
+
       {C.vertical ? (
         <View
           style={{
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            flex: 1,
+            marginTop: 8,
           }}
         >
-          <View style={{ flexDirection: 'row', gap: 4 }}>
-            <MiniV text={`${model.ganZhi}${C.ganZhiSuffix}`} P={P} />
-            <MiniV text={`${model.officer ?? ''}${C.officerDaySuffix}`} P={P} />
+          <View style={{ flexDirection: 'row', gap: 5 }}>
+            <MiniV text={`${day.ganZhi}${C.ganZhiSuffix}`} size={A.stripFont} P={P} />
+            <MiniV text={`${day.dayOfficer}${C.officerDaySuffix}`} size={A.stripFont} P={P} />
+            <MiniV
+              text={day.dayGod?.name ? `${C.dayGodPrefix}${day.dayGod.name}` : ''}
+              size={A.stripFont}
+              P={P}
+            />
+            <MiniV
+              text={
+                day.mansion
+                  ? `${C.stripMansion}${day.mansion.name}${day.mansion.luminary}${day.mansion.animal}宿`
+                  : ''
+              }
+              size={A.stripFont}
+              P={P}
+            />
           </View>
+          <View style={{ alignItems: 'center' }}>
+            <Text
+              style={{
+                color: P.ink,
+                fontSize: A.dayFont,
+                lineHeight: A.dayFont + 10,
+                fontWeight: '700',
+              }}
+            >
+              {d.getDate()}
+            </Text>
+            <Text style={{ color: P.gold, fontSize: A.metaFont }} numberOfLines={1}>
+              {C.nayinLine(nayinOf(day.ganZhi))}
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 5 }}>
+            <MiniV
+              text={day.lunarDate ? C.lunarLine(day.lunarDate) : ''}
+              size={A.stripFont}
+              P={P}
+            />
+            <MiniV text={model.ganzhiYear ?? ''} size={A.stripFont} P={P} />
+          </View>
+        </View>
+      ) : (
+        <View style={{ alignItems: 'center', marginTop: 8 }}>
           <Text
             style={{
               color: P.ink,
-              fontSize: 56,
-              lineHeight: 62,
+              fontSize: A.dayFont,
+              lineHeight: A.dayFont + 10,
               fontWeight: '700',
             }}
           >
             {d.getDate()}
           </Text>
-          <View style={{ flexDirection: 'row', gap: 4 }}>
-            <MiniV text={model.lunarMonthDay} P={P} />
-            <MiniV text={model.ganzhiYear ?? ''} P={P} />
-          </View>
-        </View>
-      ) : (
-        <View style={{ alignItems: 'center', flex: 1, justifyContent: 'center', gap: 2 }}>
-          <Text style={{ color: P.ink, fontSize: 56, lineHeight: 62, fontWeight: '700' }}>
-            {d.getDate()}
+          <Text style={{ color: P.dim, fontSize: A.metaFont, marginTop: 2 }} numberOfLines={1}>
+            {day.ganZhi} · {day.lunarDate ? C.lunarLine(day.lunarDate) : ''}
           </Text>
-          <Text style={{ color: P.dim, fontSize: 10 }} numberOfLines={1}>
-            {model.ganZhi} · {model.lunarMonthDay}
+          <Text style={{ color: P.gold, fontSize: A.metaFont, marginTop: 1 }} numberOfLines={1}>
+            {C.nayinLine(nayinOf(day.ganZhi))}
           </Text>
         </View>
       )}
-      <Text style={{ color: P.dim, fontSize: 9, textAlign: 'center' }} numberOfLines={1}>
-        {day.clash ? C.clashText(day.clash.clashAnimal, day.evilDirection) : ''}
-        {day.pengZu ? ` · ${C.pengzuText(day.pengZu.stem, day.pengZu.branch)}` : ''}
-        {!day.clash && !day.pengZu ? `· ${nayinOf(day.ganZhi)}` : ''}
+
+      <Text
+        style={{ color: P.dim, fontSize: A.metaFont, textAlign: 'center', marginTop: 6 }}
+        numberOfLines={1}
+      >
+        {[clashText, pengzuText].filter(Boolean).join(' · ')}
       </Text>
-      <View style={{ height: 0.5, backgroundColor: P.ink, marginVertical: 3 }} />
-      <Text style={{ color: P.ink, fontSize: 11, lineHeight: 16 }} numberOfLines={2}>
-        宜 {compactVerbs(model.goodForRaw, yiN, locale, register)}
+
+      <View style={{ height: 0.5, backgroundColor: P.ink, marginVertical: 8 }} />
+
+      <Text
+        style={{ color: P.ink, fontSize: A.yijiFont, lineHeight: A.yijiFont + 6 }}
+        numberOfLines={2}
+      >
+        {L.yi} {compactVerbs(model.goodForRaw, yiN, locale, register)}
       </Text>
-      <Text style={{ color: P.dim, fontSize: 11, lineHeight: 16 }} numberOfLines={2}>
-        忌 {compactVerbs(model.avoidRaw, yiN, locale, register)}
+      <Text
+        style={{ color: P.dim, fontSize: A.yijiFont, lineHeight: A.yijiFont + 6, marginTop: 2 }}
+        numberOfLines={2}
+      >
+        {L.ji} {compactVerbs(model.avoidRaw, yiN, locale, register)}
       </Text>
+
       {fit || fitSummary ? (
-        <Text style={{ color: P.dim, fontSize: 10, marginTop: 2 }} numberOfLines={2}>
-          {fit ? `${fit} · ` : ''}
-          {fitSummary ?? ''}
-        </Text>
+        <View>
+          <View style={{ height: 0.5, backgroundColor: P.ink, marginVertical: 8 }} />
+          <Text style={{ color: P.dim, fontSize: A.metaFont, lineHeight: 16 }} numberOfLines={2}>
+            {fit ? `${L.forYou} · ${fit}` : ''}
+            {fitSummary ? `${fit ? ' ' : ''}${fitSummary}` : ''}
+          </Text>
+        </View>
       ) : null}
+
+      <View style={{ flex: 1 }} />
+      <Text style={{ color: P.dim, fontSize: 9, letterSpacing: 1, textAlign: 'center' }}>
+        {colophon}
+      </Text>
     </View>
   )
 }
 
-function MiniV({ text, P }: { text: string; P: ReturnType<typeof almanacPalette> }) {
+function MiniV({
+  text,
+  size,
+  P,
+}: {
+  text: string
+  size: number
+  P: ReturnType<typeof almanacPalette>
+}) {
   return (
     <View>
       {text.split('').map((c, i) => (
-        <Text key={`${c}-${i}`} style={{ color: P.ink, fontSize: 9, lineHeight: 11 }}>
+        <Text key={`${c}-${i}`} style={{ color: P.ink, fontSize: size, lineHeight: size + 4 }}>
           {c}
         </Text>
       ))}

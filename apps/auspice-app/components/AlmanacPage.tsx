@@ -174,7 +174,7 @@ export function AlmanacPage({ payload, locale }: { payload: AuspiceDayPayload; l
   const avoid = day.avoid.map(verb)
 
   return (
-    <View style={{ paddingHorizontal: spacing.lg, gap: spacing.md }}>
+    <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md }}>
       {/* ══ 撕页黄历纸页 ══ */}
       <View style={{ borderWidth: 2, borderColor: P.ink, padding: 3 }}>
         <View
@@ -264,13 +264,13 @@ export function AlmanacPage({ payload, locale }: { payload: AuspiceDayPayload; l
 
               <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                 <Strip
-                  text={day.lunarDate ? C.lunarLine(day.lunarDate) : ''}
+                  text={day.lunarDate ? C.lunarStrip(day.lunarDate) : ''}
                   term='农历'
                   onPress={tap}
                   style={vStyle(P)}
                 />
                 <Strip
-                  text={yg ? C.yearLine(yg.stem, yg.branch, yg.animal) : ''}
+                  text={yg ? C.yearStrip(yg.stem, yg.branch, yg.animal) : ''}
                   term='岁次'
                   onPress={tap}
                   style={vStyle(P)}
@@ -403,6 +403,25 @@ export function AlmanacPage({ payload, locale }: { payload: AuspiceDayPayload; l
           </View>
         </View>
       </View>
+
+      {/* ══ 于你 ══ */}
+      {fit ? (
+        <View>
+          <RuleTitle title={C.forYouLabel} P={P} />
+          <Text
+            style={{
+              color: fit === '吉' ? P.gold : fit === '凶' ? P.brown : P.ink,
+              fontSize: 16,
+              letterSpacing: 2,
+            }}
+          >
+            {t.personal.fitClassical[fit]}
+          </Text>
+          <Text style={{ color: P.ink, fontSize: 14, lineHeight: 23, marginTop: 4 }}>
+            {t.personal.summaryClassical[fit]}
+          </Text>
+        </View>
+      ) : null}
 
       {/* ══ 生辰八字五行 ══ */}
       <View>
@@ -556,25 +575,6 @@ export function AlmanacPage({ payload, locale }: { payload: AuspiceDayPayload; l
         <Text style={{ color: P.dim, fontSize: 13, lineHeight: 21, textAlign: 'center' }}>
           {relationLine}
         </Text>
-      ) : null}
-
-      {/* ══ 于你 ══ */}
-      {fit ? (
-        <View>
-          <RuleTitle title={C.forYouLabel} P={P} />
-          <Text
-            style={{
-              color: fit === '吉' ? P.gold : fit === '凶' ? P.brown : P.ink,
-              fontSize: 16,
-              letterSpacing: 2,
-            }}
-          >
-            {t.personal.fitClassical[fit]}
-          </Text>
-          <Text style={{ color: P.ink, fontSize: 14, lineHeight: 23, marginTop: 4 }}>
-            {t.personal.summaryClassical[fit]}
-          </Text>
-        </View>
       ) : null}
 
       <YiJiMeaningSheet

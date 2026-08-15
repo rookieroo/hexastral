@@ -198,14 +198,14 @@ private fun YuunWidgetContent(
       padV = WidgetSpec.MEDIUM_PADDING.dp
     }
     WidgetFamily.Large -> {
-      padH = WidgetSpec.LARGE_PADDING.dp
-      // 黄历模式：上下收紧贴合组件，横向保持系统圆角留白。
-      padV =
-        if (parsed.classical && !isEnglish(parsed.locale)) {
-          WidgetSpec.LARGE_ALMANAC_V_PADDING.dp
-        } else {
-          WidgetSpec.LARGE_PADDING.dp
-        }
+      // 黄历模式：四面留足 padding（与 Swift largeAlmanacPadding/VPadding 同值）。
+      if (parsed.classical) {
+        padH = WidgetSpec.LARGE_ALMANAC_PADDING.dp
+        padV = WidgetSpec.LARGE_ALMANAC_V_PADDING.dp
+      } else {
+        padH = WidgetSpec.LARGE_PADDING.dp
+        padV = WidgetSpec.LARGE_PADDING.dp
+      }
     }
   }
 

@@ -83,8 +83,8 @@
       "tipFont": 12,
       "tipLines": 3,
       "almanac": {
-        "padding": 14,
-        "vPadding": 8,
+        "padding": 16,
+        "vPadding": 12,
         "dayFont": 72,
         "stripFont": 11,
         "metaFont": 10,

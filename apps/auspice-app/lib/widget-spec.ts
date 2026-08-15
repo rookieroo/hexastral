@@ -49,6 +49,15 @@ export type LargeFamilySpec = WidgetFamilySpec & {
   tipLabelFont: number
   tipFont: number
   tipLines: number
+  /** 黄历模式 large — 撕页黄历（与原生 Swift/Glance 同一 SSOT 数值）。 */
+  almanac: {
+    padding: number
+    vPadding: number
+    dayFont: number
+    stripFont: number
+    metaFont: number
+    yijiFont: number
+  }
 }
 
 export type WidgetSpecDoc = {

@@ -61,8 +61,8 @@ enum WidgetSpec {
     static let largeTipLines = 3
 
     // Large — 黄历模式 (撕页黄历)
-    static let largeAlmanacPadding: CGFloat = 14
-    static let largeAlmanacVPadding: CGFloat = 8
+    static let largeAlmanacPadding: CGFloat = 16
+    static let largeAlmanacVPadding: CGFloat = 12
     static let largeAlmanacDayFont: CGFloat = 72
     static let largeAlmanacStripFont: CGFloat = 11
     static let largeAlmanacMetaFont: CGFloat = 10

@@ -115,6 +115,14 @@ export interface AlmanacCopy {
   forYouLabel: string
   weekday(d: Date): string
   gregorian(d: Date): string
+  /** 组件/竖排用短公历（7月28日 / JAN 9）。 */
+  gregorianShort(d: Date): string
+  /** 组件用星期 chip（周四 · 9 / THU 9），对齐原生 weekdayChip。 */
+  weekdayChip(d: Date): string
+  /** 竖排条用农历（无空格无括号，避免换行）。 */
+  lunarStrip(lunarDate: { month: number; day: number; monthName: string; dayName: string }): string
+  /** 竖排条用岁次（无括号）。 */
+  yearStrip(stem: string, branch: string, animal: string): string
   lunarLine(lunarDate: { month: number; day: number; monthName: string; dayName: string }): string
   yearLine(stem: string, branch: string, animal: string): string
   ganZhiSuffix: string
@@ -154,6 +162,12 @@ export function almanacCopy(locale: string): AlmanacCopy {
       forYouLabel: 'For you',
       weekday: (d) => WEEKDAYS.en[d.getDay()] ?? '',
       gregorian: (d) => `${MONTHS_EN[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`,
+      gregorianShort: (d) =>
+        `${(MONTHS_EN[d.getMonth()] ?? '').slice(0, 3).toUpperCase()} ${d.getDate()}`,
+      weekdayChip: (d) =>
+        `${WEEKDAYS.en[d.getDay()]?.slice(0, 3).toUpperCase() ?? ''} ${d.getDate()}`,
+      lunarStrip: (ld) => `Lunar ${ld.month}/${ld.day}`,
+      yearStrip: (stem, branch, animal) => `${stem}${branch} · ${animal}`,
       lunarLine: (ld) => `Lunar ${ld.month}/${ld.day}`,
       yearLine: (stem, branch, animal) => `${stem}${branch} year · ${animal}`,
       ganZhiSuffix: ' day',
@@ -196,6 +210,13 @@ export function almanacCopy(locale: string): AlmanacCopy {
       forYouLabel: 'あなたへ',
       weekday: (d) => WEEKDAYS.ja[d.getDay()] ?? '',
       gregorian: (d) => `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`,
+      gregorianShort: (d) => `${d.getMonth() + 1}月${d.getDate()}日`,
+      weekdayChip: (d) => {
+        const wd = ['日', '月', '火', '水', '木', '金', '土']
+        return `${wd[d.getDay()] ?? ''} · ${d.getDate()}`
+      },
+      lunarStrip: (ld) => `旧暦${ld.month}月${ld.day}日`,
+      yearStrip: (stem, branch) => `歳次${stem}${branch}年`,
       lunarLine: (ld) => `旧暦 ${ld.month}月${ld.day}日`,
       yearLine: (stem, branch, animal) => `歳次${stem}${branch}年（${animal}）`,
       ganZhiSuffix: '日',
@@ -234,6 +255,13 @@ export function almanacCopy(locale: string): AlmanacCopy {
       forYouLabel: '於你',
       weekday: (d) => WEEKDAYS['zh-Hant'][d.getDay()] ?? '',
       gregorian: (d) => `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`,
+      gregorianShort: (d) => `${d.getMonth() + 1}月${d.getDate()}日`,
+      weekdayChip: (d) => {
+        const wd = ['日', '一', '二', '三', '四', '五', '六']
+        return `週${wd[d.getDay()] ?? ''} · ${d.getDate()}`
+      },
+      lunarStrip: (ld) => `${ld.monthName}${ld.dayName}`,
+      yearStrip: (stem, branch) => `歲次${stem}${branch}年`,
       lunarLine: (ld) => `${ld.monthName}${ld.dayName}`,
       yearLine: (stem, branch, animal) => `歲次${stem}${branch}年（${animal}）`,
       ganZhiSuffix: '日',
@@ -271,6 +299,13 @@ export function almanacCopy(locale: string): AlmanacCopy {
     forYouLabel: '于你',
     weekday: (d) => WEEKDAYS['zh-Hans'][d.getDay()] ?? '',
     gregorian: (d) => `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`,
+    gregorianShort: (d) => `${d.getMonth() + 1}月${d.getDate()}日`,
+    weekdayChip: (d) => {
+      const wd = ['日', '一', '二', '三', '四', '五', '六']
+      return `周${wd[d.getDay()] ?? ''} · ${d.getDate()}`
+    },
+    lunarStrip: (ld) => `${ld.monthName}${ld.dayName}`,
+    yearStrip: (stem, branch) => `岁次${stem}${branch}年`,
     lunarLine: (ld) => `${ld.monthName}${ld.dayName}`,
     yearLine: (stem, branch, animal) => `岁次${stem}${branch}年（${animal}）`,
     ganZhiSuffix: '日',
