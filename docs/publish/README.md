@@ -31,7 +31,7 @@ Last updated: 2026-07-31.
 
 **Ship / submit order (technical):** Yuun → Yuel → (Kanyu after prose P0) → Yaul last. Syel is post-wave but code-ready for parallel console prep.
 
-**API / D1:** `ALLOW_DEV_PRO: "0"` live; HMAC exemptions for notify stale-token + physiognomy `purge-inactive`; push migrations through **0034** (`lunar_is_leap` + faceoracle/auspice push). Prefer `bun db:migrate:prod` then `bun deploy` — do not assume “through 0018” from older docs.
+**API / D1:** `ALLOW_DEV_PRO: "0"` live; HMAC exemptions for notify stale-token + physiognomy `purge-inactive`; migrations through **0040** (0039 push no-verbatim-repeat guard + 0040 push metrics `auspice_push_sends`/`auspice_push_opens`). Prefer `bun db:migrate:prod` then `bun deploy` — do not assume “through 0018” or older tips from previous docs.
 
 ---
 
@@ -117,6 +117,13 @@ For **each** app (Yuel, then Yuun):
   - Both apps: **No tracking** (`NSPrivacyTracking: false`), no ATT.
   - Data collected: Apple email (sign-in only), Purchases. Yuel also: user-typed
     birth dates / partner birthdays (typed into the app, not device contacts).
+  - **Yuun push metrics (2026-07):** declare **Product Interaction — Not linked —
+    Analytics** (push tap usage analytics). The metrics tables store only a salted
+    one-way device key (`metricsDeviceKey`), never the raw device id — nothing is
+    linkable to an account. `app.json` `NSPrivacyCollectedDataTypes` already ships
+    this row (Linked=false, Analytics + App Functionality); paste the matching
+    row in ASC. Android Play Data safety: "App activity — collected, not shared" +
+    "Device or other IDs — app functionality".
 - [ ] Get the **ascAppId** Apple assigns → paste into `eas.json` submit config (see §6)
 
 ---
@@ -171,10 +178,11 @@ Follow [docs/setup/revenuecat-entitlements.md](../setup/revenuecat-entitlements.
 ## 5. Backend deploy + DB migration
 
 > Migrations are **sequential and cumulative**. `bun db:migrate:prod` applies every
-> unapplied migration in order. As of 2026-07-26 the tip includes **0034**
-> (`lunar_is_leap` on birthday reminders, plus earlier push-queue / timezone work
-> 0031–0033). Older notes that said “through 0018” are obsolete — always migrate
-> to the current tip before relying on push / birthday / FaceOracle cron paths.
+> unapplied migration in order. Current tip **0040** (0039 push no-verbatim-repeat
+> guard `last_body_key`; 0040 push metrics `auspice_push_sends` / `auspice_push_opens`;
+> earlier push-queue / timezone work 0031–0034). Older notes that said “through 0018”
+> are obsolete — always migrate to the current tip before relying on push / birthday /
+> FaceOracle cron paths.
 
 Order (local wrangler — no CI exists):
 - [ ] Internal services first: `svc-astro`, `svc-notify`, `svc-signal`, `svc-geocode`,
@@ -182,7 +190,7 @@ Order (local wrangler — no CI exists):
 - [ ] API + migrations:
       ```bash
       cd apps/hexastral-api
-      bun db:migrate:prod      # applies all pending migrations (…→0034+) to remote D1
+      bun db:migrate:prod      # applies all pending migrations (…→0040+) to remote D1
       bun deploy
       ```
 - [ ] Web (serves the privacy/terms + invite landings on all brand domains):

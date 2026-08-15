@@ -1,7 +1,7 @@
 # HexAstral Monorepo
 
 > **Maintainer**: HexAstral Engineering
-> **Stack**: Cloudflare Workers + Expo 54 + Next.js 15 + Bun + Turborepo
+> **Stack**: Cloudflare Workers + Expo 54 + Next.js 16 + Bun + Turborepo
 
 HexAstral is an AI-powered East Asian metaphysics product suite built on Cloudflare + Expo.
 
@@ -47,6 +47,8 @@ services/
   svc-mailer/           Transactional email (AWS SES)
   svc-admin-notify/     Admin alert sink (Telegram)
   svc-tail/             Centralized log aggregation (tail consumer for all workers)
+  svc-feng/             Kanyu reports / map rendering
+  svc-ad-convert/       Ad conversion attribution
 packages/
   hexastral-tokens/     Design tokens (palette + typography + motion)
   hexastral-client/     Hono RPC client (typed from hexastral-api)
@@ -134,7 +136,7 @@ Common commands:
 bun typecheck                # all workspaces
 bun lint                     # all workspaces (biome)
 bun format:fix               # biome auto-format
-bun test                     # all workspaces with tests (astro-core, svc-fortune)
+bun test                     # all workspaces with tests (astro-core, api golden, apps, services)
 bun check-deps               # version consistency across workspaces
 ```
 

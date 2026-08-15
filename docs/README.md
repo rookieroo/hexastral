@@ -98,23 +98,10 @@ Brand assets: [brand/](./brand/) · Yuel design: [design/](./design/)
 
 ## Architecture decisions (active)
 
+> 2026-08 说明：历史 ADR 0004–0027 的原文文件已从仓库移除（决策内容已内化到各
+> per-app 文档与代码注释），仅保留仍然存在的两篇：
+
 | ADR | Topic |
 |---|---|
-| [0004](./decisions/0004-satellite-funnel-pattern.md) | Satellite funnel pattern |
-| [0005](./decisions/0005-package-boundaries.md) | Package boundaries |
-| [0010](./decisions/0010-cycle-satellite.md) | Yuun (cycle) satellite |
-| [0012](./decisions/0012-matrix-freemium-monetization.md) | Freemium matrix |
-| [0013](./decisions/0013-iap-system-architecture.md) | IAP system |
-| [0014-bonds](./decisions/0014-bonds-timeline-architecture.md) | Yuel bonds timeline |
-| [0018](./decisions/0018-hexastral-design-language.md) | Ink Brutalism design language |
-| [0019](./decisions/0019-v1-wave-narrowed-cycle-feng-yuan.md) | V1 wave scope (Yuun / Feng / Yuel) |
-| [0020](./decisions/0020-cycle-life-timeline-and-glossary.md) | Yuun life timeline |
-| [0021](./decisions/0021-kindred-v2-solo-first-mingpan-frame.md) | Yuel solo-first frame |
-| [0023](./decisions/0023-timeline-makeif-insight-layer.md) | Yuun make-if layer |
-| [0024](./decisions/0024-app-brand-naming.md) | Yuun / Yuel brand naming |
-| [0025](./decisions/0025-kindred-relationship-push.md) | Yuel relationship push |
-| [0026](./decisions/0026-timeline-makeif-altitude-split.md) | Yuun make-if altitude |
-| [0027](./decisions/0027-bond-credit-and-locale-economy.md) | Yuel bond credits |
+| [0003](./decisions/0003-portfolio-voice-compliance.md) | Portfolio voice & compliance (ADR-0003 doctrine) |
 | [0028](./decisions/0028-face-oracle-dual-track.md) | Syel dual-track + three-source funnel (display Syel; API `faceoracle`) |
-
-Superseded ADRs: [archive/decisions/](./archive/decisions/)

@@ -51,9 +51,14 @@ Last updated: 2026-08-02.
 
 ## 0. 开干前（一次）
 
+> **No-IAP 先发**（当前策略，`EXPO_PUBLIC_IAP_ENABLED=false`）：§0 的 Paid Agreements /
+> 税务银行、以及整个 §8（订阅/IAP/RC/密钥）**全部跳过**——免费无 IAP 的 App 不需要
+> 收款协议。银行就绪后，用「新版本 + 订阅」一次补齐 §8 再提交。§7 隐私/法务、§6 文案、
+> §9-§12 冒烟提审对 no-IAP 版本照常执行。
+
 1. 打开 https://appstoreconnect.apple.com/agreements  
-   - [ ] **Paid Applications Agreement** = Active  
-   - [ ] 税务 / 银行信息完整（否则订阅卡 Missing Metadata）
+   - [ ] **Paid Applications Agreement** = Active（仅 IAP 版本需要；no-IAP 跳过）  
+   - [ ] 税务 / 银行信息完整（仅 IAP 版本需要）  
 2. 打开 https://appstoreconnect.apple.com/access/users  
    - [ ] 本人角色 ≥ **App Manager**（隐私 / IAP / 提审）  
    - [ ] 需要内测的同事已邀请进 LLC 团队（Internal Testing 只能加 ASC Users）
@@ -221,9 +226,14 @@ Subtitle / 商店 Name **不在**此页全局填 → 在各语言本地化填。
 
 其它语言页若单独有隐私链：zh → `/zh/` · tw → `/tw/` · ja → `/ja/`（与 aso 描述内链接一致）。
 
-### 7.2 营养标签（两 App 相同）
+### 7.2 营养标签（两 App 相同口径，与 `app.json` privacyManifests 逐行一致）
 
 路径：App → **App Privacy** → Get Started / Edit → 全部答完 → **Publish**
+
+> **此表以代码内 `NSPrivacyCollectedDataTypes` 为准**（2026-07 修订：旧版表格与
+> manifest 不符——误标了 Name、给 Product Interaction 标了 Linked=Yes 和广告营销
+> 用途，还漏了 Device ID）。推送指标已去标识化（`metricsDeviceKey` 加盐哈希入库），
+> 因此 Product Interaction 为**不关联**。若 ASC 填的与 manifest 不一致会被拒。
 
 总问：
 
@@ -234,21 +244,24 @@ Subtitle / 商店 Name **不在**此页全局填 → 在各语言本地化填。
 
 | 数据类型 | Linked to identity? | Tracking? | Purposes（意图） |
 |---|---|---|---|
-| **Name** | **Yes** | No | **仅** App Functionality |
-| **Email Address** | Yes | No | **仅** App Functionality |
+| **User ID**（登录/匿名设备 id 用于服务端同步与推送注册） | Yes | No | **仅** App Functionality |
+| **Device ID**（本地生成匿名 id：推送注册、生日提醒） | Yes | No | **仅** App Functionality |
+| **Email Address**（Apple/Google 登录） | Yes | No | **仅** App Functionality |
 | **Other User Content**（生辰 / 亲友 / 伴侣手输） | Yes | No | **仅** App Functionality |
-| **User ID** | Yes | No | App Functionality + Analytics + Developer’s Advertising or Marketing |
-| **Purchases** | Yes | No | App Functionality + Analytics |
-| **Product Interaction** | Yes | No | Analytics + App Functionality + Developer’s Advertising or Marketing |
+| **Purchases**（订阅记录，RevenueCat） | Yes | No | **仅** App Functionality |
+| **Product Interaction**（推送点击使用分析，服务端存加盐哈希、不关联身份） | **No** | No | Analytics + App Functionality |
+| **Other Data Types** | Yes | No | **仅** App Functionality |
 
 **不要添加 / 不要 Set Up**：
 
 - Advertising Data  
 - Other Usage Data  
 - Crash Data / Performance Data / Other Diagnostic Data  
-- Phone / Contacts / Photos / Location / Device ID / Health / Sensitive Info  
+- Phone / Contacts / Photos / Location / Health / Sensitive Info  
+- **Name**（App 不采集用户姓名；亲友称呼属 Other User Content）  
 - Third-Party Advertising（意图里也不要勾）  
 - Data Used to Track You  
+- 不要把 Product Interaction 标成 Linked 或加 Advertising/Marketing 用途
 
 说明：无 App 内广告 SDK；无 Sentry；服务端运维告警不是客户端 Diagnostics。
 
@@ -258,6 +271,10 @@ Subtitle / 商店 Name **不在**此页全局填 → 在各语言本地化填。
 ---
 
 ## 8. 订阅与 IAP（ASC → RevenueCat → 密钥）
+
+> **No-IAP 先发阶段：整节跳过。** 不创建订阅/IAP 产品、不填 RC、不进 §8.5 密钥；
+> `EXPO_PUBLIC_IAP_ENABLED=false` 的包里 paywall 显示 Coming soon。银行就绪后回到
+> 本节，并**随一个新 App 版本**提交首个订阅（Apple 要求首发订阅必须挂版本）。
 
 严格按 **8.1 → 8.5**。订阅组 = **每个 App 各自一份**（不能跨 App 共用同一组）；两边 Reference Name 都可叫 `hexastral_universe`。
 

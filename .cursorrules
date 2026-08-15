@@ -5,7 +5,7 @@ Navigation hub for agents: **[AGENTS.md](AGENTS.md)**. Architecture SSOT: **`doc
 ## 1. MANDATORY ARCHITECTURE RULES
 - **Package Manager**: Always use `bun`. Never `npm/pnpm`.
 - **CLI runners**: Always use `bunx`, never `npx` (Expo, Wrangler, one-off binaries). Prefer `bun run <script>` when defined.
-- **Environment**: Cloudflare Workers (Hono) for API, Expo 54 for iOS, Next.js 15 for Web.
+- **Environment**: Cloudflare Workers (Hono) for API, Expo 54 for iOS, Next.js 16 for Web.
 - **Rules overrides**: Sub-folder `.cursorrules` in `apps/hexastral-api/` and `services/` only. All `apps/*-app` satellite apps and all `packages/*` follow this file — no per-app or per-package rules files.
 
 ---
@@ -16,6 +16,17 @@ Navigation hub for agents: **[AGENTS.md](AGENTS.md)**. Architecture SSOT: **`doc
 - `import { z } from 'zod/v4'` ONLY (not `'zod'`)
 - Use `import type` for type-only imports
 - Cloudflare API: Use `lib/service-clients.ts`, never raw `c.env.SVC_*.fetch()`
+- Hono API errors: `throw new HTTPException(...)` — never bare `Response` in routes
+
+### API request handling (Hono)
+- Read the request body ONCE, pass it down as a parameter — never re-`await c.req.json()` downstream
+- Context via `c.set()` / `c.get()` — no module-global mutable state in Workers
+- `db` always from `c.get('db')` (injected by `dbMiddleware`) — never instantiate per-route
+
+### Style
+- Functional style — classes only when 3+ shared dependencies
+- Named exports (default exports only for React / React Native components)
+- `??` operator and early-return type narrowing for null safety
 
 ### Safety
 - No `any` type → use `unknown` + type guards
@@ -163,8 +174,9 @@ try { await operation() } catch (err) {
 
 ## 7. DEPLOYMENT POLICY
 
+- **No CI in this repo.** Validation is local (`bun run preflight`); deploys run locally via `wrangler` / EAS.
 - **Do not** auto-deploy **production** on every change across `hexastral-api`, `hexastral-web`, and all `services/*` workers — risk of partial rollout, bad migrations, and noisy churn.
-- **Preferred**: CI runs `bun typecheck` / lint on PRs; merge to `main` feeds **staging or preview** only; production deploys use **path-filtered** jobs (e.g. Turborepo `--filter`), **manual approval** or **tagged releases**, and **explicit** D1 migrations (`bun db:migrate:prod`).
+- Production deploys and remote D1 migrations (`bun db:migrate:prod`) require **explicit user approval** each time.
 
 ---
 
@@ -180,6 +192,5 @@ For detailed guidance:
 - **Mobile satellite apps**: This file §3 (no per-app rules)
 - **API**: `apps/hexastral-api/.cursorrules`
 - **Microservices**: `services/.cursorrules`
-- **All AI tools entry**: `AGENTS.md`
-- **Copilot code-generation bans**: `.github/copilot-instructions.md`
+- **All vibe-coding tools entry (Claude Code / Codex / Cursor / Gemini CLI …)**: `AGENTS.md` — the universal navigation hub
 - **Implementation help**: `IMPLEMENTATION_GUIDE.md`

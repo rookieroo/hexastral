@@ -33,6 +33,9 @@ yarn-error.log*
 .env.production.local
 .env.prod
 .env.staging
+# Tracked-file warning: apps/hexastral-web/.env.production is already in git
+# (public NEXT_PUBLIC_* values only) — run `git rm --cached` to untrack it.
+.env.production
 
 # secrets (never commit)
 .env.*.secrets
@@ -78,3 +81,6 @@ node_modules/
 .license-backup-*/
 
 **/issue-images/*
+
+# Local agent worktrees (never commit)
+.claude/worktrees/

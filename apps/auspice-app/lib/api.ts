@@ -106,6 +106,11 @@ export interface AuspiceDay {
   avoid: string[]
   clash: DayClash
   evilDirection: string
+  /** 黄道黑道值神 — the day's ruling god (青龙…勾陈). Optional for back-compat
+   *  with cached payloads; feeds the push extra-clause rotation. */
+  dayGod?: { name: string; lucky: boolean }
+  /** 彭祖百忌 (按日柱干支) — feeds the push extra-clause rotation. */
+  pengZu?: { stem: string; branch: string }
   /** 黄历吉色 — color the day's pillar favors. Renamed from `luckyColor`. */
   auspiciousColor: string
   /** 黄历吉方 — direction the day's pillar favors. Renamed from `luckyDirection`. */
@@ -630,6 +635,30 @@ export async function fetchAuspiceExplain(params: {
     u: u ?? undefined,
     dev: __DEV__,
   })
+}
+
+/**
+ * Report a push tap for the delivery/open metrics loop (POST /api/auspice/push/open).
+ * Fire-and-forget: the caller must not await — the tap handler routes first,
+ * the report never blocks and a failed report is silently dropped.
+ * `notificationId` is the server-side idempotency key; `bk` attributes the open
+ * to the exact rendered body (variant A/B).
+ */
+export function reportPushOpen(args: {
+  deviceId: string
+  notificationId: string | null
+  /** data.type — auspice_daily / auspice_evening / auspice_timeline / … */
+  type: string
+  day?: string | null
+  bk?: string | null
+}): void {
+  void postJson<{ recorded: boolean }>('/api/auspice/push/open', {
+    deviceId: args.deviceId,
+    notificationId: args.notificationId ?? undefined,
+    type: args.type,
+    day: args.day ?? undefined,
+    bk: args.bk ?? undefined,
+  }).catch(() => {})
 }
 
 /**

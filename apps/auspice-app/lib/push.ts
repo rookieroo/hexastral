@@ -22,6 +22,7 @@ import { Platform } from 'react-native'
 import { fetchAuspiceDay, fetchTimeline, type PersonalFit, type PersonalReasonCode } from './api'
 import { upcomingHolidayHeadsUps } from './cn-holidays'
 import { localizeFestival, localizeSolarTermName } from './culture'
+import { getAuspiceDeviceId } from './device'
 import { getStrings, type Locale } from './i18n'
 import type { AuspicePerson, PersonCalendar } from './people'
 import { getAuspiceProActive } from './pro'
@@ -304,14 +305,19 @@ function dailyContent(
   t: ReturnType<typeof getStrings>,
   payload: Awaited<ReturnType<typeof fetchAuspiceDay>>,
   _isPro: boolean,
-  yijiMode: YijiVocabularyMode
+  yijiMode: YijiVocabularyMode,
+  deviceId: string
 ): { title: string; body: string } {
   const d = payload.day
   const sep = locale === 'en' ? ', ' : '、'
   const colon = locale === 'en' ? ': ' : '：'
   const loc = (v: string) => displayYijiVerb(v, locale, yijiMode)
-  const yi = d.goodFor.slice(0, 1).map(loc).join(sep) || '—'
-  const ji = d.avoid.slice(0, 1).map(loc).join(sep) || '—'
+  // Free repetition guard (local fallback mirror of the server's pushVariation):
+  // per-device-per-day variation rotates the verb window + optional 冲煞/extra
+  // clauses so the fallback body doesn't read verbatim-identical on repeat days.
+  const v = localVariation(deviceId, payload.date)
+  const yi = d.goodFor.slice(0, v.verbs).map(loc).join(sep) || '—'
+  const ji = d.avoid.slice(0, v.verbs).map(loc).join(sep) || '—'
   const special = d.festivalToday
     ? localizeFestival(d.festivalToday.id, locale, d.festivalToday.name)
     : d.solarTermToday
@@ -320,13 +326,45 @@ function dailyContent(
   const dayId = ganzhiDayLabel(d.ganZhi, d.element, locale)
   const title = special ? `${dayId} · ${special}` : dayId
   let body = `${t.suitable} ${yi} · ${t.avoid} ${ji}`
+  // CJK-only rotating clauses (mirrors the server body: 冲煞 → 值神/彭祖/宿).
+  if (locale !== 'en' && v.withClash && d.clash.clashAnimal && d.evilDirection) {
+    body += ` · 冲${d.clash.clashAnimal}煞${d.evilDirection}`
+  }
+  if (locale !== 'en') {
+    if (v.extra === 'dayGod' && d.dayGod?.name) body += ` · 值神${d.dayGod.name}`
+    else if (v.extra === 'pengZu' && d.pengZu?.branch) body += ` · 彭祖忌 ${d.pengZu.branch}`
+    else if (v.extra === 'mansion' && d.mansion?.name) body += ` · ${d.mansion.name}宿`
+  }
   // For-you line when birth is set (verdict + one-line summary). Pro still gates
   // deeper personalization elsewhere; push mirrors the free takeaway on the card.
   const pers = payload.personalization
   if (pers) {
+    if (special) body += ` · ${special}`
     body += ` · ${t.personal.forYou}${colon}${t.personal.fit[pers.fit]} — ${t.personal.summary[pers.fit]}`
   }
   return { title, body: withPushDisclaimer(locale, body) }
+}
+
+/* ── local variation — mirrors the server's pushVariation space ────────────── */
+
+/** FNV-1a, same family as the server's hash (values differ — the local fallback
+ *  only runs while server push is inactive, so exact parity isn't required). */
+function pushSeedHash(s: string): number {
+  let h = 0x811c9dc5
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 16_777_619) >>> 0
+  }
+  return h >>> 0
+}
+
+function localVariation(deviceId: string, dateStr: string) {
+  const idx = pushSeedHash(`${deviceId}|${dateStr}`) % 24
+  return {
+    verbs: ([3, 4, 5] as const)[idx % 3] ?? 3,
+    withClash: Math.floor(idx / 3) % 2 === 0,
+    extra: (['none', 'dayGod', 'pengZu', 'mansion'] as const)[Math.floor(idx / 6) % 4] ?? 'none',
+  }
 }
 
 /** (Re)schedule the rolling daily window with fresh deterministic content. */
@@ -342,6 +380,8 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
   // Go, missing key) safely return false → free-tier body.
   const isPro = await getAuspiceProActive()
   const yijiMode = await resolveYijiDisplayMode(opts.locale)
+  // Stable device id seeds the local repetition-guard variation.
+  const deviceId = await getAuspiceDeviceId().catch(() => '')
 
   for (let i = 0; i < WINDOW_DAYS; i++) {
     const when = eightAm(i)
@@ -355,7 +395,8 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
         t,
         await fetchAuspiceDay(dateStr, opts.birthDate),
         isPro,
-        yijiMode
+        yijiMode,
+        deviceId
       )
     } catch {
       // keep the generic fallback — a push that opens the app is still useful
@@ -364,9 +405,11 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
     try {
       // Stable per-date identifier → idempotent: rescheduling (e.g. on a locale
       // switch) REPLACES the day's notification instead of stacking a duplicate.
+      // `type` mirrors the server push data so open-tracking attributes the
+      // local-fallback tap to the same slot taxonomy.
       await Notifications.scheduleNotificationAsync({
         identifier: `${DAILY_ID_PREFIX}${dateStr}`,
-        content: { ...content, data: { day: dateStr, focus: 'personal' } },
+        content: { ...content, data: { type: 'auspice_daily', day: dateStr, focus: 'personal' } },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
       })
     } catch {}
@@ -400,7 +443,7 @@ export async function scheduleDailyAlmanac(opts: PushOpts): Promise<void> {
     try {
       await Notifications.scheduleNotificationAsync({
         identifier: `${EVENING_ID_PREFIX}${tomorrow}`,
-        content: { ...headsUp, data: { day: tomorrow } },
+        content: { ...headsUp, data: { type: 'auspice_evening', day: tomorrow } },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
       })
     } catch {}
@@ -423,6 +466,7 @@ export async function fireTestDailyPush(
   const dateStr = localYmd(new Date())
   const isPro = opts.isPro ?? (await getAuspiceProActive())
   const yijiMode = await resolveYijiDisplayMode(opts.locale)
+  const deviceId = await getAuspiceDeviceId().catch(() => '')
   let content: { title: string; body: string } = { title: t.appName, body: t.today }
   try {
     content = dailyContent(
@@ -430,7 +474,8 @@ export async function fireTestDailyPush(
       t,
       await fetchAuspiceDay(dateStr, opts.birthDate),
       isPro,
-      yijiMode
+      yijiMode,
+      deviceId
     )
   } catch {
     // keep the generic fallback — a push that opens the app is still useful
@@ -519,9 +564,11 @@ export async function purgeStaleNotificationsOnce(): Promise<void> {
 
 /**
  * Subscribe to notification taps. The handler receives the notification's
- * deep-link target: `day` (YYYY-MM-DD → Today) and/or `route` (e.g. `/timeline`).
- * Returns an unsubscribe fn. Also drains `getLastNotificationResponseAsync` so
- * cold-start taps (app launched from a notification) reach the same handler.
+ * deep-link target: `day` (YYYY-MM-DD → Today) and/or `route` (e.g. `/timeline`),
+ * plus the metrics fields (`pushType` / `bodyKey` / `notificationId`) the
+ * open-tracking report needs. Returns an unsubscribe fn. Also drains
+ * `getLastNotificationResponseAsync` so cold-start taps (app launched from a
+ * notification) reach the same handler.
  */
 export function addAuspiceNotificationTapListener(
   onOpen: (target: {
@@ -532,6 +579,12 @@ export function addAuspiceNotificationTapListener(
     nodeType: string | null
     year: string | null
     month: string | null
+    /** data.type — the push kind (auspice_daily / auspice_evening / …). */
+    pushType: string | null
+    /** data.bk — body hash for variant attribution (daily/evening). */
+    bodyKey: string | null
+    /** Notification identifier — the open-report idempotency key. */
+    notificationId: string | null
   }) => void
 ): () => void {
   let lastHandledId: string | null = null
@@ -548,6 +601,9 @@ export function addAuspiceNotificationTapListener(
       nodeType: typeof data.nodeType === 'string' ? data.nodeType : null,
       year: typeof data.year === 'string' ? data.year : null,
       month: typeof data.month === 'string' ? data.month : null,
+      pushType: typeof data.type === 'string' ? data.type : null,
+      bodyKey: typeof data.bk === 'string' ? data.bk : null,
+      notificationId: id || null,
     })
   }
   const sub = Notifications.addNotificationResponseReceivedListener(handle)
@@ -708,7 +764,11 @@ export async function scheduleBirthdayReminders(
             : t.soon.replace('{n}', String(advanceDays)).replace('{name}', p.name)
         await Notifications.scheduleNotificationAsync({
           identifier: `${BDAY_ID_PREFIX}${p.id}-prev`,
-          content: { title, body },
+          content: {
+            title,
+            body,
+            data: { type: 'auspice_birthday', route: '/people', personId: p.id },
+          },
           trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: advance },
         }).catch(() => {})
       }
@@ -717,7 +777,11 @@ export async function scheduleBirthdayReminders(
     if (p.remindOnDay !== false && dayOf.getTime() > now) {
       await Notifications.scheduleNotificationAsync({
         identifier: `${BDAY_ID_PREFIX}${p.id}-day`,
-        content: { title, body: t.day.replace('{name}', p.name) },
+        content: {
+          title,
+          body: t.day.replace('{name}', p.name),
+          data: { type: 'auspice_birthday', route: '/people', personId: p.id },
+        },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: dayOf },
       }).catch(() => {})
     }
@@ -956,7 +1020,11 @@ export async function scheduleTimelineReminders(opts: TimelineReminderOpts): Pro
     try {
       await Notifications.scheduleNotificationAsync({
         identifier: `${TIMELINE_ID_PREFIX}month-${when.getFullYear()}-${pad(when.getMonth() + 1)}`,
-        content: { title, body, data: { route: '/timeline' } },
+        content: {
+          title,
+          body,
+          data: { type: 'auspice_timeline', route: '/timeline' },
+        },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
       })
     } catch {}
@@ -979,7 +1047,11 @@ export async function scheduleTimelineReminders(opts: TimelineReminderOpts): Pro
     try {
       await Notifications.scheduleNotificationAsync({
         identifier: `${TIMELINE_ID_PREFIX}dayun-${dy.startYear}`,
-        content: { title, body, data: { route: '/timeline' } },
+        content: {
+          title,
+          body,
+          data: { type: 'auspice_timeline', route: '/timeline' },
+        },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
       })
     } catch {}

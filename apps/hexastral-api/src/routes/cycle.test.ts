@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { auspiceRoutes, renderAuspicePush } from './auspice'
+import { auspiceRoutes, pushVariation, renderAuspicePush } from './auspice'
 
 // The handlers only read query params + @zhop/astro-core (no db / env / rate-limit),
 // so the sub-app can be exercised directly via .request() without bindings.
@@ -164,6 +164,124 @@ describe('renderAuspicePush — daily hook (en slice)', () => {
     expect(msg?.title).toContain('丁巳日') // zh still leads with the 干支日 label
     expect(msg?.body).toContain('宜')
     expect(msg?.data.hookKey).toBeUndefined() // zh path untouched this slice
+  })
+})
+
+describe('pushVariation — free push repetition guard', () => {
+  test('deterministic per device+date', () => {
+    expect(pushVariation('device-a', '2026-06-12')).toEqual(pushVariation('device-a', '2026-06-12'))
+  })
+
+  test('verbs stay within 3-5 and the picks spread across a month', () => {
+    const seen = new Set<string>()
+    for (let i = 1; i <= 30; i++) {
+      const date = `2026-06-${String(i).padStart(2, '0')}`
+      const v = pushVariation('device-a', date)
+      expect([3, 4, 5]).toContain(v.verbs)
+      expect(['none', 'dayGod', 'pengZu', 'mansion']).toContain(v.extra)
+      seen.add(`${v.verbs}:${v.withClash}:${v.extra}`)
+    }
+    // Not the same variant every single day — the rotation actually moves.
+    expect(seen.size).toBeGreaterThan(1)
+  })
+
+  test('the extra clause pool rotates across a month', () => {
+    const extras = new Set<string>()
+    for (let i = 1; i <= 30; i++) {
+      const date = `2026-06-${String(i).padStart(2, '0')}`
+      extras.add(pushVariation('device-a', date).extra)
+    }
+    expect(extras.size).toBeGreaterThan(1)
+  })
+
+  test('different devices on the same day spread across variants', () => {
+    const seen = new Set<string>()
+    for (let i = 0; i < 12; i++) {
+      const v = pushVariation(`device-${i}`, '2026-06-12')
+      seen.add(`${v.verbs}:${v.withClash}`)
+    }
+    expect(seen.size).toBeGreaterThan(1)
+  })
+
+  test('offset walks the variant space deterministically (repeat-guard fallback)', () => {
+    const base = pushVariation('device-a', '2026-06-12', 0)
+    const seen = new Set<string>()
+    for (let off = 0; off < 24; off++) {
+      const v = pushVariation('device-a', '2026-06-12', off)
+      expect([3, 4, 5]).toContain(v.verbs)
+      seen.add(`${v.verbs}:${v.withClash}:${v.extra}`)
+      expect(pushVariation('device-a', '2026-06-12', off)).toEqual(v) // stable
+    }
+    // The offset chain covers more than one distinct variant.
+    expect(seen.size).toBeGreaterThan(1)
+    // offset 1 is not the base variant.
+    expect(pushVariation('device-a', '2026-06-12', 1)).not.toEqual(base)
+  })
+
+  test('zh morning body carries the 冲煞 clause only when the variation picks it; en never CJK', () => {
+    const ymd = { year: 2026, month: 6, day: 12 }
+    const zh = renderAuspicePush('morning', ymd, {
+      locale: 'zh-Hans',
+      birthDate: '1990-08-15',
+      isPro: false,
+      deviceId: 'device-zh',
+    })
+    const en = renderAuspicePush('morning', ymd, {
+      locale: 'en',
+      birthDate: '1990-08-15',
+      isPro: false,
+      deviceId: 'device-en',
+    })
+    const v = pushVariation('device-zh', '2026-06-12')
+    if (v.withClash) expect(zh?.body).toMatch(/冲.煞/)
+    else expect(zh?.body).not.toMatch(/冲.煞/)
+    expect(en?.body).not.toMatch(/[一-鿿]/)
+  })
+
+  test('signed-in zh body adds the rotating corpus hook; anonymous stays bare', () => {
+    const ymd = { year: 2026, month: 6, day: 12 }
+    const anon = renderAuspicePush('morning', ymd, {
+      locale: 'zh-Hans',
+      birthDate: '1990-08-15',
+      isPro: false,
+      deviceId: 'device-zh',
+    })
+    const signed = renderAuspicePush('morning', ymd, {
+      locale: 'zh-Hans',
+      birthDate: '1990-08-15',
+      isPro: false,
+      deviceId: 'device-zh',
+      portfolioUserId: 'user_test',
+    })
+    expect(signed?.title).toContain('丁巳日') // 干支-led convention stays
+    expect(signed?.body).toContain('宜')
+    // The hook line is the only difference between the two tiers for this device.
+    expect(signed?.body.length).toBeGreaterThan(anon?.body.length ?? 0)
+    expect(signed?.body).not.toBe(anon?.body)
+  })
+
+  test('variationOffset shifts the rendered body (guard fallback path)', () => {
+    const ymd = { year: 2026, month: 6, day: 12 }
+    const sub = {
+      locale: 'zh-Hans',
+      birthDate: '1990-08-15',
+      isPro: false,
+      deviceId: 'device-zh',
+    }
+    const base = renderAuspicePush('morning', ymd, sub, 0)
+    const seen = new Set<string>()
+    for (let off = 0; off < 24; off++) {
+      const m = renderAuspicePush('morning', ymd, sub, off)
+      expect(m?.title).toContain('丁巳日')
+      seen.add(`${m?.title}|${m?.body}`)
+    }
+    // The offset chain yields more than one distinct rendering.
+    expect(seen.size).toBeGreaterThan(1)
+    // The guard's exact success condition: some offset escapes the base body.
+    const escapes = Array.from({ length: 23 }, (_, i) => i + 1).some(
+      (off) => JSON.stringify(renderAuspicePush('morning', ymd, sub, off)) !== JSON.stringify(base)
+    )
+    expect(escapes).toBe(true)
   })
 })
 

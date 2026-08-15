@@ -23,7 +23,7 @@ Yuun is a Chinese almanac (中华黄历) with Today-first navigation and a three
 - **Calendar** / **Settings** modular groups
 - For-you: free verdict + summary; Pro = per-reason (locked until IAP enabled)
 - Anonymous local birth preview + sign-in CTA; sync when multi-device on
-- Calendar feed: free `/calendar.ics` · Pro `/calendar/personal.ics`
+- Calendar feed: free `/calendar.ics` · Pro `/calendar/p/:token` (signed personal feed)
 - 亲友: Free cap 3; Pro unlimited
 - Notifications: server Expo push (anonymous = public; signed-in = personal; Pro = tips); timeline node (Pro)
 - Paywall: Coming soon when IAP off; Apple + Google + RC when `EXPO_PUBLIC_IAP_ENABLED=true`

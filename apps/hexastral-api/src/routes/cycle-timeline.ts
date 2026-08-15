@@ -59,6 +59,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
 import {
+  auspicePushSends,
   auspicePushSubs,
   lifeTimelineCache,
   TIMELINE_CACHE_VERSION,
@@ -75,6 +76,7 @@ import {
   recordLlmGuardGrant,
   resolveLlmGuardSubject,
 } from '../services/shared/llm-guard'
+import { metricsDeviceKey } from './auspice'
 
 export const auspiceTimelineRoutes = new Hono<AppEnv>()
 
@@ -894,6 +896,25 @@ auspiceTimelineRoutes.get('/push/targets', async (c) => {
         month: String(month),
       },
     })
+    // Metrics: one send row per device+date (idempotent — month-start cron retries).
+    // De-identified: only the salted device key is stored (see metricsDeviceKey).
+    await db
+      .insert(auspicePushSends)
+      .values({
+        id: crypto.randomUUID(),
+        deviceId: metricsDeviceKey(sub.deviceId),
+        slot: 'timeline',
+        date,
+        status: 'sent',
+        locale: sub.locale,
+        isPro: livePro,
+        timezoneId,
+        createdAt: new Date().toISOString(),
+      })
+      .onConflictDoUpdate({
+        target: [auspicePushSends.deviceId, auspicePushSends.date, auspicePushSends.slot],
+        set: { locale: sub.locale, isPro: livePro, updatedAt: new Date().toISOString() },
+      })
   }
   return jsonOk(c, { messages, hasMore, nextCursor: hasMore ? offset + limit : null })
 })

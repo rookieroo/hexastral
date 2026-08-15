@@ -1,7 +1,7 @@
 /**
  * Internal Key 验证中间件 — service-to-service 认证
  *
- * 用于 svc-fortune / svc-notify 等内部 Worker 通过 service binding 调用的端点。
+ * 用于 svc-notify / svc-signal / svc-admin-notify 等内部 Worker 通过 service binding 调用的端点。
  * 使用 crypto.subtle 常量时间比较，防止时序攻击。
  *
  * 若 X-Internal-Key 有效，设置 c.set('internalCaller', true) 并跳过后续 HMAC/Turnstile 检查。

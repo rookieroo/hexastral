@@ -26,7 +26,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { AuspiceErrorBoundary } from '@/components/AuspiceErrorBoundary'
 import { useYuunWidgetSync } from '@/hooks/useYuunWidgetSync'
+import { reportPushOpen } from '@/lib/api'
 import { getAuspiceBirthDate, getAuspiceBirthInfo } from '@/lib/birth'
+import { getAuspiceDeviceId } from '@/lib/device'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { LocaleProvider, useStrings } from '@/lib/i18n-context'
 import { parseKindredComposeUrl } from '@/lib/kindred-import'
@@ -148,7 +150,27 @@ function RootLayoutInner() {
   // Notification tap → deep-link Today / timeline / people.
   useEffect(() => {
     return addAuspiceNotificationTapListener(
-      ({ day, route, focus, personId, nodeType, year, month }) => {
+      ({
+        day,
+        route,
+        focus,
+        personId,
+        nodeType,
+        year,
+        month,
+        pushType,
+        bodyKey,
+        notificationId,
+      }) => {
+        // Delivery/open metrics: report the tap BEFORE routing (fire-and-forget —
+        // never blocks the deep link, a failed report is silently dropped).
+        if (pushType) {
+          void getAuspiceDeviceId()
+            .then((deviceId) =>
+              reportPushOpen({ deviceId, notificationId, type: pushType, day, bk: bodyKey })
+            )
+            .catch(() => {})
+        }
         if (route === '/timeline' || route?.startsWith('/timeline')) {
           router.push({
             pathname: '/timeline',

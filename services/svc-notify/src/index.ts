@@ -344,11 +344,31 @@ interface ExpoMessage {
   title?: string
   body: string
   data?: Record<string, string>
+  /**
+   * Caller-side identity for delivery-metrics reporting (auspice pushes only —
+   * matches the `auspice_push_sends` rows the API wrote at render time).
+   * NEVER sent to Expo — stripped from the outgoing payload.
+   */
+  meta?: { deviceId: string; slot: string; date: string }
 }
 
-async function sendExpoMessages(messages: ExpoMessage[]): Promise<{ invalidTokens: string[] }> {
+/** One delivery outcome to report back to hexastral-api (/push/outcomes). */
+export interface PushOutcome {
+  deviceId: string
+  slot: string
+  date: string
+  ticketId?: string
+  status: 'delivered' | 'error'
+  error?: string
+}
+
+async function sendExpoMessages(
+  messages: ExpoMessage[]
+): Promise<{ invalidTokens: string[]; outcomes: PushOutcome[] }> {
   const invalidTokens: string[] = []
+  const outcomes: PushOutcome[] = []
   const ticketToToken = new Map<string, string>()
+  const ticketToMeta = new Map<string, NonNullable<ExpoMessage['meta']>>()
   const chunkSize = 100
   for (let i = 0; i < messages.length; i += chunkSize) {
     const chunk = messages.slice(i, i + chunkSize)
@@ -359,7 +379,16 @@ async function sendExpoMessages(messages: ExpoMessage[]): Promise<{ invalidToken
         Accept: 'application/json',
         'Accept-Encoding': 'gzip, deflate',
       },
-      body: JSON.stringify(chunk.map((m) => ({ sound: 'default', ...m }))),
+      // Explicit fields only — `meta` must never reach the Expo API.
+      body: JSON.stringify(
+        chunk.map((m) => ({
+          sound: 'default',
+          to: m.to,
+          title: m.title,
+          body: m.body,
+          data: m.data,
+        }))
+      ),
     })
     if (!res.ok) {
       logger.error('Expo push API error (auspice)', { status: String(res.status) })
@@ -367,30 +396,46 @@ async function sendExpoMessages(messages: ExpoMessage[]): Promise<{ invalidToken
     }
     const json = await res.json<{ data: ExpoTicket[] }>()
     json.data.forEach((item, idx) => {
-      const t = chunk[idx]?.to
+      const msg = chunk[idx]
+      const t = msg?.to
+      const meta = msg?.meta
       if (item.details?.error === 'DeviceNotRegistered') {
         if (t) invalidTokens.push(t)
+        if (meta) outcomes.push({ ...meta, status: 'error', error: 'DeviceNotRegistered' })
       } else if (item.status === 'ok' && item.id && t) {
         ticketToToken.set(item.id, t)
+        if (meta) ticketToMeta.set(item.id, meta)
       } else if (item.status !== 'ok') {
         logger.warn('Expo push token issue (auspice)', { message: item.message })
+        if (meta) outcomes.push({ ...meta, status: 'error', error: item.message ?? 'send_error' })
       }
     })
   }
 
   if (ticketToToken.size > 0) {
-    const more = await collectInvalidTokensFromReceipts([...ticketToToken.keys()], ticketToToken)
-    invalidTokens.push(...more)
+    const { invalid, receipts } = await collectReceipts([...ticketToToken.keys()], ticketToToken)
+    invalidTokens.push(...invalid)
+    for (const [ticketId, receipt] of receipts) {
+      const meta = ticketToMeta.get(ticketId)
+      if (!meta) continue
+      outcomes.push({ ...meta, ticketId, status: receipt.status, error: receipt.error })
+    }
   }
-  return { invalidTokens }
+  return { invalidTokens, outcomes }
 }
 
-/** Poll Expo push receipts for tickets that looked OK at send time. */
-async function collectInvalidTokensFromReceipts(
+/** Poll Expo push receipts: DeviceNotRegistered feeds token cleanup; every other
+ *  ticket status feeds delivery metrics. Receipts not ready yet are simply
+ *  omitted — the send row stays 'sent' (acceptable, documented). */
+async function collectReceipts(
   ticketIds: string[],
   ticketToToken: Map<string, string>
-): Promise<string[]> {
+): Promise<{
+  invalid: string[]
+  receipts: Map<string, { status: 'delivered' | 'error'; error?: string }>
+}> {
   const invalid: string[] = []
+  const receipts = new Map<string, { status: 'delivered' | 'error'; error?: string }>()
   const chunkSize = 100
   // Brief pause so Expo can attach receipt status for DeviceNotRegistered.
   await new Promise((r) => setTimeout(r, 1_500))
@@ -418,7 +463,11 @@ async function collectInvalidTokensFromReceipts(
         if (receipt?.details?.error === 'DeviceNotRegistered') {
           const t = ticketToToken.get(id)
           if (t) invalid.push(t)
+          continue
         }
+        if (receipt?.status === 'ok') receipts.set(id, { status: 'delivered' })
+        else if (receipt?.status === 'error')
+          receipts.set(id, { status: 'error', error: receipt.details?.error })
       }
     } catch (err) {
       logger.warn('Expo getReceipts error', {
@@ -426,7 +475,30 @@ async function collectInvalidTokensFromReceipts(
       })
     }
   }
-  return invalid
+  return { invalid, receipts }
+}
+
+/** Data type → metrics slot (mirrors the API's mapping). */
+const AUSPICE_SLOT_BY_TYPE: Record<string, string> = {
+  auspice_daily: 'daily',
+  auspice_evening: 'evening',
+  auspice_timeline: 'timeline',
+  auspice_birthday: 'birthday',
+  auspice_relationship: 'relationship',
+}
+
+/** Report delivery outcomes to hexastral-api — best effort, never blocks the send. */
+async function reportPushOutcomes(env: Env, outcomes: PushOutcome[]): Promise<void> {
+  if (outcomes.length === 0) return
+  for (let i = 0; i < outcomes.length; i += 200) {
+    const chunk = outcomes.slice(i, i + 200)
+    await env.SVC_API.fetch('https://internal/api/auspice/push/outcomes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Internal-Key': env.INTERNAL_KEY },
+      body: JSON.stringify({ events: chunk }),
+      signal: AbortSignal.timeout(5_000),
+    }).catch(() => undefined)
+  }
 }
 
 // ============ Daily Fortune Fortune Text ============
@@ -636,11 +708,25 @@ async function runAuspicePush(
       }>()
       const msgs = json.data.messages
       if (msgs.length > 0) {
-        const { invalidTokens: bad } = await sendExpoMessages(
-          msgs.map((m) => ({ to: m.token, title: m.title, body: m.body, data: m.data }))
+        const { invalidTokens: bad, outcomes } = await sendExpoMessages(
+          msgs.map((m) => {
+            const mtype = m.data?.type
+            return {
+              to: m.token,
+              title: m.title,
+              body: m.body,
+              data: m.data,
+              meta: {
+                deviceId: m.deviceId,
+                slot: (mtype && AUSPICE_SLOT_BY_TYPE[mtype]) || 'daily',
+                date,
+              },
+            }
+          })
         )
         invalidTokens.push(...bad)
         sent += msgs.length - bad.length
+        await reportPushOutcomes(env, outcomes)
       }
       cursor = json.data.nextCursor
     }
@@ -708,11 +794,25 @@ async function runAuspiceTimelinePush(env: Env, targetHour: number): Promise<voi
       }>()
       const msgs = json.data.messages
       if (msgs.length > 0) {
-        const { invalidTokens: bad } = await sendExpoMessages(
-          msgs.map((m) => ({ to: m.token, title: m.title, body: m.body, data: m.data }))
+        const { invalidTokens: bad, outcomes } = await sendExpoMessages(
+          msgs.map((m) => {
+            const mtype = m.data?.type
+            return {
+              to: m.token,
+              title: m.title,
+              body: m.body,
+              data: m.data,
+              meta: {
+                deviceId: m.deviceId,
+                slot: (mtype && AUSPICE_SLOT_BY_TYPE[mtype]) || 'timeline',
+                date,
+              },
+            }
+          })
         )
         invalidTokens.push(...bad)
         sent += msgs.length - bad.length
+        await reportPushOutcomes(env, outcomes)
       }
       cursor = json.data.nextCursor == null ? null : String(json.data.nextCursor)
     }
@@ -1004,6 +1104,20 @@ async function purgeStaleTokens(env: Env): Promise<void> {
         error: err instanceof Error ? err.message : String(err),
       })
     }
+  }
+
+  // Push metrics tables roll at the same 90-day window (single call — the API
+  // deletes all expired rows in one pass, no batching needed).
+  try {
+    await env.SVC_API.fetch('https://internal/api/auspice/push/purge-events', {
+      method: 'POST',
+      headers: { 'X-Internal-Key': env.INTERNAL_KEY },
+      signal: AbortSignal.timeout(10_000),
+    })
+  } catch (err) {
+    logger.error('push metrics purge failed', {
+      error: err instanceof Error ? err.message : String(err),
+    })
   }
 
   await alertAdmin(env.SVC_ADMIN_NOTIFY, {

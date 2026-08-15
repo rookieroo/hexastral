@@ -279,7 +279,7 @@ console.log(
 )
 
 try {
-  execSync(`npx wrangler d1 execute ${DB_NAME} ${flag} --file="${tmpFile}"`, {
+  execSync(`bunx wrangler d1 execute ${DB_NAME} ${flag} --file="${tmpFile}"`, {
     stdio: 'inherit',
     cwd: API_ROOT,
   })

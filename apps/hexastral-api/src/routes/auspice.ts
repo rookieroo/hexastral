@@ -45,11 +45,17 @@ import {
   computeDailyHook,
 } from '@zhop/astro-i18n'
 import { canonicalizeTimezoneToPool } from '@zhop/timezone-pool'
-import { and, eq, inArray, lt } from 'drizzle-orm'
+import { and, eq, gte, inArray, lt, sql } from 'drizzle-orm'
 import { type Context, Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod/v4'
-import { auspicePushSubs, birthdayReminders, makeifForks } from '../db/schema'
+import {
+  auspicePushOpens,
+  auspicePushSends,
+  auspicePushSubs,
+  birthdayReminders,
+  makeifForks,
+} from '../db/schema'
 import type { AppDb, AppEnv } from '../infra-types'
 import { jsonOk, ok } from '../lib/api-response'
 import { allowAuspiceDevGuardBypass, resolveAuspiceIsPro } from '../lib/auspice-pro'
@@ -1522,6 +1528,81 @@ function hashIp(ip: string): string {
   return (h >>> 0).toString(36)
 }
 
+/** FNV-1a over a string — seeds the per-device push variation (deviceId is
+ *  device-scoped identity, so hashing it keeps the derived value opaque). */
+function hashString(s: string): number {
+  let h = 0x811c9dc5
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 16_777_619) >>> 0
+  }
+  return h >>> 0
+}
+
+/** Hash of a rendered push — the identity the no-verbatim-repeat guard tracks.
+ *  Exported for the metrics test harness (data.bk must equal this value). */
+export function pushBodyKey(title: string, body: string): string {
+  return String(hashString(`${title}|${body}`))
+}
+
+/**
+ * Salted one-way key for the metrics tables — the raw deviceId never lands in
+ * `auspice_push_sends` / `auspice_push_opens`, so the analytics CANNOT be joined
+ * back to a device or account (unlike `auspice_push_subs`, which keeps the raw
+ * id for push delivery). Same salt across both tables so the open-rate joins
+ * keep working. Privacy posture: metrics are de-identified (pseudonymous), and
+ * the ASC label stays "Product Interaction — not linked — Analytics".
+ */
+const METRICS_SALT = 'auspice-metrics:v1'
+export function metricsDeviceKey(deviceId: string): string {
+  return hashString(`${METRICS_SALT}:${deviceId}`).toString(36)
+}
+
+/**
+ * Write (upsert) one push send row — idempotent per (device, date, slot) so cron
+ * retries / smoke calls never double-count. Called at render time; svc-notify
+ * later backfills ticketId + delivered/error via POST /push/outcomes.
+ */
+export async function recordPushSend(
+  db: AppDb,
+  args: {
+    deviceId: string
+    slot: string
+    date: string
+    bodyKey?: string | null
+    variant?: string | null
+    locale?: string
+    isPro: boolean
+    timezoneId: string
+  }
+): Promise<void> {
+  await db
+    .insert(auspicePushSends)
+    .values({
+      id: crypto.randomUUID(),
+      deviceId: metricsDeviceKey(args.deviceId),
+      slot: args.slot,
+      date: args.date,
+      bodyKey: args.bodyKey ?? null,
+      variant: args.variant ?? null,
+      status: 'sent',
+      locale: args.locale,
+      isPro: args.isPro,
+      timezoneId: args.timezoneId,
+      createdAt: new Date().toISOString(),
+    })
+    .onConflictDoUpdate({
+      target: [auspicePushSends.deviceId, auspicePushSends.date, auspicePushSends.slot],
+      set: {
+        bodyKey: args.bodyKey ?? null,
+        variant: args.variant ?? null,
+        locale: args.locale,
+        isPro: args.isPro,
+        updatedAt: new Date().toISOString(),
+      },
+    })
+}
+
 /** Deterministic fallback when the LLM is exhausted/unavailable — never blank. */
 function templateExplanation(almanac: DailyAlmanac, field: string): string {
   const base = `${field}：${almanac.todayGanZhi}日 · ${almanac.dayOfficer}日 · ${almanac.mansion.name}宿。`
@@ -2280,6 +2361,9 @@ interface PushLabelSet {
   eveningCaution: string
   eveningSep: string
   fit: Record<string, string>
+  /** Compliance tail appended to every daily/evening body — mirrors the app's
+   *  local-fallback push disclaimer (Terms §3; ADR-0003 cultural reference). */
+  disclaimer: string
 }
 
 const EN_PUSH_LABELS: PushLabelSet = {
@@ -2293,6 +2377,7 @@ const EN_PUSH_LABELS: PushLabelSet = {
   eveningCaution: 'a day to stay careful — take it steady',
   eveningSep: ' · ',
   fit: { 吉: 'favorable', 平: 'steady', 凶: 'cautious' },
+  disclaimer: 'Entertainment & cultural reference only',
 }
 
 const PUSH_LABELS: Record<string, PushLabelSet> = {
@@ -2307,6 +2392,7 @@ const PUSH_LABELS: Record<string, PushLabelSet> = {
     eveningCaution: '对你而言宜谨慎，凡事缓行',
     eveningSep: ' · ',
     fit: { 吉: '宜把握', 平: '平稳', 凶: '宜谨慎' },
+    disclaimer: '仅供娱乐与文化参照',
   },
   'zh-Hant': {
     yi: '宜',
@@ -2319,6 +2405,7 @@ const PUSH_LABELS: Record<string, PushLabelSet> = {
     eveningCaution: '對你而言宜謹慎，凡事緩行',
     eveningSep: ' · ',
     fit: { 吉: '宜把握', 平: '平穩', 凶: '宜謹慎' },
+    disclaimer: '僅供娛樂與文化參照',
   },
   ja: {
     yi: '吉',
@@ -2331,6 +2418,7 @@ const PUSH_LABELS: Record<string, PushLabelSet> = {
     eveningCaution: 'あなたには慎重な日、無理せず穏やかに',
     eveningSep: ' · ',
     fit: { 吉: '好機', 平: '平穏', 凶: '慎重に' },
+    disclaimer: '娯楽・文化参照のみ',
   },
   en: EN_PUSH_LABELS,
 }
@@ -2352,6 +2440,8 @@ interface AuspicePushSubRow {
   portfolioUserId?: string | null
   /** Null/undefined → derive from locale via defaultYijiModeForLocale. */
   yijiMode?: string | null
+  /** Hash of the last rendered daily push — the no-verbatim-repeat guard. */
+  lastBodyKey?: string | null
 }
 
 /** Push personalization ladder: anonymous = public only; signed-in = fit; Pro = fit + tips. */
@@ -2561,13 +2651,61 @@ function birthdayFiresOn(
   return null
 }
 
+/** One free-body variation — see pushVariation. */
+export interface PushVariation {
+  verbs: 3 | 4 | 5
+  withClash: boolean
+  /** Extra rotating clause for CJK locales: 值神 / 彭祖忌 / 宿 — never on en. */
+  extra: 'none' | 'dayGod' | 'pengZu' | 'mansion'
+}
+
+/**
+ * Total distinct variants. The no-verbatim-repeat guard (see GET /push/targets)
+ * walks `offset` 1..PUSH_VARIANT_COUNT-1 across this space when a rendered body
+ * would repeat the device's previous one.
+ */
+export const PUSH_VARIANT_COUNT = 24 // 3 verb windows × 2 clash × 4 extras
+
+const VERBS_POOL = [3, 4, 5] as const
+const EXTRA_POOL = ['none', 'dayGod', 'pengZu', 'mansion'] as const
+
+/**
+ * Deterministic per-device-per-day variation for the free public push body, so
+ * long-term subscribers don't see the same truncated 宜忌 verbatim whenever the
+ * day-signature repeats (the 60-day 干支 cycle + fixed top-3 slice otherwise
+ * reproduce identical bodies). Pure + stable: same device + date → same pick;
+ * consecutive days and different devices spread across the 24 variants.
+ *
+ * - `verbs` rotates the 宜/忌 window size (3/4/5 verbs per side).
+ * - `withClash` toggles the 冲煞 clause (冲X煞Y — standard almanac annotation
+ *   already shown on the day card).
+ * - `extra` rotates a third deterministic clause (值神 / 彭祖百忌 / 宿) on CJK.
+ *
+ * `offset` shifts to the next variant in the fixed space — the repeat guard uses
+ * it; ordinary renders call with 0.
+ */
+export function pushVariation(deviceId: string, dateStr: string, offset = 0): PushVariation {
+  const seed = deviceId ?? ''
+  const idx =
+    ((((hashString(`${seed}|${dateStr}`) % PUSH_VARIANT_COUNT) + offset) % PUSH_VARIANT_COUNT) +
+      PUSH_VARIANT_COUNT) %
+    PUSH_VARIANT_COUNT
+  return {
+    verbs: VERBS_POOL[idx % 3] ?? 3,
+    withClash: Math.floor(idx / 3) % 2 === 0,
+    extra: EXTRA_POOL[Math.floor(idx / 6) % 4] ?? 'none',
+  }
+}
+
 /** Render a deterministic push for one subscriber + date (morning = that day,
  *  evening = a heads-up about `dateYmd` which the cron already advanced to tomorrow).
  *  The evening returns null when tomorrow isn't notable → caller schedules nothing. */
 export function renderAuspicePush(
   slot: 'morning' | 'evening',
   dateYmd: Ymd,
-  sub: AuspicePushSubRow
+  sub: AuspicePushSubRow,
+  /** Shift across the deterministic variant space (repeat guard; 0 = normal). */
+  variationOffset = 0
 ): { title: string; body: string; data: Record<string, string> } | null {
   const L = pushLabels(sub.locale)
   const subject = sub.birthDate ? subjectFromBirthDate(sub.birthDate) : undefined
@@ -2600,8 +2738,12 @@ export function renderAuspicePush(
           : (special ?? fitClause ?? '')
       return {
         title: L.eveningTitle,
-        body,
-        data: { type: 'auspice_evening', day: fmtUtc(ymdToDate(dateYmd)) },
+        body: `${body}${L.eveningSep}${L.disclaimer}`,
+        data: {
+          type: 'auspice_evening',
+          day: fmtUtc(ymdToDate(dateYmd)),
+          bk: pushBodyKey(L.eveningTitle, `${body}${L.eveningSep}${L.disclaimer}`),
+        },
       }
     }
     const fitClause =
@@ -2613,10 +2755,15 @@ export function renderAuspicePush(
     if (!special && !fitClause) return null
     const x =
       special && fitClause ? `${special}${L.eveningSep}${fitClause}` : (special ?? fitClause ?? '')
+    const body = `${L.eveningIs.replace('{x}', x)}${L.eveningSep}${L.disclaimer}`
     return {
       title: L.eveningTitle,
-      body: L.eveningIs.replace('{x}', x),
-      data: { type: 'auspice_evening', day: fmtUtc(ymdToDate(dateYmd)) },
+      body,
+      data: {
+        type: 'auspice_evening',
+        day: fmtUtc(ymdToDate(dateYmd)),
+        bk: pushBodyKey(L.eveningTitle, body),
+      },
     }
   }
 
@@ -2642,20 +2789,29 @@ export function renderAuspicePush(
     if (tier === 'pro' && personalization?.reasons?.length) {
       body += ` · ${personalization.reasons.slice(0, 2).join(', ')}`
     }
+    body += `${L.eveningSep}${L.disclaimer}`
     return {
       title,
       body,
-      data: { type: 'auspice_daily', day: dateStr, hookKey: dailyHook.hookKey },
+      data: {
+        type: 'auspice_daily',
+        day: dateStr,
+        hookKey: dailyHook.hookKey,
+        bk: pushBodyKey(title, body),
+        v: 'hook',
+      },
     }
   }
+  // Per-device variation (free repetition guard) — see pushVariation.
+  const v = pushVariation(sub.deviceId ?? '', dateStr, variationOffset)
   const yi =
     day.goodFor
-      .slice(0, 3)
+      .slice(0, v.verbs)
       .map((v) => formatYijiVerb(v, sub.locale, resolvePushYijiMode(sub)))
       .join('、') || '—'
   const ji =
     day.avoid
-      .slice(0, 3)
+      .slice(0, v.verbs)
       .map((v) => formatYijiVerb(v, sub.locale, resolvePushYijiMode(sub)))
       .join('、') || '—'
   const special = day.festivalToday?.name ?? day.solarTermToday?.name ?? null
@@ -2666,12 +2822,49 @@ export function renderAuspicePush(
     : special
       ? `${dayId} · ${special}`
       : dayId
+  // Rotating 冲煞 clause for CJK locales — content variety on top of the 宜忌 list
+  // (en keeps the minimal gloss path). The day-signature (干支/建除/宿) can repeat
+  // across a subscription's lifetime; the per-device variation + this clause keep
+  // the rendered body from being verbatim-identical on those repeats.
+  const clashClause =
+    v.withClash && !sub.locale.startsWith('en') && day.clash.clashAnimal && day.evilDirection
+      ? `冲${day.clash.clashAnimal}煞${day.evilDirection}`
+      : null
+  // Third rotating clause (值神 / 彭祖百忌 / 宿) — thickens the free body with a
+  // different deterministic fact each day; CJK-only like the 冲煞 clause.
+  const extraClause =
+    sub.locale.startsWith('en') || v.extra === 'none'
+      ? null
+      : v.extra === 'dayGod'
+        ? `值神${day.dayGod.name}`
+        : v.extra === 'pengZu'
+          ? `彭祖忌 ${day.pengZu.branch}`
+          : `${day.mansion.name}宿`
+  // Signed-in CJK gets the corpus dailyHook headline appended to the body — the
+  // TITLE keeps the 干支-day convention (the hook supplements, not replaces); the
+  // line rotates by day so the body reads fresh even when 宜忌 top-verbs repeat.
+  const hookLine =
+    !sub.locale.startsWith('en') && showPersonal && dailyHook ? dailyHook.title : null
   let body = `${L.yi} ${yi} · ${L.ji} ${ji}`
+  if (clashClause) body += ` · ${clashClause}`
+  if (extraClause) body += ` · ${extraClause}`
   if (pers && special) body += ` · ${special}`
+  if (hookLine) body += ` · ${hookLine}`
   if (tier === 'pro' && pers?.reasons?.length) {
     body += ` · ${pers.reasons.slice(0, 2).join(' · ')}`
   }
-  return { title, body, data: { type: 'auspice_daily', day: dateStr } }
+  // Compliance tail — mirrors the app's local-fallback disclaimer (Terms §3).
+  body += `${L.eveningSep}${L.disclaimer}`
+  return {
+    title,
+    body,
+    data: {
+      type: 'auspice_daily',
+      day: dateStr,
+      bk: pushBodyKey(title, body),
+      v: `${v.verbs}:${v.withClash ? '1' : '0'}:${v.extra}`,
+    },
+  }
 }
 
 const pushRegisterSchema = z.object({
@@ -2797,6 +2990,7 @@ auspiceRoutes.get('/push/targets', async (c) => {
       holidayOn: auspicePushSubs.holidayOn,
       relationshipOn: auspicePushSubs.relationshipOn,
       yijiMode: auspicePushSubs.yijiMode,
+      lastBodyKey: auspicePushSubs.lastBodyKey,
     })
     .from(auspicePushSubs)
     .where(eq(auspicePushSubs.timezoneId, timezoneId))
@@ -2861,8 +3055,46 @@ auspiceRoutes.get('/push/targets', async (c) => {
 
     // Daily morning reading / event-driven evening heads-up (null on a quiet evening).
     if (slot === 'evening' ? effective.dailyEvening : effective.dailyMorning) {
-      const m = renderAuspicePush(slot, ymd, effective)
-      if (m) messages.push({ deviceId: effective.deviceId, token: effective.token, ...m })
+      let m = renderAuspicePush(slot, ymd, effective)
+      // No-verbatim-repeat guard (morning daily only): when the rendered body
+      // equals the device's previous one, walk the deterministic variant space
+      // until it differs, and write the new key back as the next baseline.
+      // Render-time bookkeeping — a failed send can only cost a little variety,
+      // never an extra message.
+      if (m && slot === 'morning') {
+        const lastKey = effective.lastBodyKey ?? ''
+        const keyOf = (x: { title: string; body: string }) => pushBodyKey(x.title, x.body)
+        if (keyOf(m) === lastKey) {
+          for (let off = 1; off < PUSH_VARIANT_COUNT; off++) {
+            const alt = renderAuspicePush(slot, ymd, effective, off)
+            if (alt && keyOf(alt) !== lastKey) {
+              m = alt
+              break
+            }
+          }
+        }
+        const newKey = keyOf(m)
+        if (newKey !== lastKey) {
+          await db
+            .update(auspicePushSubs)
+            .set({ lastBodyKey: newKey })
+            .where(eq(auspicePushSubs.deviceId, effective.deviceId))
+        }
+      }
+      if (m) {
+        // Metrics: one send row per device+date+slot (idempotent upsert).
+        await recordPushSend(db, {
+          deviceId: effective.deviceId,
+          slot,
+          date,
+          bodyKey: m.data.bk ?? null,
+          variant: m.data.v ?? null,
+          locale: effective.locale,
+          isPro: livePro,
+          timezoneId,
+        })
+        messages.push({ deviceId: effective.deviceId, token: effective.token, ...m })
+      }
     }
     // Birthday (morning) — free cap of BIRTHDAY_FREE_LIMIT reminders; morning slot ≤1 msg.
     if (slot === 'morning' && effective.birthdayOn) {
@@ -2908,6 +3140,14 @@ auspiceRoutes.get('/push/targets', async (c) => {
             personId: r.id,
             day: date,
           },
+        })
+        await recordPushSend(db, {
+          deviceId: effective.deviceId,
+          slot: 'birthday',
+          date,
+          locale: effective.locale,
+          isPro: livePro,
+          timezoneId,
         })
         birthdaySent += 1
       }
@@ -2964,6 +3204,14 @@ auspiceRoutes.get('/push/targets', async (c) => {
             personId: best.personId,
           },
         })
+        await recordPushSend(db, {
+          deviceId: effective.deviceId,
+          slot: 'relationship',
+          date,
+          locale: effective.locale,
+          isPro: livePro,
+          timezoneId,
+        })
       }
     }
     // Holiday / 调休 heads-up — intentionally off for v1 (client Settings removed the
@@ -3002,3 +3250,172 @@ auspiceRoutes.post('/push/purge-inactive', async (c) => {
   await db.delete(auspicePushSubs).where(inArray(auspicePushSubs.deviceId, ids))
   return jsonOk(c, { deleted: ids.length })
 })
+
+// ── Push metrics (送达/打开闭环) ────────────────────────────────────────────
+// sends are written at targets render time (see recordPushSend); these three
+// endpoints complete the loop: svc-notify reports Expo ticket outcomes, the app
+// reports opens on tap, and the weekly purge keeps the tables rolling at 90 days.
+
+/** Internal: svc-notify reports Expo ticket outcomes per (device, date, slot). */
+const pushOutcomesSchema = z.object({
+  events: z
+    .array(
+      z.object({
+        deviceId: z.string().min(1).max(128),
+        date: z.string().regex(DATE_RE),
+        slot: z.enum(['daily', 'evening', 'timeline', 'birthday', 'relationship']),
+        ticketId: z.string().max(64).optional(),
+        status: z.enum(['delivered', 'error']),
+        error: z.string().max(256).optional(),
+      })
+    )
+    .max(200),
+})
+
+auspiceRoutes.post('/push/outcomes', async (c) => {
+  const key = c.req.header('X-Internal-Key')
+  if (!key || key !== c.env.INTERNAL_KEY) throw new HTTPException(401, { message: 'Unauthorized' })
+  const body = pushOutcomesSchema.parse(await c.req.json().catch(() => ({})))
+  const updated = await applyPushOutcomes(c.get('db'), body.events)
+  return jsonOk(c, { updated })
+})
+
+/**
+ * Backfill Expo ticket outcomes onto send rows — exported for the sqlite test
+ * harness. Rows missing from `auspice_push_sends` (purged / never written) are
+ * silently skipped.
+ */
+export async function applyPushOutcomes(
+  db: AppDb,
+  events: Array<{
+    deviceId: string
+    date: string
+    slot: string
+    ticketId?: string
+    status: 'delivered' | 'error'
+    error?: string
+  }>
+): Promise<number> {
+  let updated = 0
+  for (const ev of events) {
+    await db
+      .update(auspicePushSends)
+      .set({
+        ticketId: ev.ticketId ?? undefined,
+        status: ev.status,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(
+        and(
+          eq(auspicePushSends.deviceId, metricsDeviceKey(ev.deviceId)),
+          eq(auspicePushSends.date, ev.date),
+          eq(auspicePushSends.slot, ev.slot)
+        )
+      )
+    updated += 1
+  }
+  return updated
+}
+
+/** Data type → metrics slot. The app reports the push payload's `type` verbatim. */
+const PUSH_TYPE_TO_SLOT: Record<string, string> = {
+  auspice_daily: 'daily',
+  auspice_evening: 'evening',
+  auspice_timeline: 'timeline',
+  auspice_birthday: 'birthday',
+  auspice_relationship: 'relationship',
+}
+
+/** Per-device/day open cap — blunt anti-spam on the client-reported surface. */
+const PUSH_OPEN_DAILY_CAP = 20
+
+const pushOpenSchema = z.object({
+  deviceId: z.string().min(1).max(128),
+  /** Client notification identifier — the idempotency key. */
+  notificationId: z.string().min(1).max(256).optional(),
+  type: z.enum([
+    'auspice_daily',
+    'auspice_evening',
+    'auspice_timeline',
+    'auspice_birthday',
+    'auspice_relationship',
+  ]),
+  day: z.string().regex(DATE_RE).optional(),
+  bk: z.string().max(64).optional(),
+  personId: z.string().max(128).optional(),
+})
+
+/** Anonymous (rides the /api/auspice/* IP rate limit): the app reports a push tap. */
+auspiceRoutes.post('/push/open', async (c) => {
+  const body = pushOpenSchema.parse(await c.req.json().catch(() => ({})))
+  const outcome = await recordPushOpen(c.get('db'), body)
+  return jsonOk(c, { recorded: outcome === 'recorded', reason: outcome })
+})
+
+/**
+ * Record one push open — exported for the sqlite test harness. Order matters:
+ * duplicate (same device+notification) first, then the per-device daily cap,
+ * then insert with a uniqueness belt-and-suspenders for concurrent retries.
+ */
+export async function recordPushOpen(
+  db: AppDb,
+  args: {
+    deviceId: string
+    notificationId?: string | null
+    type: string
+    day?: string | null
+    bk?: string | null
+    personId?: string | null
+  }
+): Promise<'recorded' | 'duplicate' | 'daily_cap'> {
+  // Metrics are de-identified: only the salted key lands in the table.
+  const mk = metricsDeviceKey(args.deviceId)
+  if (args.notificationId) {
+    const existing = await db
+      .select({ id: auspicePushOpens.id })
+      .from(auspicePushOpens)
+      .where(
+        and(
+          eq(auspicePushOpens.deviceId, mk),
+          eq(auspicePushOpens.notificationId, args.notificationId)
+        )
+      )
+      .limit(1)
+    if (existing.length > 0) return 'duplicate'
+  }
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const recent = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(auspicePushOpens)
+    .where(and(eq(auspicePushOpens.deviceId, mk), gte(auspicePushOpens.createdAt, cutoff)))
+  if ((recent[0]?.n ?? 0) >= PUSH_OPEN_DAILY_CAP) return 'daily_cap'
+  await db
+    .insert(auspicePushOpens)
+    .values({
+      id: crypto.randomUUID(),
+      deviceId: mk,
+      notificationId: args.notificationId ?? null,
+      slot: PUSH_TYPE_TO_SLOT[args.type] ?? 'daily',
+      date: args.day ?? null,
+      bodyKey: args.bk ?? null,
+      personId: args.personId ?? null,
+      createdAt: new Date().toISOString(),
+    })
+    .onConflictDoNothing({ target: [auspicePushOpens.deviceId, auspicePushOpens.notificationId] })
+  return 'recorded'
+}
+
+/** Internal (Sunday cron): drop push metrics older than the 90-day window. */
+auspiceRoutes.post('/push/purge-events', async (c) => {
+  const key = c.req.header('X-Internal-Key')
+  if (!key || key !== c.env.INTERNAL_KEY) throw new HTTPException(401, { message: 'Unauthorized' })
+  const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
+  await purgePushEvents(c.get('db'), cutoff)
+  return jsonOk(c, { purged: true, cutoff })
+})
+
+/** Delete send/open rows older than `cutoffIso` — exported for the test harness. */
+export async function purgePushEvents(db: AppDb, cutoffIso: string): Promise<void> {
+  await db.delete(auspicePushSends).where(lt(auspicePushSends.createdAt, cutoffIso))
+  await db.delete(auspicePushOpens).where(lt(auspicePushOpens.createdAt, cutoffIso))
+}

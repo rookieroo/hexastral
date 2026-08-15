@@ -83,6 +83,9 @@ export type PurgeScope = {
   userId: string
   /** `user:<id>` plus every `device:<id>` linked to this account. */
   auspiceOwners: string[]
+  /** Raw Auspice device ids linked to this account (sub rows, incl. anonymous
+   *  rows registered before sign-in) — deletes their `auspice_push_subs` PII. */
+  auspiceDeviceIds: string[]
   conversationIds: string[]
   /** Bonds owned by, or pointing at, the deleted user. */
   bondIds: string[]
@@ -176,7 +179,19 @@ export const PURGE_STEPS: readonly PurgeStep[] = [
   { table: faceoraclePushSubs, where: (s) => eq(faceoraclePushSubs.userId, s.userId) },
   { table: userGrowthAttributions, where: (s) => eq(userGrowthAttributions.userId, s.userId) },
   { table: watchCredentials, where: (s) => eq(watchCredentials.userId, s.userId) },
-  { table: auspicePushSubs, where: (s) => eq(auspicePushSubs.portfolioUserId, s.userId) },
+  {
+    // Push subs carry birthDate PII — drop the linked rows AND any anonymous row
+    // the same device registered before sign-in (portfolioUserId null but the
+    // deviceId is in scope via the sub link or the client-supplied deviceId).
+    table: auspicePushSubs,
+    where: (s) =>
+      s.auspiceDeviceIds.length > 0
+        ? or(
+            eq(auspicePushSubs.portfolioUserId, s.userId),
+            inArray(auspicePushSubs.deviceId, s.auspiceDeviceIds)
+          )
+        : eq(auspicePushSubs.portfolioUserId, s.userId),
+  },
   { table: makeifForks, where: (s) => inArray(makeifForks.owner, s.auspiceOwners) },
   { table: timelineReadings, where: (s) => inArray(timelineReadings.owner, s.auspiceOwners) },
   { table: birthdayReminders, where: (s) => inArray(birthdayReminders.owner, s.auspiceOwners) },
@@ -221,12 +236,16 @@ async function resolvePurgeScope(
 
   const deviceOwners = new Set<string>(linkedSubs.map((s) => `device:${s.deviceId}`))
   // Client-supplied deviceId covers the no-push path (birthday / make-if /
-  // timeline rows keyed as device:<id> with no auspice_push_subs link).
+  // timeline rows keyed as device:<id> with no auspice_push_subs link), and the
+  // anonymous sub row the device registered before sign-in.
   if (opts?.deviceId) deviceOwners.add(`device:${opts.deviceId}`)
 
   return {
     userId,
     auspiceOwners: [userOwnerKey(userId), ...deviceOwners],
+    auspiceDeviceIds: [
+      ...new Set([...linkedSubs.map((s) => s.deviceId), ...(opts?.deviceId ? [opts.deviceId] : [])]),
+    ],
     conversationIds: convRows.map((r) => r.id),
     bondIds,
     bondInvitationIds: inviteRows.map((r) => r.id),

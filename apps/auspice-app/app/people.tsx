@@ -6,10 +6,15 @@
  * The user's OWN birth lives in Settings (lib/birth.ts).
  */
 
+import { resolveBirthHour } from '@zhop/astro-core'
 import {
+  BirthClockField,
+  type BirthTimeMode,
+  BirthTimeModeToggle,
   CityPicker,
   type CityRecord,
   DEFAULT_TOP_CITIES,
+  formatHourMinute,
   isCjkScript,
   ShichenField,
   type ShichenIndex,
@@ -26,9 +31,11 @@ import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AuspicePaywallSheet } from '@/components/AuspicePaywallSheet'
+import { BaziPreliminarySheet } from '@/components/BaziPreliminarySheet'
 import { RelationshipSheet } from '@/components/RelationshipSheet'
 import { deleteBirthdayReminder, saveBirthdayReminder } from '@/lib/api'
-import { getAuspiceBirthInfo } from '@/lib/birth'
+import { type AuspiceBirthInfo, getAuspiceBirthInfo } from '@/lib/birth'
+import { auspiceBirthCopy } from '@/lib/birthInfoCopy'
 import { getAuspiceDeviceId } from '@/lib/device'
 import { searchCity } from '@/lib/geocode'
 import { useStrings } from '@/lib/i18n-context'
@@ -64,6 +71,23 @@ function formatMonthDay(raw: string): string {
   return `${digits.slice(0, 2)}-${digits.slice(2)}`
 }
 
+/* ── precise-time helpers (真太阳时 — mirrors the Settings birth form) ─────── */
+function pad2(n: number): string {
+  return String(n).padStart(2, '0')
+}
+function formatMinutes(min: number): string {
+  return `${pad2(Math.floor(min / 60))}:${pad2(min % 60)}`
+}
+/** Clock minutes → 时辰 index 0..11 (子时 covers 23:00–01:00). */
+function clockToShichenIndex(min: number): ShichenIndex {
+  const h = Math.floor(min / 60)
+  return (Math.floor((h + 1) / 2) % 12) as ShichenIndex
+}
+/** 排盘小时 → 时辰 index, for the 真太阳时 before→after preview line. */
+function shichenIndexForHour(hour: number): number {
+  return hour === 23 ? 0 : Math.floor((hour + 1) / 2) % 12
+}
+
 export default function PeopleScreen() {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
@@ -72,7 +96,10 @@ export default function PeopleScreen() {
   const isPro = hasEntitlement(entitlements, 'auspice_pro')
 
   const [people, setPeople] = useState<AuspicePerson[]>([])
-  const [selfDate, setSelfDate] = useState<string | null>(null)
+  // Full self birth info — `selfDate` feeds the Pro 关系 sheet; the complete
+  // object (时辰 etc.) feeds the no-IAP 八字初判.
+  const [selfInfo, setSelfInfo] = useState<AuspiceBirthInfo | null>(null)
+  const selfDate = selfInfo?.solarDate ?? null
 
   // ── add form ──
   const [name, setName] = useState('')
@@ -85,6 +112,12 @@ export default function PeopleScreen() {
   const [timeIndex, setTimeIndex] = useState<ShichenIndex | null>(null)
   const [gender, setGender] = useState<PersonGender | undefined>(undefined)
   const [birthCity, setBirthCity] = useState<CityRecord | null>(null)
+  // 时辰 vs 精确时间 (真太阳时) — the same mutually-exclusive either/or as the
+  // latest Birth form (Settings). Precise mode needs the clock + birth city;
+  // 时辰 mode wipes both so the engine can't keep a stale clock.
+  const [timeMode, setTimeMode] = useState<BirthTimeMode>('shichen')
+  const [clockMinutes, setClockMinutes] = useState<number | null>(null)
+  const [calibrate, setCalibrate] = useState(true)
   const [advanceDays, setAdvanceDays] = useState(1)
   const [remindOnDay, setRemindOnDay] = useState(true)
   // 时辰 + gender + birthplace are 八字-合盘-only — collapsed by default so the
@@ -97,21 +130,71 @@ export default function PeopleScreen() {
 
   const [paywallOpen, setPaywallOpen] = useState(false)
   const [relPerson, setRelPerson] = useState<AuspicePerson | null>(null)
+  // No-IAP phase: the deterministic 八字初判 (free) — stands in for the Yuel 合盘.
+  const [prelimPerson, setPrelimPerson] = useState<AuspicePerson | null>(null)
 
   useEffect(() => {
     getPeople()
       .then(setPeople)
       .catch(() => {})
     getAuspiceBirthInfo()
-      .then((info) => setSelfDate(info?.solarDate ?? null))
+      .then(setSelfInfo)
       .catch(() => {})
   }, [])
+
+  // ── precise-time (真太阳时) — mirrors the Settings birth form ──────────────
+  const preciseCopy = auspiceBirthCopy(locale)
+  /** A precise clock snaps the 时辰 wheel to that clock's window (the chart may
+   *  calibrate further — they can differ for a birth near a boundary). */
+  const handleClock = (min: number) => {
+    setClockMinutes(min)
+    setTimeIndex(clockToShichenIndex(min))
+  }
+  /** 时辰 ↔ 精确时间 are mutually exclusive — leaving precise mode wipes the
+   *  clock + city so the engine cannot keep a stale calibrated hour. */
+  const switchTimeMode = (next: BirthTimeMode) => {
+    setTimeMode(next)
+    if (next === 'shichen') {
+      setClockMinutes(null)
+      setCalibrate(true)
+      setBirthCity(null)
+    }
+  }
+  const clearPreciseFields = () => {
+    setClockMinutes(null)
+    setCalibrate(true)
+    setBirthCity(null)
+  }
+  // Live 真太阳时 before→after preview — same resolver the chart engine uses.
+  let calibrationPreview: string | null = null
+  if (
+    clockMinutes != null &&
+    birthCity?.lng != null &&
+    /^\d{4}$/.test(birthYear) &&
+    MD_RE.test(monthDay)
+  ) {
+    const [mo, d] = monthDay.split('-').map(Number)
+    const resolved = resolveBirthHour({
+      year: Number(birthYear),
+      month: mo ?? 1,
+      day: d ?? 1,
+      clockMinutes,
+      calibrate,
+      longitude: birthCity.lng,
+      timezoneId: birthCity.timezone ?? undefined,
+      city: birthCity.name || undefined,
+    })
+    if (resolved.calibrated) {
+      calibrationPreview = `${formatHourMinute(formatMinutes(clockMinutes), locale)} → ${preciseCopy.trueSolarLabel} ${formatHourMinute(`${pad2(resolved.hour)}:${pad2(resolved.minute)}`, locale)} · ${shichenSummaryLabel(shichenIndexForHour(resolved.hour), locale)}`
+    }
+  }
 
   const canAdd = MD_RE.test(monthDay) && name.trim().length > 0
 
   const add = async () => {
     if (!canAdd) return
     await requestPushPermission()
+    const wasCompat = compatExpanded
     // Sentinel year 0000 when unknown — reminders use month-day; 生肖 stays blank.
     const solarDate = `${/^\d{4}$/.test(birthYear) ? birthYear : '0000'}-${monthDay}`
     const next = await addPerson({
@@ -125,6 +208,10 @@ export default function PeopleScreen() {
       lat: birthCity?.lat,
       lng: birthCity?.lng,
       timezone: birthCity?.timezone ?? null,
+      // Precise mode stores the clock + calibration; 时辰 mode stores neither
+      // (the wheel's timeIndex alone feeds the 时柱).
+      clockMinutes: timeMode === 'precise' ? clockMinutes : null,
+      calibrate: timeMode === 'precise' ? calibrate : null,
       advanceDays,
       remindOnDay,
     })
@@ -137,6 +224,9 @@ export default function PeopleScreen() {
     setTimeIndex(null)
     setGender(undefined)
     setBirthCity(null)
+    setTimeMode('shichen')
+    setClockMinutes(null)
+    setCalibrate(true)
     setAdvanceDays(1)
     setRemindOnDay(true)
     setCompatExpanded(false)
@@ -150,6 +240,9 @@ export default function PeopleScreen() {
     // save fails while server push is active, force a local schedule so the
     // reminder is not silently dropped.
     const added = next[next.length - 1]
+    // No-IAP phase: deliver the toggle's promise immediately — the 八字初判 sheet
+    // (deterministic, free) instead of the not-yet-existing 合盘 report.
+    if (!isIapEnabled() && wasCompat && added) setPrelimPerson(added)
     if (added) {
       void getAuspiceDeviceId()
         .then((deviceId) =>
@@ -185,7 +278,11 @@ export default function PeopleScreen() {
   }
 
   const openRelation = (p: AuspicePerson) => {
-    if (!isIapEnabled()) return
+    // No-IAP phase: no Pro, no Yuel — open the deterministic 八字初判 instead.
+    if (!isIapEnabled()) {
+      setPrelimPerson(p)
+      return
+    }
     if (!selfDate) {
       Alert.alert(t.people.needBirth, t.people.needBirthBody)
       return
@@ -331,34 +428,24 @@ export default function PeopleScreen() {
             </Text>
           ) : null}
 
-          {/* Compatibility (合盘) — a PROMINENT toggle card (was a buried chevron
-              disclosure; users couldn't find the unlock). When flipped on:
-                · the row tints with the accent + reveals the extra fields below,
+          {/* Compatibility (合盘) — borderless so the nested form blends into the
+              outer card (was a bordered sub-card that read as a separate widget).
+              When flipped on:
                 · the year field above flips to REQUIRED (accent label + accent
                   underline) until a 4-digit solar year is filled, and
-                · 时辰 / gender / birthplace appear inline (not in a disclosure).
-              Off → plain birthday reminder, no 八字 demanded. */}
-          <Pressable
-            onPress={() => setCompatExpanded((v) => !v)}
-            accessibilityRole='switch'
-            accessibilityState={{ checked: compatExpanded }}
-            accessibilityLabel={t.people.compatibilityToggle}
-            style={{
-              borderRadius: 12,
-              borderWidth: 0.5,
-              borderColor: compatExpanded ? colors.accent : colors.separator,
-              backgroundColor: compatExpanded ? colors.accentGhost : 'transparent',
-              padding: spacing.md,
-              gap: spacing.sm,
-            }}
-          >
+                · 时辰 / 精确时间 (真太阳时) / gender appear inline — the same
+                  either-or time UI as the latest Settings birth form.
+              Off → plain birthday reminder, no 八字 demanded.
+              IAP OFF: the hook/hint promise the on-device 八字初判 (free), NOT the
+              Yuel 合盘 report — which doesn't exist yet and would be a dead wall. */}
+          <View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
               <View style={{ flex: 1, gap: 2 }}>
                 <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>
                   {t.people.compatibilityToggle}
                 </Text>
                 <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>
-                  {t.people.compatibilityHook}
+                  {isIapEnabled() ? t.people.compatibilityHook : t.people.compatibilityHookFallback}
                 </Text>
               </View>
               <Toggle
@@ -369,48 +456,122 @@ export default function PeopleScreen() {
             </View>
 
             {compatExpanded ? (
-              <View
-                style={{
-                  gap: spacing.lg,
-                  marginTop: spacing.sm,
-                  paddingTop: spacing.sm,
-                  borderTopWidth: 0.5,
-                  borderTopColor: colors.separator,
-                }}
-              >
+              <View style={{ gap: spacing.lg, marginTop: spacing.lg }}>
                 <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
-                  {t.people.compatibilityHint}
+                  {isIapEnabled() ? t.people.compatibilityHint : t.people.compatibilityHintFallback}
                 </Text>
 
-                {/* 时辰 (for 八字 / 合盘) */}
+                {/* 时辰 ↔ 精确时间 — mutually exclusive (matches the Birth form). */}
                 <View style={{ gap: spacing.sm }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={microLabel}>{t.birthShichenLabel}</Text>
-                    <Pressable
-                      onPress={() => setTimeIndex(null)}
-                      hitSlop={6}
-                      accessibilityRole='button'
-                      accessibilityLabel={t.birthShichenUnknown}
-                    >
-                      <Text
-                        style={{
-                          color: timeIndex === null ? colors.accent : colors.dim,
-                          fontSize: 12,
-                          fontWeight: timeIndex === null ? '600' : '400',
-                        }}
-                      >
-                        {t.birthShichenUnknown}
-                      </Text>
-                    </Pressable>
-                  </View>
-                  <ShichenField
-                    value={timeIndex}
-                    onChange={(idx: ShichenIndex) => setTimeIndex(idx)}
+                  <Text style={microLabel}>{t.birthShichenLabel}</Text>
+                  <BirthTimeModeToggle
+                    value={timeMode}
+                    onChange={switchTimeMode}
                     accent={colors.accent}
-                    labels={shichenFieldLabelsForLocale(locale)}
-                    locale={locale}
+                    labels={{
+                      shichen: preciseCopy.modeShichen,
+                      precise: preciseCopy.modePrecise,
+                    }}
                   />
                 </View>
+
+                {timeMode === 'shichen' ? (
+                  <View style={{ gap: spacing.sm }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={microLabel}>{preciseCopy.modeShichen}</Text>
+                      <Pressable
+                        onPress={() => {
+                          setTimeIndex(null)
+                          clearPreciseFields()
+                        }}
+                        hitSlop={6}
+                        accessibilityRole='button'
+                        accessibilityLabel={t.birthShichenUnknown}
+                      >
+                        <Text
+                          style={{
+                            color: timeIndex === null ? colors.accent : colors.dim,
+                            fontSize: 12,
+                            fontWeight: timeIndex === null ? '600' : '400',
+                          }}
+                        >
+                          {t.birthShichenUnknown}
+                        </Text>
+                      </Pressable>
+                    </View>
+                    <ShichenField
+                      value={timeIndex}
+                      onChange={(idx: ShichenIndex) => {
+                        clearPreciseFields()
+                        setTimeIndex(idx)
+                      }}
+                      accent={colors.accent}
+                      labels={shichenFieldLabelsForLocale(locale)}
+                      locale={locale}
+                    />
+                  </View>
+                ) : (
+                  <View style={{ gap: spacing.md }}>
+                    <BirthClockField
+                      value={clockMinutes}
+                      onChange={handleClock}
+                      accent={colors.accent}
+                      locale={locale}
+                      labels={{
+                        placeholder: preciseCopy.preciseTimeLabel,
+                        done: preciseCopy.done,
+                      }}
+                    />
+
+                    {clockMinutes != null ? (
+                      <View style={{ gap: spacing.sm }}>
+                        <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
+                          {preciseCopy.preciseCityLabel}
+                        </Text>
+                        <CityPicker
+                          value={birthCity}
+                          onSelect={setBirthCity}
+                          search={searchCity}
+                          topCities={DEFAULT_TOP_CITIES}
+                          placeholder={preciseCopy.preciseCityPlaceholder}
+                          scrollRef={scrollRef}
+                        />
+
+                        {birthCity?.lng != null ? (
+                          <View style={{ gap: spacing.sm }}>
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                              }}
+                            >
+                              <Text style={{ color: colors.text, fontSize: 15 }}>
+                                {preciseCopy.calibrateLabel}
+                              </Text>
+                              <Toggle
+                                value={calibrate}
+                                onValueChange={setCalibrate}
+                                accent={colors.accent}
+                              />
+                            </View>
+                            {calibrationPreview ? (
+                              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18 }}>
+                                {calibrationPreview}
+                              </Text>
+                            ) : null}
+                          </View>
+                        ) : null}
+                      </View>
+                    ) : null}
+                  </View>
+                )}
 
                 {/* Gender */}
                 <View style={{ gap: spacing.sm }}>
@@ -426,24 +587,9 @@ export default function PeopleScreen() {
                     spacing={spacing}
                   />
                 </View>
-
-                {/* Birthplace — optional; geocode-backed (coords + IANA tz for
-                    真太阳时 correction in the Kindred 合盘). `scrollRef` lets
-                    the picker pin itself above the keyboard on focus. */}
-                <View style={{ gap: spacing.sm }}>
-                  <Text style={microLabel}>{t.birthCityLabel}</Text>
-                  <CityPicker
-                    value={birthCity}
-                    onSelect={setBirthCity}
-                    search={searchCity}
-                    topCities={DEFAULT_TOP_CITIES}
-                    placeholder={t.birthCityPlaceholder}
-                    scrollRef={scrollRef}
-                  />
-                </View>
               </View>
             ) : null}
-          </Pressable>
+          </View>
 
           {/* Advance reminder + day-of */}
           <View style={{ gap: spacing.sm }}>
@@ -517,34 +663,32 @@ export default function PeopleScreen() {
                   <Text style={{ color: colors.text, fontSize: 16 }}>{p.name}</Text>
                   <Text style={{ color: colors.dim, fontSize: 12 }}>{personLine(p)}</Text>
                 </View>
-                {/* 关系合盘 is Pro-gated AND lands in Yuel (not shipped yet) —
-                    hidden entirely while IAP is off so no dead wall is tappable. */}
-                {isIapEnabled() ? (
-                  <Pressable
-                    onPress={() => openRelation(p)}
-                    accessibilityRole='button'
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 3,
-                      paddingHorizontal: spacing.md,
-                      paddingVertical: 6,
-                      borderRadius: 14,
-                      borderWidth: 0.5,
-                      borderColor: colors.accent,
-                      backgroundColor: colors.accentGhost,
-                    }}
-                  >
-                    <Text style={{ color: colors.accent, fontSize: 12, fontWeight: '600' }}>
-                      {t.people.relation}
+                {/* 关系 reading: IAP on → Pro-gated 关系合盘 (Yuel hand-off);
+                    IAP off → free deterministic 八字初判 sheet. Never a dead wall. */}
+                <Pressable
+                  onPress={() => openRelation(p)}
+                  accessibilityRole='button'
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 3,
+                    paddingHorizontal: spacing.md,
+                    paddingVertical: 6,
+                    borderRadius: 14,
+                    borderWidth: 0.5,
+                    borderColor: colors.accent,
+                    backgroundColor: colors.accentGhost,
+                  }}
+                >
+                  <Text style={{ color: colors.accent, fontSize: 12, fontWeight: '600' }}>
+                    {t.people.relation}
+                  </Text>
+                  {isIapEnabled() && !isPro ? (
+                    <Text style={{ color: colors.accent, fontSize: 9, fontWeight: '700' }}>
+                      PRO
                     </Text>
-                    {!isPro ? (
-                      <Text style={{ color: colors.accent, fontSize: 9, fontWeight: '700' }}>
-                        PRO
-                      </Text>
-                    ) : null}
-                  </Pressable>
-                ) : null}
+                  ) : null}
+                </Pressable>
                 <Pressable onPress={() => remove(p.id)} hitSlop={8} accessibilityRole='button'>
                   <Text style={{ color: colors.dim, fontSize: 13 }}>{t.people.delete}</Text>
                 </Pressable>
@@ -564,6 +708,12 @@ export default function PeopleScreen() {
         onClose={() => setRelPerson(null)}
         selfDate={selfDate}
         person={relPerson}
+      />
+      <BaziPreliminarySheet
+        visible={!!prelimPerson && !isIapEnabled()}
+        onClose={() => setPrelimPerson(null)}
+        self={selfInfo}
+        person={prelimPerson}
       />
     </SafeAreaView>
   )

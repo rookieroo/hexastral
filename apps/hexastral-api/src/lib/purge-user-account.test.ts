@@ -205,6 +205,7 @@ describe('purge execution against real SQLite schema', () => {
     const scope: PurgeScope = {
       userId: DELETED,
       auspiceOwners: [`user:${DELETED}`, `device:${DEVICE}`],
+      auspiceDeviceIds: [DEVICE],
       conversationIds: ['conv-1'],
       bondIds: ['bond-own', 'bond-keeper'],
       bondInvitationIds: ['invite-sent', 'invite-received'],
@@ -273,11 +274,24 @@ describe('purge without push subscription (client deviceId)', () => {
       locale: 'en',
       createdAt: now,
     })
+    // Anonymous push sub (portfolioUserId null) registered before sign-in —
+    // carries birthDate PII and must leave with the account.
+    await db.insert(schema.auspicePushSubs).values({
+      deviceId: orphanDevice,
+      token: 'ExponentPushToken[test-orphan]',
+      platform: 'ios',
+      timezoneId: 'Asia/Shanghai',
+      locale: 'zh-Hans',
+      birthDate: '1990-01-01',
+      lastActiveAt: now,
+      createdAt: now,
+    })
 
     const scope: PurgeScope = {
       userId: 'orphan_user',
       // Mirrors resolvePurgeScope when opts.deviceId is set and push subs are empty.
       auspiceOwners: ['user:orphan_user', `device:${orphanDevice}`],
+      auspiceDeviceIds: [orphanDevice],
       conversationIds: [],
       bondIds: [],
       bondInvitationIds: [],
@@ -299,5 +313,7 @@ describe('purge without push subscription (client deviceId)', () => {
     expect(count('users')).toBe(0)
     expect(count('birthday_reminders')).toBe(0)
     expect(count('makeif_forks')).toBe(0)
+    // The anonymous push sub (birthDate PII) left with the account.
+    expect(count('auspice_push_subs')).toBe(0)
   })
 })

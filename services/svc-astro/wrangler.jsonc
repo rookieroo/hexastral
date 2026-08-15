@@ -2,11 +2,12 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "svc-astro",
   "main": "src/index.ts",
+  "workers_dev": false,
   "compatibility_date": "2025-09-03",
   "compatibility_flags": ["nodejs_compat"],
   "minify": true,
 
-  // ⚠️ 重要: 不设置 routes 和 workers_dev
+  // ⚠️ 重要: 不设置 routes；workers_dev=false 防止公开 *.workers.dev 地址
   // 此 Worker 仅通过 hexastral-api 的 Service Binding 内部访问
 
   // Secrets (通过 wrangler secret put 注入，不进代码仓库):

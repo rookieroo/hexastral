@@ -10,7 +10,7 @@ HexAstral is an AI-powered East Asian metaphysics product suite. Built on:
 
 - **Backend**: Cloudflare Workers + Hono + D1 (`hexastral-api` + internal services)
 - **Mobile**: Expo 54 + React Native 0.81 (satellite app matrix — see below)
-- **Web**: Next.js 15 on Cloudflare via OpenNext (`hexastral-web` + LLC site)
+- **Web**: Next.js 16 on Cloudflare via OpenNext (`hexastral-web` + LLC site)
 - **Tooling**: Bun + Turborepo + Biome + Drizzle
 
 Repo overview: [README.md](README.md).
@@ -22,7 +22,7 @@ apps/  (backend)   hexastral-api
        (web)       hexastral-web · useone-tech (LLC corp site)
        (mobile)    auspice-app (Yuun) · kindred-app (Yuel) · feng-app · coin-cast-app
                    · xingqi-app (Syel, post-V1)
-services/          svc-{astro,fortune,notify,geocode,mailer,admin-notify,signal,tail}
+services/          svc-{astro,notify,geocode,mailer,admin-notify,signal,tail,feng,ad-convert}
 packages/          astro-core · hexastral-client · satellite-runtime · scenario-* + others
 docs/              README.md · ROADMAP.md · apps/ · publish/ · setup · decisions/
 ```
@@ -42,11 +42,10 @@ Launch scope: **[docs/ROADMAP.md](docs/ROADMAP.md)** · Doc index: **[docs/READM
 
 | Document | Tool | Purpose |
 |---|---|---|
-| **AGENTS.md** (this file) | All | Navigation, house rules, commands |
-| **[.cursorrules](.cursorrules)** | Cursor | Code constraints for the whole monorepo + mobile satellite patterns |
+| **AGENTS.md** (this file) | All vibe-coding tools (Claude Code, Codex, Cursor, Gemini CLI, Copilot…) | Navigation, house rules, commands |
+| **[.cursorrules](.cursorrules)** | Cursor (and tools that read it) | Code constraints for the whole monorepo + mobile satellite patterns |
 | **[apps/hexastral-api/.cursorrules](apps/hexastral-api/.cursorrules)** | Cursor | API-only: D1, HMAC/Turnstile, service clients |
 | **[services/.cursorrules](services/.cursorrules)** | Cursor | Internal Workers: bindings, no public routes |
-| **[.github/copilot-instructions.md](.github/copilot-instructions.md)** | GitHub Copilot | Inline code-generation bans (Theme, cards, icons) |
 | **docs/ROADMAP.md + docs/decisions/** | Human + AI | Architecture, launch scope, ADRs |
 
 **No per-app or per-package `.cursorrules`.** Satellite apps (`apps/*-app`) and shared packages (`packages/*`) follow root `.cursorrules`; package-specific constraints belong in each package `README.md`.
@@ -69,7 +68,7 @@ Launch scope: **[docs/ROADMAP.md](docs/ROADMAP.md)** · Doc index: **[docs/READM
 - **HMAC v2 for mobile, Turnstile for web.** Don't add a third auth scheme.
 - **`react-native-reanimated` v4 + `expo-haptics`** for new mobile motion — not RN `Animated`.
 - **Always sign requests** via `@zhop/hexastral-client` + a signer; never raw `fetch` to the API.
-- **Do not treat `hexastral-app` as a launch target** — retired omnibus ([archive ADR-0009](docs/archive/decisions/0009-two-layer-matrix.md)).
+- **Do not treat `hexastral-app` as a launch target** — retired omnibus.
 
 ## Common commands
 

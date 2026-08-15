@@ -32,6 +32,15 @@ export interface AuspicePerson {
   lat?: number
   lng?: number
   timezone?: string | null
+  /**
+   * Precise birth clock — minutes since midnight 0..1439. Present only when the
+   * 亲友 was entered in 精确时间 mode (mutually exclusive with the bare 时辰 —
+   * the matching 时辰 is derived from the clock). Null / absent = 时辰-only.
+   */
+  clockMinutes?: number | null
+  /** 真太阳时 calibration for the precise clock; only meaningful with
+   *  `clockMinutes` + a city longitude. `false` = off. */
+  calibrate?: boolean | null
   /** Days before the birthday to remind (default 1; 0 = no advance reminder). */
   advanceDays?: number
   /** Also remind on the day itself (default true). */
@@ -82,6 +91,8 @@ export interface AddPersonInput {
   lat?: number
   lng?: number
   timezone?: string | null
+  clockMinutes?: number | null
+  calibrate?: boolean | null
   advanceDays?: number
   remindOnDay?: boolean
   lunarIsLeap?: boolean
@@ -107,6 +118,8 @@ export async function addPerson(input: AddPersonInput): Promise<AuspicePerson[]>
       lat: input.lat,
       lng: input.lng,
       timezone: input.timezone,
+      clockMinutes: input.clockMinutes ?? null,
+      calibrate: input.calibrate ?? null,
       advanceDays: input.advanceDays ?? 1,
       remindOnDay: input.remindOnDay ?? true,
     },

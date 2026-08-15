@@ -21,6 +21,7 @@ import { type AuspiceExplainResult, fetchAuspiceExplain } from '@/lib/api'
 import { ganzhiWikiLineEn } from '@/lib/ganzhi-pinyin'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
+import { isIapEnabled } from '@/lib/iap-enabled'
 import { useImageShare } from '@/lib/imageShare'
 import { dayShareUrl, shareTaglineFor } from '@/lib/share'
 
@@ -31,6 +32,9 @@ interface SheetLabels {
   failed: string
   pro: string
   unlock: string
+  /** No-IAP builds: the deterministic fallback is labeled plainly — there is no
+   *  Pro to sell, so the "Pro 专享" upsell line would dead-end into nothing. */
+  basic: string
 }
 
 const LABELS: Record<Locale, SheetLabels> = {
@@ -41,6 +45,7 @@ const LABELS: Record<Locale, SheetLabels> = {
     failed: '解读失败',
     pro: '深度解读为 Pro 专享 · 下方为基础说明',
     unlock: '解锁深度解读',
+    basic: '基础说明',
   },
   'zh-Hant': {
     title: '深度解讀',
@@ -49,6 +54,7 @@ const LABELS: Record<Locale, SheetLabels> = {
     failed: '解讀失敗',
     pro: '深度解讀為 Pro 專享 · 下方為基礎說明',
     unlock: '解鎖深度解讀',
+    basic: '基礎說明',
   },
   ja: {
     title: '詳しい解説',
@@ -57,6 +63,7 @@ const LABELS: Record<Locale, SheetLabels> = {
     failed: '取得に失敗しました',
     pro: '詳しい解説は Pro 限定 · 以下は基本説明',
     unlock: '詳しい解説を見る',
+    basic: '基本の説明',
   },
   en: {
     title: 'Deep reading',
@@ -65,6 +72,7 @@ const LABELS: Record<Locale, SheetLabels> = {
     failed: 'Failed to load',
     pro: 'The deep reading is Pro-only — below is the basics',
     unlock: 'Unlock the deep reading',
+    basic: 'Basics',
   },
 }
 
@@ -138,14 +146,22 @@ export function ExplainSheet({
               {result.explanation}
             </Text>
             {result.upsell ? (
-              <Text style={{ color: colors.accent, fontSize: 13, marginTop: spacing.md }}>
-                {L.pro}
+              <Text
+                style={{
+                  // IAP off → the "Pro 专享" label would advertise a door that
+                  // doesn't exist; render the plain 基础说明 label instead.
+                  color: isIapEnabled() ? colors.accent : colors.secondary,
+                  fontSize: 13,
+                  marginTop: spacing.md,
+                }}
+              >
+                {isIapEnabled() ? L.pro : L.basic}
               </Text>
             ) : null}
           </ScrollView>
         ) : null}
 
-        {result && !isPro && onUpgrade ? (
+        {result && !isPro && onUpgrade && isIapEnabled() ? (
           <Button variant='primary' onPress={onUpgrade}>
             {L.unlock}
           </Button>

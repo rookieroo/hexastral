@@ -16,7 +16,6 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.hexastral.yuun",
-      "deploymentTarget": "15.1",
       "usesAppleSignIn": true,
       "infoPlist": {
         "CFBundleDisplayName": "Yuun",
@@ -148,6 +147,14 @@
       "expo-router",
       "expo-dev-client",
       "expo-notifications",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.1"
+          }
+        }
+      ],
       "@bacons/apple-targets",
       "./plugins/withGoogleModularHeaders.js",
       "./plugins/withIosPodDeploymentTarget.cjs",

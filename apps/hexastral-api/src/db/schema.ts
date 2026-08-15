@@ -1534,12 +1534,86 @@ export const auspicePushSubs = sqliteTable(
      * Null → derive from locale (en→modern, else traditional).
      */
     yijiMode: text('yiji_mode'),
+    /**
+     * Hash of the last rendered daily push (title+body). The no-verbatim-repeat
+     * guard compares against it at render time and walks the deterministic
+     * variant space when the body would repeat. Null = never sent.
+     */
+    lastBodyKey: text('last_body_key'),
     lastActiveAt: text('last_active_at').notNull(),
     createdAt: text('created_at')
       .notNull()
       .$defaultFn(() => new Date().toISOString()),
   },
   (t) => [index('auspice_push_subs_tz_idx').on(t.timezoneId)]
+)
+
+/**
+ * 推送发送记录 (Auspice push metrics) — one row per device per day per slot.
+ * Written by `GET /push/targets` at render time (status 'sent'), then updated
+ * by svc-notify via `POST /push/outcomes` once Expo receipts come back
+ * (delivered / error). The 唯一约束 makes the render-time write idempotent
+ * (cron retries / smoke calls can't double-count).
+ */
+export const auspicePushSends = sqliteTable(
+  'auspice_push_sends',
+  {
+    id: text('id').primaryKey(),
+    deviceId: text('device_id').notNull(),
+    /** daily | evening | timeline | birthday | relationship */
+    slot: text('slot').notNull(),
+    /** The content date the cron passed (device-local). */
+    date: text('date').notNull(),
+    /** Hash of title+body (daily/evening) — joins opens to the exact render. */
+    bodyKey: text('body_key'),
+    /** `${verbs}:${withClash?1:0}:${extra}` — the chosen variation tuple. */
+    variant: text('variant'),
+    /** Expo push ticket id, backfilled by svc-notify outcomes. */
+    ticketId: text('ticket_id'),
+    /** sent | delivered | error */
+    status: text('status').notNull().default('sent'),
+    locale: text('locale'),
+    isPro: integer('is_pro', { mode: 'boolean' }).notNull().default(false),
+    timezoneId: text('timezone_id'),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    updatedAt: text('updated_at'),
+  },
+  (t) => [
+    unique('auspice_push_sends_uniq').on(t.deviceId, t.date, t.slot),
+    index('auspice_push_sends_date_idx').on(t.date, t.slot),
+  ]
+)
+
+/**
+ * 推送打开记录 (Auspice push metrics) — reported by the app on notification
+ * tap (`POST /push/open`). `notificationId` makes retries / cold-start drains
+ * idempotent via the 唯一约束. Advisory-only: deviceId is client-reported, so
+ * this table feeds observation/A-B, never auth or billing.
+ */
+export const auspicePushOpens = sqliteTable(
+  'auspice_push_opens',
+  {
+    id: text('id').primaryKey(),
+    deviceId: text('device_id').notNull(),
+    /** Client notification identifier — the idempotency key. */
+    notificationId: text('notification_id'),
+    /** daily | evening | timeline | birthday | relationship */
+    slot: text('slot').notNull(),
+    /** The push's `day` payload (null for birthday/relationship without one). */
+    date: text('date'),
+    /** bodyKey echoed from the push data — joins to auspice_push_sends. */
+    bodyKey: text('body_key'),
+    personId: text('person_id'),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    unique('auspice_push_opens_uniq').on(t.deviceId, t.notificationId),
+    index('auspice_push_opens_date_idx').on(t.date, t.slot),
+  ]
 )
 
 /** Yuun Watch bearer credentials — scoped read tokens for watch bootstrap sync. */

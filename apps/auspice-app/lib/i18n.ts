@@ -522,6 +522,10 @@ export interface Strings {
     /** Long-form hint that appears only AFTER the Switch is on, before the extra
      *  fields. Explains the two-person report + Yuel hand-off in detail. */
     compatibilityHint: string
+    /** No-IAP phase variants — the toggle computes a free deterministic 八字初判
+     *  on-device instead of promising the (not-yet-existing) Yuel 合盘 report. */
+    compatibilityHookFallback: string
+    compatibilityHintFallback: string
     /** Shown inside the expanded 合盘 section when the solar birth year is missing —
      *  合盘 silently can't compute without it, so make the requirement explicit. */
     compatYearRequired: string
@@ -1020,6 +1024,9 @@ const zhHans: Strings = {
     compatibilityHook: '打开后录入八字，解锁你们的关系合盘',
     compatibilityHint:
       '填写性别、时辰与出生地后，将解锁你们两人的关系合盘报告，可在 Yuel App 中查看。',
+    compatibilityHookFallback: '打开后录入八字，看你们相契的初判',
+    compatibilityHintFallback:
+      '填写性别、时辰后，将依据两人的八字推算一份相契初判（文化参照，非预测）。完整合盘将在后续版本开放。',
     compatYearRequired: '关系合盘需要完整的阳历出生年份 —— 请在上方「出生年份」填写并确认。',
   },
   watchWidgets: '桌面 · 锁屏 · Watch',
@@ -1468,6 +1475,9 @@ const zhHant: Strings = {
     compatibilityHook: '打開後錄入八字，解鎖你們的關係合盤',
     compatibilityHint:
       '填寫性別、時辰與出生地後，將解鎖你們兩人的關係合盤報告，可在 Yuel App 中查看。',
+    compatibilityHookFallback: '打開後錄入八字，看你們相契的初判',
+    compatibilityHintFallback:
+      '填寫性別、時辰後，將依據兩人的八字推算一份相契初判（文化參照，非預測）。完整合盤將在後續版本開放。',
     compatYearRequired: '關係合盤需要完整的陽曆出生年份 —— 請在上方「出生年份」填寫並確認。',
   },
   watchWidgets: '桌面 · 鎖屏 · Watch',
@@ -1947,6 +1957,9 @@ const ja: Strings = {
     compatibilityHook: 'オンにして八字を入力すれば、二人の相性が見えます',
     compatibilityHint:
       '性別・時辰・出生地を入力すると、ふたりの相性レポートが解放されます（Yuel アプリで閲覧）。',
+    compatibilityHookFallback: 'オンにして八字を入力すると、相性の初判が見えます',
+    compatibilityHintFallback:
+      '性別・時辰を入力すると、ふたりの八字から相性の初判を算出します（文化参照であり、予言ではありません）。完全なレポートは今後のバージョンで。',
     compatYearRequired:
       '相性鑑定には西暦の出生年が必要です —— 上の「生まれ年」にご記入・ご確認ください。',
   },
@@ -2438,6 +2451,9 @@ const en: Strings = {
     compatibilityHook: 'Switch on + add their 八字 to unlock your compatibility report',
     compatibilityHint:
       'Add gender, birth hour and birthplace to unlock a relationship report for the two of you — viewable in the Yuel app.',
+    compatibilityHookFallback: 'Switch on + add their 八字 for a first-glance reading',
+    compatibilityHintFallback:
+      'Add their gender and birth hour to compute a first-glance reading from both 八字 (cultural reference, not a prediction). The full report comes in a later update.',
     compatYearRequired:
       'Compatibility needs the full solar birth year — fill in and confirm “Birth year” above.',
   },
