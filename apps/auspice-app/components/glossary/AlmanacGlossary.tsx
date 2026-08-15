@@ -108,26 +108,26 @@ export function AlmanacGlossary({ locale }: { locale: Locale }) {
 
       {/* 择日宜忌释义 — 维基百科「黄历」条目 + 常用动词补充（四语：
           原文 + 拼音/读音 + 一句话白话解释）。 */}
-        <View style={{ gap: spacing.md }}>
-          {YIJI_MEANING_GROUPS.map((g) => (
-            <View key={g.title} style={{ gap: 6 }}>
-              <Text style={micro}>{g.title}</Text>
-              {g.terms.map((term) => {
-                const meaning = yijiMeaning(term, locale)
-                return meaning ? (
-                  <View key={term} style={{ gap: 1 }}>
-                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
-                      {locale === 'zh-Hant' ? toHant(term) : term}
-                    </Text>
-                    <Text style={{ color: colors.secondary, fontSize: 12, lineHeight: 18 }}>
-                      {meaning}
-                    </Text>
-                  </View>
-                ) : null
-              })}
-            </View>
-          ))}
-        </View>
+      <View style={{ gap: spacing.md }}>
+        {YIJI_MEANING_GROUPS.map((g) => (
+          <View key={g.title} style={{ gap: 6 }}>
+            <Text style={micro}>{g.title}</Text>
+            {g.terms.map((term) => {
+              const meaning = yijiMeaning(term, locale)
+              return meaning ? (
+                <View key={term} style={{ gap: 1 }}>
+                  <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>
+                    {locale === 'zh-Hant' ? toHant(term) : term}
+                  </Text>
+                  <Text style={{ color: colors.secondary, fontSize: 12, lineHeight: 18 }}>
+                    {meaning}
+                  </Text>
+                </View>
+              ) : null
+            })}
+          </View>
+        ))}
+      </View>
     </View>
   )
 }

@@ -118,6 +118,13 @@ App Store 的 Lifestyle / Education 类目比拼的不是工具效率，而是**
   - **light/dark 双色板**：`almanacPalette(isDark)` — 亮色宣纸（#f6f1e6/墨
     #2b2118/赭金 #9a6b1f/墨棕 #4a3324），暗色墨纸（#171310/米 #e9ddc8/
     金 #d9b36a/棕 #cdbba7）；header 与页面背景同步跟随。
+  - **术语国际卡（2026-08 七次修订）**：88 条宜忌动词补 en/ja 一句话释义 +
+    拼音/读音（`TERM_PINYIN/EN/JA` 三表，`yijiMeaning` 四语返回：en=拼音+英文，
+    ja=读音+日文；繁体输入经 `toHans` 归一）。方法：Wikipedia en/ja 无术语级
+    条目 →「原文 + 拼音 + 一句话白话解释」自写通书口径；写不进白话的保留原文
+    （文化参考）。文化 hub 释义列表去 zh 门，四语可见；en/ja 首页宜忌点击
+    解释层随之生效。Home/Lock/Watch 大组件预览跟随黄历模式（WidgetCard
+    AlmanacLargePreview 纸页预览）。
   - **全术语可解释层（2026-08 四稿）**：核心诉求「不懂干支五行也能看懂」——
     Hero 纸页每个行话（干支日/建除/值神/星宿/农历/岁次/纳音/冲煞/彭祖）与
     信息行值均可点击，弹出白话解释；`lib/culture/hero-terms.ts` 11 词四语

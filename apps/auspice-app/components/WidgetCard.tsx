@@ -9,12 +9,17 @@
 import { useTheme } from '@zhop/core-ui'
 import { useMemo } from 'react'
 import { Text, View } from 'react-native'
+import { almanacCopy } from '@/lib/almanac-copy'
 import type { AuspiceDay, AuspicePersonalization } from '@/lib/api'
 import { localizeSolarTermCompact } from '@/lib/culture/names'
+import { nayinOf } from '@/lib/huangli-day'
 import { getStrings, type Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
+import { useVoiceMode } from '@/lib/voice-mode-context'
 import { WIDGET_SPEC } from '@/lib/widget-spec'
+import { resolveRegisterSync } from '@/lib/yiji-display-mode'
 import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
+import { almanacPalette } from './AlmanacPage'
 import {
   buildDailyCardModel,
   compactChrome,
@@ -106,8 +111,11 @@ export function WidgetCard({
     [date, day, personalization, strings, locale]
   )
   const sub = { model, phaseOverride, chrome, locale, strings }
+  const { classical } = useVoiceMode()
   const body =
-    variant === 'android' ? (
+    classical && size === 'large' ? (
+      <AlmanacLargePreview day={day} model={model} locale={locale} />
+    ) : variant === 'android' ? (
       size === 'medium' ? (
         <AndroidMediumWidget {...sub} />
       ) : size === 'large' ? (
@@ -665,6 +673,110 @@ function LargeWidget({ model, phaseOverride, chrome, locale, strings }: SubProps
           </Text>
         </View>
       ) : null}
+    </View>
+  )
+}
+
+/** 黄历模式大组件预览 — 跟随开关，与原生黄历 large 同构（纸页 + 大日期 +
+ *  竖排行话（en 横排）+ 全宽宜忌 + 于你）。 */
+function AlmanacLargePreview({
+  day,
+  model,
+  locale,
+}: {
+  day: AuspiceDay
+  model: DailyCardModel
+  locale: Locale
+}) {
+  const { mode } = useTheme()
+  const P = almanacPalette(mode === 'dark')
+  const C = almanacCopy(locale)
+  const register = resolveRegisterSync(locale, true)
+  const d = new Date(`${model.date}T00:00:00`)
+  const dayBranch = model.ganZhi[1] ?? ''
+  const yiN = 6
+  const fit = model.fitLabel
+  const fitSummary = model.fitSummary
+  return (
+    <View style={{ flex: 1, padding: 10, gap: 4 }}>
+      <View
+        style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}
+      >
+        <Text style={{ color: P.ink, fontSize: 10 }} numberOfLines={1}>
+          {C.gregorian(d)}
+        </Text>
+        <Text style={{ color: P.dim, fontSize: 9, letterSpacing: 1 }} numberOfLines={1}>
+          {C.weekday(d)}
+        </Text>
+      </View>
+      {C.vertical ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flex: 1,
+          }}
+        >
+          <View style={{ flexDirection: 'row', gap: 4 }}>
+            <MiniV text={`${model.ganZhi}${C.ganZhiSuffix}`} P={P} />
+            <MiniV text={`${model.officer ?? ''}${C.officerDaySuffix}`} P={P} />
+          </View>
+          <Text
+            style={{
+              color: P.ink,
+              fontSize: 56,
+              lineHeight: 62,
+              fontWeight: '700',
+            }}
+          >
+            {d.getDate()}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 4 }}>
+            <MiniV text={model.lunarMonthDay} P={P} />
+            <MiniV text={model.ganzhiYear ?? ''} P={P} />
+          </View>
+        </View>
+      ) : (
+        <View style={{ alignItems: 'center', flex: 1, justifyContent: 'center', gap: 2 }}>
+          <Text style={{ color: P.ink, fontSize: 56, lineHeight: 62, fontWeight: '700' }}>
+            {d.getDate()}
+          </Text>
+          <Text style={{ color: P.dim, fontSize: 10 }} numberOfLines={1}>
+            {model.ganZhi} · {model.lunarMonthDay}
+          </Text>
+        </View>
+      )}
+      <Text style={{ color: P.dim, fontSize: 9, textAlign: 'center' }} numberOfLines={1}>
+        {day.clash ? C.clashText(day.clash.clashAnimal, day.evilDirection) : ''}
+        {day.pengZu ? ` · ${C.pengzuText(day.pengZu.stem, day.pengZu.branch)}` : ''}
+        {!day.clash && !day.pengZu ? `· ${nayinOf(day.ganZhi)}` : ''}
+      </Text>
+      <View style={{ height: 0.5, backgroundColor: P.ink, marginVertical: 3 }} />
+      <Text style={{ color: P.ink, fontSize: 11, lineHeight: 16 }} numberOfLines={2}>
+        宜 {compactVerbs(model.goodForRaw, yiN, locale, register)}
+      </Text>
+      <Text style={{ color: P.dim, fontSize: 11, lineHeight: 16 }} numberOfLines={2}>
+        忌 {compactVerbs(model.avoidRaw, yiN, locale, register)}
+      </Text>
+      {fit || fitSummary ? (
+        <Text style={{ color: P.dim, fontSize: 10, marginTop: 2 }} numberOfLines={2}>
+          {fit ? `${fit} · ` : ''}
+          {fitSummary ?? ''}
+        </Text>
+      ) : null}
+    </View>
+  )
+}
+
+function MiniV({ text, P }: { text: string; P: ReturnType<typeof almanacPalette> }) {
+  return (
+    <View>
+      {text.split('').map((c, i) => (
+        <Text key={`${c}-${i}`} style={{ color: P.ink, fontSize: 9, lineHeight: 11 }}>
+          {c}
+        </Text>
+      ))}
     </View>
   )
 }
