@@ -27,3 +27,9 @@ ASC 粘贴指南（Yuun 1.0 首发，no-IAP 版）
 ASC 操作路径（每 locale 一次）：
   App → iOS App 版本 1.0 → App Store → 语言旁 "+" 或编辑对应语言 →
   逐字段粘贴上述文件内容 → Save。
+
+换行支持（重要）：
+  Description / What's New     → 多行 OK（用 -description.txt 的换行版；
+                                 若粘贴后换行消失，用 -description-FLAT.txt）
+  Name / Subtitle / Keywords /
+  Promotional Text             → 单行字段，禁止换行（对应 txt 本身已是单行）
