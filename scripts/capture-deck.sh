@@ -34,9 +34,13 @@ LOCALE="$3"
 APP_PATH="${APP_PATH:-apps/auspice-app/ios/build/Build/Products/Release-iphonesimulator/Yuun.app}"
 BUNDLE_ID="com.hexastral.yuun"
 OUT_ROOT="${OUT_ROOT:-docs/publish/screenshots/yuun/$SIZE_DIR/$LOCALE}"
-REGION_MAP="en:en_US zh-Hans:zh_CN zh-Hant:zh_TW ja:ja_JP"
-REGION=$(for p in $REGION_MAP; do [ "${p%%:*}" = "$LOCALE" ] && echo "${p##*:}"; done)
-[ -n "$REGION" ] || { echo "unknown locale $LOCALE" >&2; exit 1; }
+case "$LOCALE" in
+  en) REGION="en_US" ;;
+  zh-Hans) REGION="zh_CN" ;;
+  zh-Hant) REGION="zh_TW" ;;
+  ja) REGION="ja_JP" ;;
+  *) echo "unknown locale $LOCALE" >&2; exit 1 ;;
+esac
 
 # 大组件变体：zh → classical；en/ja → contemporary。
 case "$LOCALE" in
@@ -80,6 +84,29 @@ function run(argv) {
     $.NSThread.sleepForTimeInterval(0.15)
   }
   return 'scroll'
+}
+JSEOF
+[ -f /tmp/drag.js ] || cat > /tmp/drag.js <<'JSEOF'
+ObjC.import('CoreGraphics')
+ObjC.import('AppKit')
+function run(argv) {
+  const x1 = parseFloat(argv[0]); const y1 = parseFloat(argv[1])
+  const x2 = parseFloat(argv[2]); const y2 = parseFloat(argv[3])
+  const dur = parseFloat(argv[4] || '0.6')
+  const apps = $.NSRunningApplication.runningApplicationsWithBundleIdentifier('com.apple.iphonesimulator')
+  if (apps.count > 0) apps.objectAtIndex(0).activateWithOptions($.NSApplicationActivateIgnoringOtherApps)
+  $.NSThread.sleepForTimeInterval(0.4)
+  const p1 = $.CGPointMake(x1, y1)
+  $.CGEventPost($.kCGHIDEventTap, $.CGEventCreateMouseEvent($(), $.kCGEventLeftMouseDown, p1, $.kCGMouseButtonLeft))
+  const steps = 12
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps
+    const m = $.CGEventCreateMouseEvent($(), $.kCGEventLeftMouseDragged, $.CGPointMake(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t), $.kCGMouseButtonLeft)
+    $.CGEventPost($.kCGHIDEventTap, m)
+    $.NSThread.sleepForTimeInterval(dur / steps)
+  }
+  $.CGEventPost($.kCGHIDEventTap, $.CGEventCreateMouseEvent($(), $.kCGEventLeftMouseUp, $.CGPointMake(x2, y2), $.kCGMouseButtonLeft))
+  return 'drag'
 }
 JSEOF
 
@@ -186,7 +213,7 @@ xcrun simctl io "$UDID" screenshot "$OUT_ROOT/06-settings.png"
 echo "== 07 lock screen =="
 seed classical
 sync_widget_payload
-read -r -p "Press ⌘L in the Simulator to lock, then press Enter here... " _
+read -r -p "Press ⌘L in the Simulator to lock, then press Enter here... " _ || true
 xcrun simctl io "$UDID" screenshot "$OUT_ROOT/07-lock.png"
 
 echo "done -> $OUT_ROOT"
