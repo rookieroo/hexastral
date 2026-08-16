@@ -54,41 +54,51 @@ First **3** are what 90% of viewers see in the carousel — front-load the value
 
 ---
 
-## 1. Auspice — Chinese Calendar (HERO deck, 6 shots)
+## 1. Auspice / Yuun — Chinese Calendar (HERO deck, 8 shots)
 
 Background tint: warm paper / ink (almanac register, not mystical).
 Positioning: an honest **Chinese almanac (黄历)** with daily yi/ji — disclosed,
-not hidden behind a generic calendar frame. The Ba Zi timeline + personal chart
-deep-read stay **mid-deck (S5–S6)** so the carousel's first impression is
-"today's almanac + For you," protecting the 4.3(b) posture.
-S6 is the signed-in personal 命书 (八字 + 紫微 chaptered reading) — included so the
-deck **discloses the primary Pro feature (Guideline 2.3.1)** without ever leading
-with it. Same honest register as S5: "a study, not a prediction."
+not hidden behind a generic calendar frame. The deck opens on the 黄历首页
+(new-install default — 黄历模式 ON for all locales), shows the home-screen
+widget family, then the modern mode for contrast, then culture depth /
+utilities / trust / lock screen / lifetime. Same honest register throughout:
+"cultural reference, not prediction."
+
+Capture runbook: `scripts/capture-deck.sh <device> <size-dir> <locale>`
+(see script header for prereqs — springboard + lock-screen widgets are arranged
+once per device). Output naming: `01-almanac-home … 08-lifetime`.
 
 | # | Screen | Visual notes |
 | --- | --- | --- |
-| S1 | **Today home** (yi/ji first) | Week strip + 宜忌 chips + For you card (verdict visible). **`ja` variant must show the 六曜 badge** above 宜忌. Title-only header; **header Settings icon** drill-in (no bottom tab bar). |
-| S2 | **Calendar expanded inline on Today** | Month grid expanded in place under the week strip: 阳历 + 农历 + 节气 + 节日; a festival day highlighted; collapse chevron visible. |
-| S3 | 24 solar terms (Settings → Library → `/glossary`) | Glossary or festival detail — one 节气 expanded into food/poetry/wellness depth. |
-| S4 | Family events | Member list with an upcoming 农历 birthday + reminder toggle. The diaspora hook. |
-| S5 | Ba Zi life timeline (Pro) | The 大运/流年 git-graph with one what-if branch. Caption MUST carry "reflection, not prediction." |
-| S6 | Personal chart deep-read (Pro) | The 宣纸 "命书" report — identity line + chaptered reading (who you are / current period / …), one 八字+紫微 chart visible. Cultural/reflective register; NO mystic motifs. Caption MUST carry "a study, not a prediction." |
+| 01 | **黄历首页 (classical home)** | Paper sheet + 干支 + 宜忌 + 节气 + 于你判词（朱笔圈字）。zh-Hans/zh-Hant 竖排原文；ja 竖排白话；en 横排白话。 |
+| 02 | **副一屏三尺寸组件 (springboard page 2)** | Small + Medium + Large 三个 Yuun 组件同屏。**大组件变体规则**：zh-Hans/zh-Hant → 黄历版 (almanac large, 四柱/建除/纳音)；en/ja → 现代版 (modern large)。中/小尺寸不随模式变（设计如此）。 |
+| 03 | **现代首页 (modern home)** | Contemporary home（月历展开与否自选）——与 01 构成双模式叙事。 |
+| 04 | **文化深读** | `/festival/jieqi-chushu` 处暑编辑部排版：候应/诗/养生。 |
+| 05 | **择日** | Event picker（事件类别 + 专业择时参考）。 |
+| 06 | **设置与提醒** | 滚动到 Daily reminder 推送开关 + Classic modern 开关 + 隐私/条款入口。 |
+| 07 | **锁屏** | 真实锁屏 + Yuun 锁屏组件（accessory circular/rectangular）。 |
+| 08 | **人生时间轴 (Life timeline)** | 大运/流年节点 + 当月卡片。**no-IAP 首发**：只截免费可见内容，不得出现 Pro 深读/paywall（2.3.1）。 |
 
-**Post-v1 (not in default review deck):** Widget + Watch — see [widget-watch-scope.md](../apps/yuun/widget-watch-scope.md). Use Custom Product Pages if needed before native ship.
+Widget large-variant rule (founder decision 2026-08): 中文适合黄历版大组件、
+非中文适合现代版大组件 —— `capture-deck.sh` 内 `WIDGET_MODE` 按 locale 分流。
+
+**Watch complications:** 不在默认 review deck（第三方只能填系统表盘槽位，
+App 内「桌面·锁屏·Watch」页的槽位预览即可）；真表盘图留待真机拍摄或 CPP。
 
 **Captions**
 
 | # | en-US | zh-Hans | zh-Hant | ja |
 | --- | --- | --- | --- | --- |
-| S1 | Today's almanac | 今日黄历 · 宜忌 | 今日黃曆 · 宜忌 | 今日の黄暦 · 宜忌 |
-| S1 sub | Yi/ji + your personal layer | 宜忌 · 对你而言 | 宜忌 · 對你而言 | 宜忌 · あなたへ |
-| S2 | Browse any month | 月历 · 纵览全年 | 月曆 · 縱覽全年 | カレンダー · 月を見渡す |
-| S3 | The 24 solar terms, in depth | 二十四节气，深读全年 | 二十四節氣，深讀全年 | 二十四節気を、深く読む |
-| S4 | Never miss a lunar birthday | 再不错过家人的农历生日 | 再不錯過家人的農曆生日 | 家族の旧暦の誕生日を逃さない |
-| S5 | Your life as a Ba Zi timeline | 把人生看成一条八字时间轴 | 把人生看成一條八字時間軸 | 人生を、八字のタイムラインで |
-| S5 sub | A reflection — not a prediction | 供观照，不作预测 | 供觀照，不作預測 | 予測ではなく、内省のために |
-| S6 | Your chart, read in depth | 你的命盘，深读一层 | 你的命盤，深讀一層 | 命式を、深く読む |
-| S6 sub | Ba Zi & Zi Wei — a study, not a prediction | 八字 · 紫微——研读，不作预测 | 八字 · 紫微——研讀，不作預測 | 四柱推命・紫微斗数 —— 予測ではなく内省 |
+| 01 | Today's almanac | 今日黄历 · 宜忌 | 今日黃曆 · 宜忌 | 今日の黄暦 · 宜忌 |
+| 01 sub | Yi/ji + your personal layer | 宜忌 · 对你而言 | 宜忌 · 對你而言 | 宜忌 · あなたへ |
+| 02 | The almanac, at a glance | 黄历，三种尺寸 | 黃曆，三種尺寸 | 黄暦、3サイズで |
+| 03 | Two ways to read today | 今日，两种读法 | 今日，兩種讀法 | 今日を、ふたつの読み方で |
+| 04 | The 24 solar terms, in depth | 二十四节气，深读全年 | 二十四節氣，深讀全年 | 二十四節気を、深く読む |
+| 05 | Find your date | 择日 · 选吉日 | 擇日 · 選吉日 | 吉日を選ぶ |
+| 06 | A daily almanac, on your terms | 每日宜忌，提醒到家 | 每日宜忌，提醒到家 | 毎日の宜忌を、リマインドで |
+| 07 | On your lock screen | 锁屏即黄历 | 鎖屏即黃曆 | ロック画面に黄暦 |
+| 08 | Your life as a Ba Zi timeline | 把人生看成一条八字时间轴 | 把人生看成一條八字時間軸 | 人生を、八字のタイムラインで |
+| 08 sub | A reflection — not a prediction | 供观照，不作预测 | 供觀照，不作預測 | 予測ではなく、内省のために |
 
 ---
 
