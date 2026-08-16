@@ -48,7 +48,8 @@
     },
     "production": {
       "ios": {
-        "autoIncrement": true
+        "autoIncrement": true,
+        "scheme": "Yuun"
       },
       "android": {
         "autoIncrement": true,
