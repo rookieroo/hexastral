@@ -136,15 +136,7 @@ ensure_normal_face() {
     esac
   done
 }
-tap_face() { # 点按屏幕中心，激活滑动后的表盘
-  local G NX NY
-  G=$(geo)
-  read -r GX GY GW GH <<< "$(python3 -c "p = '''$G'''.split(); print(p[0], p[1], p[2], p[3])")"
-  NX=$(python3 -c "print(int($GX + 0.5*$GW))")
-  NY=$(python3 -c "print(int($GY + 0.5*$GH))")
-  osascript -l JavaScript /tmp/tap.js "$NX" "$NY"
-  sleep 1.5
-}
+activate_face() { press_crown; sleep 1.5; }  # 按一次表冠激活滑动后的表盘
 swipe_face_left() { # 表盘切换：起点避开组件区域（下方）+ 快速短滑
   local G NX1 NY1 NX2
   G=$(geo)
@@ -160,10 +152,10 @@ capture_face() {
     xcrun simctl io "$WUDID" screenshot "$OUT_ROOT/$p.png"
     TXT=$(ocr_of "$OUT_ROOT/$p.png")
     case "$TXT" in
-      *"Edit"*|*"编辑"*|*"編輯"*|*"編集"*) press_crown; swipe_face_left; tap_face ;;
+      *"Edit"*|*"编辑"*|*"編輯"*|*"編集"*) press_crown; swipe_face_left; activate_face ;;
       *)
         if [ -n "$prev" ] && [ "$(md5 -q "$OUT_ROOT/$prev.png")" = "$(md5 -q "$OUT_ROOT/$p.png")" ]; then
-          swipe_face_left; tap_face
+          swipe_face_left; activate_face
           continue
         fi
         return 0 ;;
@@ -173,10 +165,10 @@ capture_face() {
 ensure_normal_face
 capture_face face1 ""
 swipe_face_left
-tap_face
+activate_face
 capture_face face2 face1
 swipe_face_left
-tap_face
+activate_face
 capture_face face3 face2
 
 # ── app tabs（FACE_ONLY=1 时跳过）──
