@@ -163,11 +163,12 @@ Subtitle / 商店 Name **不在**此页全局填 → 在各语言本地化填。
 
 - [ ] 价格：**Free (0)**  
 - [ ] 含 App 内购买：是（有订阅 / IAP）  
-- [ ] Availability：默认 **全部地区**，或至少 US · CN · JP · TW · HK · SG · MY · TH  
+- [ ] Availability：默认 **除中国大陆外的全部地区**，或至少 US · JP · TW · HK · SG · MY · TH  
 - [ ] Pre-order：**关**  
 - [ ] Yuun / Yuel 各保存一次  
 
 说明：Primary Language = en-US 只影响**未本地化商店的文案回退**；可售地区与有没有本地化语言无关。
+**中国大陆（国区）勿勾**：外国主体（UseONE, LLC）+ 无 ICP 备案无法在国区上架——Apple 自 2023 年起强制国区 App 填 ICP 备案号，境外主体拿不到备案，勾了也会被移除/拒审；国区合规是 Phase-2（中国主体 + App 备案 + 软著）。
 
 ---
 
