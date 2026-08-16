@@ -2292,8 +2292,9 @@ auspiceRoutes.delete('/makeif/forks/:id', async (c) => {
 // tier gets reminders for the first BIRTHDAY_FREE_LIMIT 亲友; more need auspice_pro.
 // The cap is enforced HERE (authoritative) so it can't be bypassed by editing local
 // storage; the app also caps locally for snappy UX. Device-scoped like make-if.
-
-const BIRTHDAY_FREE_LIMIT = 3
+// 2026-08 no-IAP ship: raised to 30 — effectively unlimited for real families;
+// the cap stays as a mechanism, the Pro hook moves to For-you reasons/timeline.
+const BIRTHDAY_FREE_LIMIT = 30
 
 /** MM-DD for a solar birthday (cron index); null for 农历 (resolved at runtime). */
 function solarMonthDay(date: string, calendar: 'solar' | 'lunar'): string | null {

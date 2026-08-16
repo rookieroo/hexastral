@@ -657,8 +657,10 @@ export async function scheduleRetroCheck(opts: {
 
 const BDAY_ID_PREFIX = 'cycle-bday-'
 /** Free tier gets birthday reminders for the first N 亲友; more need auspice_pro.
- *  Mirrors the server cap in /api/auspice/birthdays so local + server agree. */
-export const FREE_BIRTHDAY_LIMIT = 3
+ *  Mirrors the server cap in /api/auspice/birthdays so local + server agree.
+ *  2026-08 no-IAP ship: raised to 30 — effectively unlimited for real families;
+ *  the cap stays as a mechanism, the Pro hook moves to For-you reasons/timeline. */
+export const FREE_BIRTHDAY_LIMIT = 30
 
 const BDAY_TEXT: Record<Locale, { soon: string; tomorrow: string; day: string }> = {
   'zh-Hans': {

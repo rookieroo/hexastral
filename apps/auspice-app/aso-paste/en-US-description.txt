@@ -12,7 +12,7 @@ FOR YOU
 - Deeper personal reads and timeline tools arrive in a later update
 
 FAMILY
-- Family lunar or solar birthday reminders (up to 3 on Free)
+- Family lunar or solar birthday reminders
 - Morning push and optional evening heads-up
 
 NOT

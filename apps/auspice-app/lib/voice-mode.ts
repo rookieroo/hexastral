@@ -90,7 +90,7 @@ export function subscribeVoiceMode(listener: Listener): () => void {
  * 更有吸引力，民族的就是世界的；en/ja 为白话黄历布局）。已有任一语体 key
  * （含 legacy）的老用户不动；App 内可随时切回。
  */
-export async function seedVoiceModeDefault(_locale: string): Promise<void> {
+export async function seedVoiceModeDefault(_locale?: string): Promise<void> {
   try {
     const [raw, legacy] = await Promise.all([
       AsyncStorage.getItem(STORAGE_KEY),
