@@ -66,6 +66,13 @@ export function usePurchases(): void {
       return
     }
 
+    // No-IAP builds (EXPO_PUBLIC_IAP_ENABLED=false) must never touch RevenueCat:
+    // a stray valid-format key (e.g. a dev test key in a release-mode bundle)
+    // would configure Purchases and RevenueCat kills the app in release mode.
+    if (process.env.EXPO_PUBLIC_IAP_ENABLED === 'false') {
+      return
+    }
+
     const key = resolveRevenueCatPublicKey(Platform.OS)
     if (!key) {
       const extra = getExtraConfig()
