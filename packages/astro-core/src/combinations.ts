@@ -562,9 +562,7 @@ export function branchRelationSummary(day: EarthlyBranch): BranchRelationSummary
   return {
     clash: clash ? (clash[0] === day ? clash[1] : clash[0]) : null,
     combine: combine ? (combine[0] === day ? combine[1] : combine[0]) : null,
-    triple: triple
-      ? (triple.slice(0, 3) as readonly EarthlyBranch[]).filter((b) => b !== day)
-      : [],
+    triple: triple ? (triple.slice(0, 3) as readonly EarthlyBranch[]).filter((b) => b !== day) : [],
     harm: harm ? (harm[0] === day ? harm[1] : harm[0]) : null,
     punish,
   }

@@ -19,7 +19,7 @@ import { useVoiceMode } from '@/lib/voice-mode-context'
 import { WIDGET_SPEC } from '@/lib/widget-spec'
 import { resolveRegisterSync } from '@/lib/yiji-display-mode'
 import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
-import { almanacPalette } from './AlmanacPage'
+import { almanacPalette, VerdictMark } from './AlmanacPage'
 import {
   buildDailyCardModel,
   compactChrome,
@@ -114,7 +114,7 @@ export function WidgetCard({
   const { classical } = useVoiceMode()
   const body =
     classical && size === 'large' ? (
-      <AlmanacLargePreview day={day} model={model} locale={locale} />
+      <AlmanacLargePreview day={day} model={model} locale={locale} variant={variant} />
     ) : variant === 'android' ? (
       size === 'medium' ? (
         <AndroidMediumWidget {...sub} />
@@ -685,10 +685,12 @@ function AlmanacLargePreview({
   day,
   model,
   locale,
+  variant,
 }: {
   day: AuspiceDay
   model: DailyCardModel
   locale: Locale
+  variant?: 'ios' | 'android'
 }) {
   const { mode } = useTheme()
   const P = almanacPalette(mode === 'dark')
@@ -823,10 +825,57 @@ function AlmanacLargePreview({
       {fit || fitSummary ? (
         <View>
           <View style={{ height: 0.5, backgroundColor: P.ink, marginVertical: 8 }} />
-          <Text style={{ color: P.dim, fontSize: A.metaFont, lineHeight: 16 }} numberOfLines={2}>
-            {fit ? `${L.forYou} · ${fit}` : ''}
-            {fitSummary ? `${fit ? ' ' : ''}${fitSummary}` : ''}
-          </Text>
+          {variant === 'android' ? (
+            /* Android Glance 同构 — 无路径绘制，彩色判级字回退。 */
+            <View>
+              {model.fit ? (
+                <Text
+                  style={{
+                    color: model.fit === '凶' ? P.seal : model.fit === '吉' ? P.gold : P.brown,
+                    fontSize: A.yijiFont,
+                    fontWeight: '700',
+                  }}
+                  numberOfLines={1}
+                >
+                  {model.fit}
+                </Text>
+              ) : null}
+              <Text
+                style={{ color: P.dim, fontSize: A.metaFont, lineHeight: 16 }}
+                numberOfLines={2}
+              >
+                {fit ? `${L.forYou} · ${fit}` : ''}
+                {fitSummary ? `${fit ? ' ' : ''}${fitSummary}` : ''}
+              </Text>
+            </View>
+          ) : model.fit && (locale === 'zh-Hans' || locale === 'zh-Hant') ? (
+            /* iOS WidgetKit 同构 — label + 28pt VerdictLoop + 判语。 */
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text
+                style={{ color: P.dim, fontSize: A.metaFont, fontWeight: '700' }}
+                numberOfLines={1}
+              >
+                {L.forYou}
+              </Text>
+              <VerdictMark
+                glyph={model.fit}
+                color={model.fit === '凶' ? P.seal : model.fit === '吉' ? P.gold : P.brown}
+                P={P}
+                size={28}
+              />
+              <Text
+                style={{ color: P.dim, fontSize: A.metaFont, lineHeight: 16, flex: 1 }}
+                numberOfLines={2}
+              >
+                {fitSummary ?? ''}
+              </Text>
+            </View>
+          ) : (
+            <Text style={{ color: P.dim, fontSize: A.metaFont, lineHeight: 16 }} numberOfLines={2}>
+              {fit ? `${L.forYou} · ${fit}` : ''}
+              {fitSummary ? `${fit ? ' ' : ''}${fitSummary}` : ''}
+            </Text>
+          )}
         </View>
       ) : null}
 

@@ -39,6 +39,8 @@ data class YuunWidgetDay(
   /** 黄历模式 extras — 撕页黄历 large 组件用。 */
   val dayGod: String?,
   val evilDirection: String?,
+  /** 判级原字（吉/平/凶，zh 黄历模式）— Glance 无路径绘制，用彩色字回退。 */
+  val fitGlyph: String?,
   val pengZuStem: String?,
   val pengZuBranch: String?,
   val nayin: String?,
@@ -134,6 +136,7 @@ object WidgetPayloadParser {
       clashShengxiao = d.optStringOrNull("clashShengxiao"),
       dayGod = d.optStringOrNull("dayGod"),
       evilDirection = d.optStringOrNull("evilDirection"),
+      fitGlyph = d.optStringOrNull("fitGlyph"),
       pengZuStem = d.optStringOrNull("pengZuStem"),
       pengZuBranch = d.optStringOrNull("pengZuBranch"),
       nayin = d.optStringOrNull("nayin"),

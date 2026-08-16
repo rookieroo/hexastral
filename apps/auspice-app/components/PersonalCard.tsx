@@ -32,6 +32,7 @@ export function PersonalCard({
   onDeepRead,
   hideSummaryLine = false,
   pushHook,
+  fromPush = false,
 }: {
   data: AuspicePersonalization
   lucky?: LuckyGuide | null
@@ -41,6 +42,8 @@ export function PersonalCard({
   hideSummaryLine?: boolean
   /** Push landing hook — one line atop the card (from payload.dailyHook). */
   pushHook?: { title: string; lens: string } | null
+  /** 本次会话由推送着陆（focus=personal）— 显示「今日推送」徽标。 */
+  fromPush?: boolean
 }) {
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
@@ -92,6 +95,24 @@ export function PersonalCard({
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <Text style={{ color: colors.secondary, fontSize: 13, letterSpacing: 1, flex: 1 }}>
           {classicalActive ? t.personal.forYouClassical : t.personal.forYou}
+          {fromPush ? (
+            <Text
+              style={{
+                color: colors.secondary,
+                fontSize: 10,
+                borderWidth: 0.5,
+                borderColor: colors.separator,
+                borderRadius: 6,
+                paddingHorizontal: 6,
+                paddingVertical: 1,
+                overflow: 'hidden',
+                letterSpacing: 0,
+              }}
+            >
+              {' '}
+              {t.personal.pushOriginBadge}
+            </Text>
+          ) : null}
         </Text>
         <Text style={{ color: fitColor, fontSize: 15, fontWeight: '700', letterSpacing: 1 }}>
           {classicalActive ? t.personal.fitClassical[data.fit] : t.personal.fit[data.fit]}

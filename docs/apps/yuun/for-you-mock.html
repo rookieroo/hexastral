@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>For you — 吉/平/凶 三态设计稿（黄历模式 · 于你）</title>
+<style>
+  :root{
+    --bg:#f6f1e6; --card:#fffdf7; --ink:#2b2118; --dim:#8a7f70; --line:#e3d9c6;
+    --gold:#9a6b1f; --brown:#4a3324; --seal:#a8342a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{background:#ddd6c8; font-family:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif; color:var(--ink); padding:20px 10px 60px}
+  .wrap{max-width:430px; margin:0 auto; display:flex; flex-direction:column; gap:16px}
+  .card{background:var(--bg); border-radius:14px; padding:18px 20px; box-shadow:0 4px 18px rgba(43,33,24,.10)}
+  .rule{display:flex; align-items:center; gap:10px; margin-bottom:12px}
+  .rule::before,.rule::after{content:''; flex:1; height:1px; background:var(--ink); opacity:.8}
+  .rule span{font-size:12px; letter-spacing:3px; color:var(--ink)}
+  .row{display:flex; align-items:center; gap:14px}
+  .mark{position:relative; width:52px; height:52px; flex-shrink:0; display:flex; align-items:center; justify-content:center}
+  .mark svg{position:absolute; inset:0; transform:rotate(-4deg)}
+  .mark .glyph{font-size:22px; font-weight:700; color:var(--ink); letter-spacing:1px; line-height:1}
+  .summary{flex:1; font-size:14px; line-height:23px; color:var(--ink)}
+  .badge{display:inline-block; border:0.5px solid var(--ink); border-radius:6px; padding:1px 8px; font-size:10px; letter-spacing:1px; color:var(--dim); margin-bottom:8px}
+  .hint{font-size:11px; color:var(--dim); margin-top:10px; letter-spacing:1px}
+  .en .summary{font-size:13px}
+  .label{font-size:11px; color:var(--dim); letter-spacing:2px; margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <div class="label">黄历模式 · 于你 — 吉（赭金整圈细笔 · 2.2）</div>
+    <div class="rule"><span>于 你</span></div>
+    <div class="row">
+      <div class="mark">
+        <svg width="52" height="52" viewBox="0 0 40 40">
+          <path d="M31,7 C16,2 4,11 5,22 C6,34 26,39 33,29 C37,23 35,13 27,9 C21,6 14,8 11,13" stroke="#9a6b1f" stroke-width="2.2" opacity="0.9" fill="none" stroke-linecap="round"/>
+        </svg>
+        <span class="glyph">吉</span>
+      </div>
+      <div class="summary">此日五行相顺，诸事宜早，不宜迟疑。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label">黄历模式 · 于你 — 平（墨棕轻量半闭 · 2.6 · 90% 墨）</div>
+    <div class="rule"><span>于 你</span></div>
+    <div class="row">
+      <div class="mark">
+        <svg width="52" height="52" viewBox="0 0 40 40">
+          <path d="M30,10 C17,4 6,13 7,23 C8,33 25,37 31,28 C35,22 32,13 24,10" stroke="#4a3324" stroke-width="2.6" opacity="0.9" fill="none" stroke-linecap="round"/>
+        </svg>
+        <span class="glyph">平</span>
+      </div>
+      <div class="summary">此日诸事平稳，守常即可。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label">黄历模式 · 于你 — 凶（朱砂中量多笔圈 · 3.4 · 满墨）</div>
+    <div class="rule"><span>于 你</span></div>
+    <div class="row">
+      <div class="mark">
+        <svg width="52" height="52" viewBox="0 0 40 40">
+          <path d="M31,7 C16,2 4,11 5,22 C6,34 26,39 33,29 C37,23 35,13 27,9 C21,6 14,8 11,13" stroke="#a8342a" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+        </svg>
+        <span class="glyph">凶</span>
+      </div>
+      <div class="summary">此日宜守不宜攻，收敛静待，不宜冒进。</div>
+    </div>
+    <div class="hint">判级字是普通墨色字体（端正）；手绘圈画在字的上层，笔画压过字边 —— 红笔圈字效果。</div>
+  </div>
+
+  <div class="card">
+    <div class="label">推送着陆变体 — 「今日推送」徽标 + 同一判级表达</div>
+    <div class="rule"><span>于 你</span></div>
+    <div class="badge">今日推送</div>
+    <div class="row">
+      <div class="mark">
+        <svg width="52" height="52" viewBox="0 0 40 40">
+          <path d="M31,7 C16,2 4,11 5,22 C6,34 26,39 33,29 C37,23 35,13 27,9 C21,6 14,8 11,13" stroke="#a8342a" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+        </svg>
+        <span class="glyph">凶</span>
+      </div>
+      <div class="summary">此日宜守不宜攻，收敛静待，不宜冒进。</div>
+    </div>
+  </div>
+
+  <div class="card en">
+    <div class="label">en / ja 变体 — 无圈无「凶」字，纯文字判级（白话注册表）</div>
+    <div class="rule"><span>FOR YOU</span></div>
+    <div class="row">
+      <div class="summary"><b style="color:#9a6b1f">Caution</b> — Today's chart reads cautious (cultural reference) — hold back and avoid overextending.</div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div class="summary"><b style="color:#4a3324">慎重に</b> — 今日は攻めより守り（文化参考）——控えめに、無理は避けましょう。</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

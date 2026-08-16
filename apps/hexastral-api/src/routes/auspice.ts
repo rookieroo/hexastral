@@ -2960,6 +2960,8 @@ export function renderAuspicePush(
     data: {
       type: 'auspice_daily',
       day: dateStr,
+      // 推送着陆闭环：有生辰（showPersonal）时点推送直接滚到「对你而言」。
+      ...(pers ? { focus: 'personal' } : {}),
       bk: pushBodyKey(title, body),
       v: `${v.verbs}:${v.withClash ? '1' : '0'}:${v.extra}`,
     },
@@ -3052,6 +3054,106 @@ auspiceRoutes.post('/push/register', async (c) => {
       },
     })
   return jsonOk(c, { registered: true })
+})
+
+// DEV: 立即用真实 renderAuspicePush 渲染并发送该设备的「今日 morning」推送 —
+// 与 svc-notify 定时链路同一渲染函数与同一发送面（/expo-push/send），
+// 测试即真实文案（含 per-device 变化、黄历模式语体、对你而言等全部口径）。
+auspiceRoutes.post('/push/dev-fire', async (c) => {
+  const body = await c.req.json<{ deviceId?: string; token?: string }>().catch(() => null)
+  const deviceId = body?.deviceId
+  if (!deviceId) throw new HTTPException(400, { message: 'deviceId required' })
+  const db = c.get('db')
+  const sub = await db
+    .select()
+    .from(auspicePushSubs)
+    .where(eq(auspicePushSubs.deviceId, deviceId))
+    .get()
+  if (!sub) return jsonOk(c, { sent: false, reason: 'device_not_registered' })
+  const tz = /^[A-Za-z_/+-]+$/.test(sub.timezoneId ?? '')
+    ? (sub.timezoneId as string)
+    : 'Asia/Shanghai'
+  let dateStr: string
+  try {
+    dateStr = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date())
+  } catch {
+    dateStr = fmtUtc(new Date())
+  }
+  const m = renderAuspicePush('morning', parseYmd(dateStr), sub)
+  if (!m) return jsonOk(c, { sent: false, reason: 'no_message' })
+  // The device may present its LIVE Expo token so a stale sub row can't break the
+  // test — send to what the device holds right now (format-validated).
+  const liveToken =
+    typeof body?.token === 'string' && /^ExponentPushToken\[[a-zA-Z0-9_-]+\]$/.test(body.token)
+      ? body.token
+      : undefined
+  const token = liveToken ?? sub.token
+  let send: Response | null = null
+  try {
+    send = await c.env.SVC_NOTIFY.fetch('https://internal/expo-push/send', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        // svc-notify's /expo-push/* middleware requires the shared internal key —
+        // without it the send 401s and the failure was silently reported as unknown.
+        'X-Internal-Key': c.env.INTERNAL_KEY,
+      },
+      body: JSON.stringify({
+        tokens: [token],
+        title: m.title,
+        body: m.body,
+        data: m.data,
+        sound: 'default',
+      }),
+    })
+  } catch {
+    send = null
+  }
+  let sent = false
+  let reason: string | undefined
+  if (send?.ok) {
+    const js = await send
+      .json<{
+        success?: boolean
+        invalidTokens?: string[]
+        errors?: Array<{ token?: string; error?: string }>
+      }>()
+      .catch(() => null)
+    const tokenError =
+      js?.errors?.find((e) => e.token === token)?.error ??
+      (js?.invalidTokens?.includes(token) ? 'DeviceNotRegistered' : undefined)
+    if (tokenError) reason = tokenError
+    else if (js?.success === false) reason = 'send_rejected'
+    else sent = true
+  } else {
+    reason = send ? `send_http_${send.status}` : 'send_unreachable'
+  }
+  // Only record an actual dispatch — a failed dev-fire must not clobber today's
+  // real cron send row or pollute delivery metrics with phantom 'sent' rows.
+  if (sent) {
+    await recordPushSend(db, {
+      deviceId,
+      slot: 'morning',
+      date: dateStr,
+      bodyKey: m.data.bk ?? null,
+      variant: m.data.v ?? null,
+      locale: sub.locale,
+      isPro: sub.isPro,
+      timezoneId: tz,
+    })
+  }
+  return jsonOk(c, {
+    sent,
+    ...(reason ? { reason } : {}),
+    title: m.title,
+    body: m.body,
+    data: m.data,
+  })
 })
 
 auspiceRoutes.delete('/push/register', async (c) => {

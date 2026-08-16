@@ -116,6 +116,8 @@ function toWidgetDay(
     jiLong: compactVerbs(m.avoidRaw, verbBudget(locale, 'large'), locale, yijiMode),
     fit: fitLabel,
     fitSummary: fitSummary,
+    // 判级原字 — 仅 zh 黄历模式（组件画手绘圈；en/ja 走文字判级）。
+    fitGlyph: includeFit && classical && locale.startsWith('zh') ? m.fit : null,
     dayTip: m.dayTip,
     tipLabel: en ? null : chrome.tip,
     moonPhase: m.moonPhase,

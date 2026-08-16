@@ -118,7 +118,22 @@ App Store 的 Lifestyle / Education 类目比拼的不是工具效率，而是**
   - **light/dark 双色板**：`almanacPalette(isDark)` — 亮色宣纸（#f6f1e6/墨
     #2b2118/赭金 #9a6b1f/墨棕 #4a3324），暗色墨纸（#171310/米 #e9ddc8/
     金 #d9b36a/棕 #cdbba7）；header 与页面背景同步跟随。
-  - **术语国际卡（2026-08 七次修订）**：88 条宜忌动词补 en/ja 一句话释义 +
+  - **For you 判级意象（2026-08）**：三态设计 = 手绘圈（墨量与闭合度分档：
+  吉=赭金细开弧/平=墨棕轻量半闭/凶=朱砂中量多笔圈）+ 墨色端正判级字居中、
+  圈画在字上层（红笔圈字效果）；en/ja 纯文字判级。预览稿
+  `docs/apps/yuun/for-you-mock.html`。**小组件同步**：iOS WidgetKit 用
+  SwiftUI Path 画同源三档圈（`VerdictLoop`，fitGlyph 字段 zh 黄历模式专用）；
+  Android Glance 无任意路径绘制 → 彩色判级字回退（金/棕/朱砂），位图方案
+  列为后续（与 MoonPhaseBitmap 同路）。
+- **推送着陆闭环（2026-08）**：推送 ≠ For you——推送是渠道、For you 是内容板块。
+  闭环设计：①服务端 daily push 在订阅者有生辰（pers）时 data 加
+  `focus:'personal'`，点推送直达对你而言；②首页双布局都支持滚动锚点
+  （黄历首页的于你补 onPersonalSectionLayout）；③着陆时对你而言/于你显示
+  「今日推送」徽标（`personal.pushOriginBadge` 四语），白话首页的 hook 行
+  （dailyHook）作为推送内容的回声；④后续 IAP 漏斗：判级（免费）→
+  了解原因（Pro 原因码）→ 深读（Pro LLM），open/outcomes 度量已在
+  /push/open · /push/outcomes。
+- **术语国际卡（2026-08 七次修订）**：88 条宜忌动词补 en/ja 一句话释义 +
     拼音/读音（`TERM_PINYIN/EN/JA` 三表，`yijiMeaning` 四语返回：en=拼音+英文，
     ja=读音+日文；繁体输入经 `toHans` 归一）。方法：Wikipedia en/ja 无术语级
     条目 →「原文 + 拼音 + 一句话白话解释」自写通书口径；写不进白话的保留原文

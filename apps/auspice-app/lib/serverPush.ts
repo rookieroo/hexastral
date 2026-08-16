@@ -146,6 +146,56 @@ export async function syncAuspiceServerPush(
   })
 }
 
+/**
+ * DEV: 触发服务器用真实 renderAuspicePush 渲染并立即发送「今日 morning」
+ * 推送到本设备（与 svc-notify 定时链路同一文案口径）。返回真实 title/body。
+ */
+export async function devFireDailyPush(): Promise<{
+  sent: boolean
+  reason?: string
+  title?: string
+  body?: string
+}> {
+  const deviceId = await getAuspiceDeviceId().catch(() => null)
+  if (!deviceId) return { sent: false, reason: 'no_device_id' }
+  // Present the device's LIVE Expo token so a stale server-side sub row can't
+  // break the test — the server sends to this token instead of the stored one.
+  let token: string | undefined
+  try {
+    const perm = await Notifications.getPermissionsAsync()
+    if (perm.status === 'granted') {
+      const tr = await Notifications.getExpoPushTokenAsync({
+        projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID,
+      })
+      if (tr.data) token = tr.data
+    }
+  } catch {
+    // Token optional — server falls back to the stored sub token.
+  }
+  const res = await fetch(`${resolvePortfolioApiUrl()}/api/auspice/push/dev-fire`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', accept: 'application/json' },
+    body: JSON.stringify({ deviceId, ...(token ? { token } : {}) }),
+  }).catch(() => null)
+  if (!res) return { sent: false, reason: 'network' }
+  const json = await res.json().catch(() => null)
+  const data = json?.data ?? json
+  const fallbackReason =
+    typeof data?.reason === 'string' && data.reason.length > 0
+      ? data.reason
+      : typeof data?.error === 'string' && data.error.length > 0
+        ? data.error
+        : !res.ok
+          ? `http_${res.status}`
+          : undefined
+  return {
+    sent: data?.sent === true,
+    reason: fallbackReason,
+    title: typeof data?.title === 'string' ? data.title : undefined,
+    body: typeof data?.body === 'string' ? data.body : undefined,
+  }
+}
+
 /** Unregister (e.g. user turned daily push off). Falls back to local on next open. */
 export async function unregisterAuspiceServerPush(): Promise<void> {
   try {

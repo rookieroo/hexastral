@@ -83,6 +83,7 @@ import {
   syncServerPush,
 } from '@/lib/push'
 import { pushTypeById } from '@/lib/pushRegistry'
+import { devFireDailyPush } from '@/lib/serverPush'
 import { isServerPushActive } from '@/lib/serverPushFlag'
 import { TWELVE_SHICHEN } from '@/lib/shichen-content'
 import { useVoiceMode } from '@/lib/voice-mode-context'
@@ -1331,13 +1332,17 @@ export default function MeScreen() {
               <Pressable
                 onPress={async () => {
                   try {
-                    const fired = await fireTestDailyPush({
-                      locale,
-                      birthDate: birthValid ? birth.solarDate : undefined,
-                    })
+                    const fired = await devFireDailyPush()
+                    if (!fired.sent) {
+                      Alert.alert(
+                        '真实推送未发出',
+                        `原因：${fired.reason ?? 'unknown'}\n\n（设备需已注册服务器推送；若为模拟器/未授权，走本地兜底。）`
+                      )
+                      return
+                    }
                     Alert.alert(
-                      'Local test in ~2s',
-                      `${fired.title}\n\n${fired.body}\n\nNote: this is a local notification only — not Expo/APNs cron.`
+                      '真实每日推送已发送',
+                      `${fired.title ?? ''}\n\n${fired.body ?? ''}\n\n这是服务器 renderAuspicePush 的真实文案（与明早 8 点定时推送同一链路），通知应已到达。`
                     )
                   } catch (e) {
                     Alert.alert('Push failed', String(e))

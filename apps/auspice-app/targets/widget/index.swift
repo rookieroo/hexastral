@@ -46,6 +46,7 @@ struct SharedDay: Codable {
   let ganZhiPinyin: String?
   let dayGod: String?
   let evilDirection: String?
+  let fitGlyph: String?
   let pengZuStem: String?
   let pengZuBranch: String?
   let nayin: String?
@@ -53,7 +54,7 @@ struct SharedDay: Codable {
   enum CodingKeys: String, CodingKey {
     case date, ganZhi, elementColor, lunar, solarTerm, yi, ji, fit, fitSummary, dayTip, tipLabel, moonPhase
     case officer, mansion, clashShengxiao, ganzhiYear, yiShort, jiShort, yiLong, jiLong, ganZhiPinyin
-    case dayGod, evilDirection, pengZuStem, pengZuBranch, nayin
+    case dayGod, evilDirection, pengZuStem, pengZuBranch, nayin, fitGlyph
   }
 
   init(
@@ -63,7 +64,8 @@ struct SharedDay: Codable {
     ganzhiYear: String? = nil, yiShort: String? = nil, jiShort: String? = nil,
     yiLong: String? = nil, jiLong: String? = nil, ganZhiPinyin: String? = nil,
     fitSummary: String? = nil, dayTip: String? = nil, tipLabel: String? = nil,
-    dayGod: String? = nil, evilDirection: String? = nil, pengZuStem: String? = nil,
+    dayGod: String? = nil, evilDirection: String? = nil, fitGlyph: String? = nil,
+    pengZuStem: String? = nil,
     pengZuBranch: String? = nil, nayin: String? = nil
   ) {
     self.date = date
@@ -89,6 +91,7 @@ struct SharedDay: Codable {
     self.ganZhiPinyin = ganZhiPinyin
     self.dayGod = dayGod
     self.evilDirection = evilDirection
+    self.fitGlyph = fitGlyph
     self.pengZuStem = pengZuStem
     self.pengZuBranch = pengZuBranch
     self.nayin = nayin
@@ -119,6 +122,7 @@ struct SharedDay: Codable {
     ganZhiPinyin = try c.decodeIfPresent(String.self, forKey: .ganZhiPinyin)
     dayGod = try c.decodeIfPresent(String.self, forKey: .dayGod)
     evilDirection = try c.decodeIfPresent(String.self, forKey: .evilDirection)
+    fitGlyph = try c.decodeIfPresent(String.self, forKey: .fitGlyph)
     pengZuStem = try c.decodeIfPresent(String.self, forKey: .pengZuStem)
     pengZuBranch = try c.decodeIfPresent(String.self, forKey: .pengZuBranch)
     nayin = try c.decodeIfPresent(String.self, forKey: .nayin)
@@ -1136,16 +1140,20 @@ struct AuspiceWidgetEntryView: View {
 
         if let fit = d.fit, !fit.isEmpty {
           Rectangle().fill(palette.separator).frame(height: 0.5)
-          HStack(alignment: .firstTextBaseline, spacing: 4) {
+          HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(forYouLabel.isEmpty ? "于你" : forYouLabel)
               .font(.system(size: WidgetSpec.largeAlmanacMetaFont, weight: .bold))
               .tracking(1)
               .foregroundColor(palette.secondary)
               .lineLimit(1)
-            Text(fit)
-              .font(.system(size: WidgetSpec.largeAlmanacYijiFont, weight: .bold))
-              .foregroundColor(gold)
-              .lineLimit(1)
+            if let glyph = d.fitGlyph, !glyph.isEmpty {
+              VerdictLoop(glyph: glyph, scheme: palette.scheme)
+            } else {
+              Text(fit)
+                .font(.system(size: WidgetSpec.largeAlmanacYijiFont, weight: .bold))
+                .foregroundColor(gold)
+                .lineLimit(1)
+            }
           }
           if let summary = d.fitSummary, !summary.isEmpty {
             Text(summary)
@@ -1243,4 +1251,64 @@ struct AuspiceWidget: Widget {
 @main
 struct AuspiceWidgetBundle: WidgetBundle {
   var body: some Widget { AuspiceWidget() }
+}
+
+
+/// 判级手绘圈 — 与 App 内同源的三档墨迹：吉=赭金细开弧、平=墨棕轻量半闭、
+/// 凶=朱砂中量多笔圈；墨色判级字居中、圈画在字上层（红笔圈字）。
+private struct VerdictLoop: View {
+  let glyph: String
+  let scheme: ColorScheme
+
+  private var seal: Color { scheme == .light ? color("#A8342A") : color("#C96B5F") }
+  private var gold: Color { scheme == .light ? color("#9A6B1F") : color("#D9B36A") }
+  private var brown: Color { scheme == .light ? color("#4A3324") : color("#CDBBA7") }
+
+  private var mark: (path: String, width: CGFloat, opacity: Double, ink: Color) {
+    switch glyph {
+    case "吉":
+      return ("M31,7 C16,2 4,11 5,22 C6,34 26,39 33,29 C37,23 35,13 27,9 C21,6 14,8 11,13", 2.2, 0.9, gold)
+    case "凶":
+      return ("M31,7 C16,2 4,11 5,22 C6,34 26,39 33,29 C37,23 35,13 27,9 C21,6 14,8 11,13", 3.4, 1, seal)
+    default:
+      return ("M30,10 C17,4 6,13 7,23 C8,33 25,37 31,28 C35,22 32,13 24,10", 2.6, 0.9, brown)
+    }
+  }
+
+  var body: some View {
+    ZStack {
+      Text(glyph)
+        .font(.system(size: 13, weight: .bold))
+        .foregroundColor(scheme == .light ? color("#09090B") : color("#FAFAFA"))
+      GeometryReader { geo in
+        let s = geo.size.width / 40
+        Path { p in
+          // 解析 d（极简子集：M/C 命令）— 数值按 40×40 画布缩放。
+          let tokens = mark.path.components(separatedBy: CharacterSet(charactersIn: " ,MC"))
+            .filter { !$0.isEmpty }
+          guard let first = tokens.first.flatMap(Double.init),
+                let second = tokens.dropFirst().first.flatMap(Double.init) else { return }
+          p.move(to: CGPoint(x: first * s, y: second * s))
+          var i = 2
+          while i + 5 < tokens.count {
+            guard let x1 = Double(tokens[i]), let y1 = Double(tokens[i + 1]),
+                  let x2 = Double(tokens[i + 2]), let y2 = Double(tokens[i + 3]),
+                  let x3 = Double(tokens[i + 4]), let y3 = Double(tokens[i + 5]) else { break }
+            p.addCurve(
+              to: CGPoint(x: x3 * s, y: y3 * s),
+              control1: CGPoint(x: x1 * s, y: y1 * s),
+              control2: CGPoint(x: x2 * s, y: y2 * s)
+            )
+            i += 6
+          }
+        }
+        .stroke(mark.ink, style: StrokeStyle(lineWidth: mark.width * s, lineCap: .round))
+        .opacity(mark.opacity)
+        .rotationEffect(.degrees(-4))
+      }
+      .frame(width: 28, height: 28)
+    }
+    .frame(width: 28, height: 28)
+    .fixedSize()
+  }
 }

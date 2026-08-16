@@ -80,6 +80,7 @@ export function DayView({
   pushHook,
   onPersonalSectionLayout,
   festivalChip,
+  fromPush = false,
 }: {
   payload: AuspiceDayPayload
   /** Daily hook from push payload — rendered atop PersonalCard, not a separate hero. */
@@ -88,6 +89,8 @@ export function DayView({
   onPersonalSectionLayout?: (y: number) => void
   /** Optional festival / solar-term chip rendered in the almanac zone. */
   festivalChip?: ReactNode
+  /** 推送着陆（focus=personal）→ 对你而言卡片显示「今日推送」徽标。 */
+  fromPush?: boolean
 }) {
   const { colors, spacing, isDark } = useTheme()
   const { t, locale } = useStrings()
@@ -246,6 +249,7 @@ export function DayView({
         <SectionLabel>{t.personal.forYou}</SectionLabel>
         {payload.personalization ? (
           <PersonalCard
+            fromPush={fromPush}
             data={payload.personalization}
             lucky={lucky}
             locked={!isPro}

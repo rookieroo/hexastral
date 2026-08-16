@@ -669,6 +669,26 @@ private fun AlmanacLargeLayout(
         Spacer(GlanceModifier.height(8.dp))
         Hairline()
         Spacer(GlanceModifier.height(8.dp))
+        // 判级原字（zh 黄历模式）— Glance 无路径绘制，彩色字回退；en/ja 无。
+        val glyph = day.fitGlyph
+        if (!glyph.isNullOrBlank()) {
+          Text(
+            text = glyph,
+            style =
+              TextStyle(
+                color =
+                  when (glyph) {
+                    "吉" -> YuunColors.gold
+                    "凶" -> YuunColors.seal
+                    else -> YuunColors.brown
+                  },
+                fontSize = WidgetSpec.LARGE_ALMANAC_YIJI_FONT.sp,
+                fontWeight = FontWeight.Bold,
+              ),
+            maxLines = 1,
+          )
+          Spacer(GlanceModifier.height(2.dp))
+        }
         ForYouLine(day = day, parsed = parsed, withSummary = true)
       }
     }

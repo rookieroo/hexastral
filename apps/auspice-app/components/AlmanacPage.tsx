@@ -17,8 +17,17 @@ import {
   STEM_WUXING,
 } from '@zhop/astro-core'
 import { useTheme } from '@zhop/core-ui'
+import { Share2 } from 'lucide-react-native'
 import { useState } from 'react'
-import { Pressable, StyleSheet, Text, type TextStyle, View } from 'react-native'
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  type TextStyle,
+  useWindowDimensions,
+  View,
+} from 'react-native'
+import Svg, { Path as SvgPath } from 'react-native-svg'
 import { YiJiMeaningSheet } from '@/components/YiJiMeaningSheet'
 import { almanacCopy } from '@/lib/almanac-copy'
 import type { AuspiceDayPayload } from '@/lib/api'
@@ -36,7 +45,11 @@ import {
 } from '@/lib/huangli-day'
 import type { Locale } from '@/lib/i18n'
 import { useStrings } from '@/lib/i18n-context'
+import { useImageShare } from '@/lib/imageShare'
+import { dayShareUrl, shareTaglineFor } from '@/lib/share'
 import { resolveRegisterSync } from '@/lib/yiji-display-mode'
+import { moonPhaseForIsoDate } from './DailyCard'
+import { PhaseLogo } from './PhaseLogo'
 
 export function almanacPalette(isDark: boolean) {
   return isDark
@@ -48,6 +61,7 @@ export function almanacPalette(isDark: boolean) {
         line: '#3c3329',
         gold: '#d9b36a',
         brown: '#cdbba7',
+        seal: '#c96b5f',
         goldSoft: 'rgba(217,179,106,0.14)',
       }
     : {
@@ -58,14 +72,31 @@ export function almanacPalette(isDark: boolean) {
         line: '#e3d9c6',
         gold: '#9a6b1f',
         brown: '#4a3324',
+        seal: '#a8342a',
         goldSoft: '#f1e6cf',
       }
 }
 type Palette = ReturnType<typeof almanacPalette>
 
-export function AlmanacPage({ payload, locale }: { payload: AuspiceDayPayload; locale: Locale }) {
+export function AlmanacPage({
+  payload,
+  locale,
+  fromPush = false,
+  onPersonalSectionLayout,
+  capture = false,
+}: {
+  payload: AuspiceDayPayload
+  locale: Locale
+  /** 推送着陆（focus=personal）→ 于你显示「今日推送」徽标。 */
+  fromPush?: boolean
+  /** 于你区块 Y 偏移 — 推送着陆滚动定位用。 */
+  onPersonalSectionLayout?: (y: number) => void
+  /** 离屏分享副本 — 隐藏分享按钮、禁交互。 */
+  capture?: boolean
+}) {
   const { spacing, isDark } = useTheme()
   const { t } = useStrings()
+  const { shotRef, capturing, share } = useImageShare()
   const P = almanacPalette(isDark)
   const C = almanacCopy(locale)
   // 动词注册表：zh 黄历模式→原文；en→modern；ja→白话 gloss。
@@ -173,253 +204,360 @@ export function AlmanacPage({ payload, locale }: { payload: AuspiceDayPayload; l
   const goodFor = day.goodFor.map(verb)
   const avoid = day.avoid.map(verb)
 
-  return (
-    <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md }}>
-      {/* ══ 撕页黄历纸页 ══ */}
-      <View style={{ borderWidth: 2, borderColor: P.ink, padding: 3 }}>
-        <View
-          style={{
-            borderWidth: 0.5,
-            borderColor: P.ink,
-            paddingHorizontal: spacing.md,
-            paddingVertical: spacing.md,
-          }}
-        >
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'baseline',
-            }}
-          >
-            <Text style={{ color: P.ink, fontSize: 14, letterSpacing: 1 }}>{C.gregorian(d)}</Text>
-            <Text style={{ color: P.dim, fontSize: 12, letterSpacing: 2 }}>{C.weekday(d)}</Text>
-          </View>
-
-          {C.vertical ? (
-            /* CJK 竖排条 */
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginTop: spacing.md,
-              }}
+  /** 纸页内容（Hero + 宜忌）— 分享组合与页面复用；interactive 控制分享按钮。 */
+  const renderSheet = (interactive: boolean) => (
+    <View
+      style={{
+        borderWidth: 0.5,
+        borderColor: P.ink,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.md,
+      }}
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+        }}
+      >
+        <Text style={{ color: P.ink, fontSize: 14, letterSpacing: 1 }}>{C.gregorian(d)}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Text style={{ color: P.dim, fontSize: 12, letterSpacing: 2 }}>{C.weekday(d)}</Text>
+          {interactive && !capturing ? (
+            <Pressable
+              onPress={() => share(`${shareTaglineFor(locale)}\n${dayShareUrl(date, locale)}`)}
+              hitSlop={10}
+              accessibilityRole='button'
+              accessibilityLabel={t.shareToday}
+              style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1 })}
             >
-              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                <Strip
-                  text={`${day.ganZhi}${C.ganZhiSuffix}`}
-                  term='干支'
-                  onPress={tap}
-                  style={vStyle(P)}
-                />
-                <Strip
-                  text={`${day.dayOfficer}${C.officerDaySuffix}`}
-                  term='建除'
-                  onPress={tap}
-                  style={vStyle(P)}
-                />
-                <Strip
-                  text={day.dayGod?.name ? `${C.dayGodPrefix}${day.dayGod.name}` : ''}
-                  term='值神'
-                  onPress={tap}
-                  style={vStyle(P)}
-                />
-                <Strip
-                  text={
-                    day.mansion
-                      ? `${C.stripMansion}${day.mansion.name}${day.mansion.luminary}${day.mansion.animal}宿`
-                      : ''
-                  }
-                  term='星宿'
-                  onPress={tap}
-                  style={vStyle(P)}
-                />
-              </View>
-
-              <View style={{ alignItems: 'center', flex: 1 }}>
-                <Text
-                  style={{
-                    color: P.ink,
-                    fontSize: 92,
-                    lineHeight: 104,
-                    fontWeight: '700',
-                    letterSpacing: 2,
-                  }}
-                >
-                  {d.getDate()}
-                </Text>
-                <Pressable onPress={() => tap('纳音')} hitSlop={6}>
-                  {day.solarTermToday ? (
-                    <Text style={{ color: P.gold, fontSize: 11 }}>
-                      {localizeSolarTermName(day.solarTermToday.name, locale)}
-                    </Text>
-                  ) : (
-                    <Text style={{ color: P.dim, fontSize: 11, textDecorationLine: 'underline' }}>
-                      {C.nayinLine(nayin)}
-                    </Text>
-                  )}
-                </Pressable>
-              </View>
-
-              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                <Strip
-                  text={day.lunarDate ? C.lunarStrip(day.lunarDate) : ''}
-                  term='农历'
-                  onPress={tap}
-                  style={vStyle(P)}
-                />
-                <Strip
-                  text={yg ? C.yearStrip(yg.stem, yg.branch, yg.animal) : ''}
-                  term='岁次'
-                  onPress={tap}
-                  style={vStyle(P)}
-                />
-              </View>
-            </View>
-          ) : (
-            /* en 横排 */
-            <View style={{ marginTop: spacing.sm, gap: spacing.sm }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'flex-end',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <Text
-                  style={{
-                    color: P.ink,
-                    fontSize: 76,
-                    lineHeight: 84,
-                    fontWeight: '700',
-                  }}
-                >
-                  {d.getDate()}
-                </Text>
-                <View style={{ gap: 2, alignItems: 'flex-end' }}>
-                  <Pressable onPress={() => tap('干支')} hitSlop={4}>
-                    <Text style={{ color: P.ink, fontSize: 13, textDecorationLine: 'underline' }}>
-                      {day.ganZhi}
-                      {C.ganZhiSuffix}
-                    </Text>
-                  </Pressable>
-                  <Pressable onPress={() => tap('建除')} hitSlop={4}>
-                    <Text style={{ color: P.ink, fontSize: 13, textDecorationLine: 'underline' }}>
-                      {C.rowOfficer} {day.dayOfficer}
-                    </Text>
-                  </Pressable>
-                  <Pressable onPress={() => tap('值神')} hitSlop={4}>
-                    <Text style={{ color: P.ink, fontSize: 13, textDecorationLine: 'underline' }}>
-                      {C.rowDayGod} {day.dayGod?.name ?? ''}
-                    </Text>
-                  </Pressable>
-                  <Pressable onPress={() => tap('星宿')} hitSlop={4}>
-                    <Text style={{ color: P.ink, fontSize: 13, textDecorationLine: 'underline' }}>
-                      {C.rowMansion}{' '}
-                      {day.mansion
-                        ? `${day.mansion.name}${day.mansion.luminary}${day.mansion.animal}`
-                        : ''}
-                    </Text>
-                  </Pressable>
-                  <Pressable onPress={() => tap('纳音')} hitSlop={4}>
-                    <Text style={{ color: P.gold, fontSize: 13, textDecorationLine: 'underline' }}>
-                      {C.nayinLine(nayin)}
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
-              <Text style={{ color: P.dim, fontSize: 12 }}>
-                {day.lunarDate ? C.lunarLine(day.lunarDate) : ''}
-                {yg ? ` · ${C.yearLine(yg.stem, yg.branch, yg.animal)}` : ''}
-                {day.solarTermToday
-                  ? ` · ${localizeSolarTermName(day.solarTermToday.name, locale)}`
-                  : ''}
-              </Text>
-            </View>
-          )}
-
-          {/* 冲煞 / 彭祖 — 可点解释 */}
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              flexWrap: 'wrap',
-              gap: 12,
-              marginTop: spacing.sm,
-            }}
-          >
-            {day.clash ? (
-              <Pressable onPress={() => tap('冲煞')} hitSlop={6}>
-                <Text
-                  style={{
-                    color: P.dim,
-                    fontSize: 11,
-                    letterSpacing: 1,
-                    textDecorationLine: 'underline',
-                  }}
-                >
-                  {C.clashText(day.clash.clashAnimal, day.evilDirection)}
-                </Text>
-              </Pressable>
-            ) : null}
-            {day.pengZu ? (
-              <Pressable onPress={() => tap('彭祖百忌')} hitSlop={6}>
-                <Text
-                  style={{
-                    color: P.dim,
-                    fontSize: 11,
-                    letterSpacing: 1,
-                    textDecorationLine: 'underline',
-                  }}
-                >
-                  {C.pengzuText(day.pengZu.stem, day.pengZu.branch)}
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
-
-          {/* 宜忌 — 框内全宽平铺（动词可点释义） */}
-          <View style={{ borderTopWidth: 0.5, borderTopColor: P.ink, marginTop: spacing.md }}>
-            {yangGong ? (
-              <View style={{ alignItems: 'center', paddingTop: spacing.md }}>
-                <Text
-                  style={{
-                    backgroundColor: P.goldSoft,
-                    color: P.brown,
-                    fontSize: 11,
-                    paddingHorizontal: 10,
-                    paddingVertical: 3,
-                    letterSpacing: 1,
-                  }}
-                >
-                  {C.yangGongNote}
-                </Text>
-              </View>
-            ) : null}
-            <YijiBlock label='宜' labelColor={P.gold} items={goodFor} P={P} onSelect={tap} />
-            <View style={{ height: 0.5, backgroundColor: P.ink, marginVertical: spacing.sm }} />
-            <YijiBlock label='忌' labelColor={P.brown} items={avoid} P={P} onSelect={tap} />
-          </View>
+              <Share2 size={16} color={P.dim} strokeWidth={1.6} />
+            </Pressable>
+          ) : null}
         </View>
       </View>
 
-      {/* ══ 于你 ══ */}
-      {fit ? (
-        <View>
-          <RuleTitle title={C.forYouLabel} P={P} />
-          <Text
+      {C.vertical ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: spacing.md,
+          }}
+        >
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Strip
+              text={`${day.ganZhi}${C.ganZhiSuffix}`}
+              term='干支'
+              onPress={tap}
+              style={vStyle(P)}
+            />
+            <Strip
+              text={`${day.dayOfficer}${C.officerDaySuffix}`}
+              term='建除'
+              onPress={tap}
+              style={vStyle(P)}
+            />
+            <Strip
+              text={day.dayGod?.name ? `${C.dayGodPrefix}${day.dayGod.name}` : ''}
+              term='值神'
+              onPress={tap}
+              style={vStyle(P)}
+            />
+            <Strip
+              text={
+                day.mansion
+                  ? `${C.stripMansion}${day.mansion.name}${day.mansion.luminary}${day.mansion.animal}宿`
+                  : ''
+              }
+              term='星宿'
+              onPress={tap}
+              style={vStyle(P)}
+            />
+          </View>
+
+          <View style={{ alignItems: 'center', flex: 1 }}>
+            <Text
+              style={{
+                color: P.ink,
+                fontSize: 92,
+                lineHeight: 104,
+                fontWeight: '700',
+                letterSpacing: 2,
+              }}
+            >
+              {d.getDate()}
+            </Text>
+            <Pressable onPress={() => tap('纳音')} hitSlop={6}>
+              {day.solarTermToday ? (
+                <Text style={{ color: P.gold, fontSize: 11 }}>
+                  {localizeSolarTermName(day.solarTermToday.name, locale)}
+                </Text>
+              ) : (
+                <Text style={{ color: P.dim, fontSize: 11, textDecorationLine: 'underline' }}>
+                  {C.nayinLine(nayin)}
+                </Text>
+              )}
+            </Pressable>
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <Strip
+              text={day.lunarDate ? C.lunarStrip(day.lunarDate) : ''}
+              term='农历'
+              onPress={tap}
+              style={vStyle(P)}
+            />
+            <Strip
+              text={yg ? C.yearStrip(yg.stem, yg.branch, yg.animal) : ''}
+              term='岁次'
+              onPress={tap}
+              style={vStyle(P)}
+            />
+          </View>
+        </View>
+      ) : (
+        <View style={{ marginTop: spacing.sm, gap: spacing.sm }}>
+          <View
             style={{
-              color: fit === '吉' ? P.gold : fit === '凶' ? P.brown : P.ink,
-              fontSize: 16,
-              letterSpacing: 2,
+              flexDirection: 'row',
+              alignItems: 'flex-end',
+              justifyContent: 'space-between',
             }}
           >
-            {t.personal.fitClassical[fit]}
+            <Text style={{ color: P.ink, fontSize: 76, lineHeight: 84, fontWeight: '700' }}>
+              {d.getDate()}
+            </Text>
+            <View style={{ gap: 2, alignItems: 'flex-end' }}>
+              <Pressable onPress={() => tap('干支')} hitSlop={4}>
+                <Text style={{ color: P.ink, fontSize: 13, textDecorationLine: 'underline' }}>
+                  {day.ganZhi}
+                  {C.ganZhiSuffix}
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => tap('建除')} hitSlop={4}>
+                <Text style={{ color: P.ink, fontSize: 13, textDecorationLine: 'underline' }}>
+                  {C.rowOfficer} {day.dayOfficer}
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => tap('值神')} hitSlop={4}>
+                <Text style={{ color: P.ink, fontSize: 13, textDecorationLine: 'underline' }}>
+                  {C.rowDayGod} {day.dayGod?.name ?? ''}
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => tap('星宿')} hitSlop={4}>
+                <Text style={{ color: P.ink, fontSize: 13, textDecorationLine: 'underline' }}>
+                  {C.rowMansion}{' '}
+                  {day.mansion
+                    ? `${day.mansion.name}${day.mansion.luminary}${day.mansion.animal}`
+                    : ''}
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => tap('纳音')} hitSlop={4}>
+                <Text style={{ color: P.gold, fontSize: 13, textDecorationLine: 'underline' }}>
+                  {C.nayinLine(nayin)}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+          <Text style={{ color: P.dim, fontSize: 12 }}>
+            {day.lunarDate ? C.lunarLine(day.lunarDate) : ''}
+            {yg ? ` · ${C.yearLine(yg.stem, yg.branch, yg.animal)}` : ''}
+            {day.solarTermToday
+              ? ` · ${localizeSolarTermName(day.solarTermToday.name, locale)}`
+              : ''}
           </Text>
-          <Text style={{ color: P.ink, fontSize: 14, lineHeight: 23, marginTop: 4 }}>
-            {t.personal.summaryClassical[fit]}
-          </Text>
+        </View>
+      )}
+
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+          gap: 12,
+          marginTop: spacing.sm,
+        }}
+      >
+        {day.clash ? (
+          <Pressable onPress={() => tap('冲煞')} hitSlop={6}>
+            <Text
+              style={{
+                color: P.dim,
+                fontSize: 11,
+                letterSpacing: 1,
+                textDecorationLine: 'underline',
+              }}
+            >
+              {C.clashText(day.clash.clashAnimal, day.evilDirection)}
+            </Text>
+          </Pressable>
+        ) : null}
+        {day.pengZu ? (
+          <Pressable onPress={() => tap('彭祖百忌')} hitSlop={6}>
+            <Text
+              style={{
+                color: P.dim,
+                fontSize: 11,
+                letterSpacing: 1,
+                textDecorationLine: 'underline',
+              }}
+            >
+              {C.pengzuText(day.pengZu.stem, day.pengZu.branch)}
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
+
+      <View style={{ borderTopWidth: 0.5, borderTopColor: P.ink, marginTop: spacing.md }}>
+        {yangGong ? (
+          <View style={{ alignItems: 'center', paddingTop: spacing.md }}>
+            <Text
+              style={{
+                backgroundColor: P.goldSoft,
+                color: P.brown,
+                fontSize: 11,
+                paddingHorizontal: 10,
+                paddingVertical: 3,
+                letterSpacing: 1,
+              }}
+            >
+              {C.yangGongNote}
+            </Text>
+          </View>
+        ) : null}
+        <YijiBlock label='宜' labelColor={P.gold} items={goodFor} P={P} onSelect={tap} />
+        <View style={{ height: 0.5, backgroundColor: P.ink, marginVertical: spacing.sm }} />
+        <YijiBlock label='忌' labelColor={P.brown} items={avoid} P={P} onSelect={tap} />
+      </View>
+    </View>
+  )
+
+  /** 分享组合 — Header + Hero + For you + Footer（传播靠金句 + 品牌 + 链接）。 */
+  if (capturing) {
+    return (
+      <View
+        ref={shotRef}
+        collapsable={false}
+        style={{ backgroundColor: P.bg, padding: 14, gap: spacing.md }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 4 }}>
+          <PhaseLogo
+            phase={moonPhaseForIsoDate(date)}
+            size={26}
+            scheme={isDark ? 'dark' : 'light'}
+          />
+          <View>
+            <Text style={{ color: P.ink, fontSize: 17, fontWeight: '700' }}>Yuun</Text>
+            <Text style={{ color: P.dim, fontSize: 10, letterSpacing: 3 }}>
+              {locale === 'en'
+                ? 'ALMANAC · TODAY'
+                : locale === 'ja'
+                  ? '黄暦 · 今日'
+                  : '黄历 · 今日'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={{ borderWidth: 2, borderColor: P.ink, padding: 3 }}>{renderSheet(false)}</View>
+
+        {fit ? (
+          <View>
+            <RuleTitle title={C.forYouLabel} P={P} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              {locale === 'zh-Hans' || locale === 'zh-Hant' ? (
+                <VerdictMark
+                  glyph={fit}
+                  color={fit === '凶' ? P.seal : fit === '吉' ? P.gold : P.brown}
+                  P={P}
+                />
+              ) : (
+                <Text
+                  style={{
+                    color: fit === '吉' ? P.gold : fit === '凶' ? P.brown : P.ink,
+                    fontSize: 16,
+                    letterSpacing: 2,
+                  }}
+                >
+                  {t.personal.fitClassical[fit]}
+                </Text>
+              )}
+              <Text style={{ color: P.ink, fontSize: 14, lineHeight: 23, flex: 1 }}>
+                {sealSummary(t.personal.summaryClassical[fit])}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        <Text
+          style={{
+            color: P.dim,
+            fontSize: 11,
+            letterSpacing: 1,
+            textAlign: 'center',
+            paddingTop: 4,
+          }}
+        >
+          Yuun · yuun.hexastral.com
+        </Text>
+      </View>
+    )
+  }
+
+  return (
+    <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md }}>
+      {/* ══ 撕页黄历纸页 ══ */}
+      <View style={{ borderWidth: 2, borderColor: P.ink, padding: 3 }}>{renderSheet(true)}</View>
+
+      {/* ══ 于你 ══ */}
+      {fit ? (
+        <View
+          onLayout={(e) => {
+            if (onPersonalSectionLayout) onPersonalSectionLayout(e.nativeEvent.layout.y)
+          }}
+        >
+          <RuleTitle title={C.forYouLabel} P={P} />
+          {fromPush ? (
+            <View
+              style={{
+                alignSelf: 'flex-start',
+                borderWidth: 0.5,
+                borderColor: P.ink,
+                borderRadius: 6,
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                marginBottom: spacing.sm,
+              }}
+            >
+              <Text style={{ color: P.dim, fontSize: 10, letterSpacing: 1 }}>
+                {t.personal.pushOriginBadge}
+              </Text>
+            </View>
+          ) : null}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            {locale === 'zh-Hans' || locale === 'zh-Hant' ? (
+              <VerdictMark
+                glyph={fit}
+                color={fit === '凶' ? P.seal : fit === '吉' ? P.gold : P.brown}
+                P={P}
+              />
+            ) : (
+              <Text
+                style={{
+                  color: fit === '吉' ? P.gold : fit === '凶' ? P.brown : P.ink,
+                  fontSize: 16,
+                  letterSpacing: 2,
+                }}
+              >
+                {t.personal.fitClassical[fit]}
+              </Text>
+            )}
+            <Text style={{ color: P.ink, fontSize: 14, lineHeight: 23, flex: 1 }}>
+              {sealSummary(t.personal.summaryClassical[fit])}
+            </Text>
+          </View>
         </View>
       ) : null}
 
@@ -483,13 +621,7 @@ export function AlmanacPage({ payload, locale }: { payload: AuspiceDayPayload; l
               <View style={{ flex: 1 }}>
                 {term ? (
                   <Pressable onPress={() => tap(term)} hitSlop={4}>
-                    <Text
-                      style={{
-                        color: P.ink,
-                        fontSize: 14,
-                        textDecorationLine: 'underline',
-                      }}
-                    >
+                    <Text style={{ color: P.ink, fontSize: 14, textDecorationLine: 'underline' }}>
                       {value}
                     </Text>
                   </Pressable>
@@ -585,6 +717,82 @@ export function AlmanacPage({ payload, locale }: { payload: AuspiceDayPayload; l
         footnote={C.meaningFootnote}
         onClose={() => setMeaningTerm(null)}
       />
+    </View>
+  )
+}
+
+/** 印章旁正文 — zh 句首「吉，/平，/凶，」由印章承担，正文去掉前缀。 */
+function sealSummary(summary: string): string {
+  const m = /^(吉|平|凶)，/.exec(summary)
+  return m ? summary.slice(m[0].length) : summary
+}
+
+/** 朱批圈判级意象 — 同 Yuel RiskMark 设计语言：三态同圈形（整圈），以圈色
+ *  与笔重分档——吉=赭金细笔 2.2、平=墨棕中笔 2.6、凶=朱砂重笔 3.4；墨色判级字
+ *  居中叠加其上（黑字被圈起来的效果）。 */
+const VERDICT_MARKS: Record<string, { d: string; sw: number; op: number }> = {
+  吉: {
+    d: 'M31,7 C16,2 4,11 5,22 C6,34 26,39 33,29 C37,23 35,13 27,9 C21,6 14,8 11,13',
+    sw: 2.2,
+    op: 0.9,
+  },
+  平: { d: 'M30,10 C17,4 6,13 7,23 C8,33 25,37 31,28 C35,22 32,13 24,10', sw: 2.6, op: 0.9 },
+  凶: {
+    d: 'M31,7 C16,2 4,11 5,22 C6,34 26,39 33,29 C37,23 35,13 27,9 C21,6 14,8 11,13',
+    sw: 3.4,
+    op: 1,
+  },
+}
+
+export function VerdictMark({
+  glyph,
+  color,
+  P,
+  size = 52,
+}: {
+  glyph: string
+  color: string
+  P: Palette
+  /** 尺寸 pt — App 于你 52；小组件预览 28（对齐原生 VerdictLoop）。 */
+  size?: number
+}) {
+  const m = VERDICT_MARKS[glyph] ?? VERDICT_MARKS['平'] ?? { d: '', sw: 3, op: 0.9 }
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {/* 判级字：普通墨色字体、保持端正 — 不是画出来的字。 */}
+      <Text
+        style={{
+          color: P.ink,
+          fontSize: Math.round(size * 0.42),
+          fontWeight: '700',
+          letterSpacing: 1,
+        }}
+      >
+        {glyph}
+      </Text>
+      {/* 手绘红圈画在字的上层，笔画压过字边 — 真实红笔圈字的效果。 */}
+      <Svg
+        width={size}
+        height={size}
+        viewBox='0 0 40 40'
+        style={{ position: 'absolute', transform: [{ rotate: '-4deg' }] }}
+      >
+        <SvgPath
+          d={m.d}
+          stroke={color}
+          strokeWidth={m.sw}
+          opacity={m.op}
+          fill='none'
+          strokeLinecap='round'
+        />
+      </Svg>
     </View>
   )
 }

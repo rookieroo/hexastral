@@ -334,12 +334,20 @@ export default function HomeScreen() {
               ) : dayData ? (
                 classicalActive ? (
                   /* 黄历模式首页 — 独立新页面（真实黄历排版），不基于现代首页改造。 */
-                  <AlmanacPage payload={dayData} locale={locale} />
+                  <AlmanacPage
+                    payload={dayData}
+                    locale={locale}
+                    fromPush={focusPersonal}
+                    onPersonalSectionLayout={(y) => {
+                      personalOffsetRef.current = y
+                    }}
+                  />
                 ) : (
                   <DayView
                     payload={dayData}
                     pushHook={pushHook}
                     festivalChip={festivalChip}
+                    fromPush={focusPersonal}
                     onPersonalSectionLayout={(y) => {
                       personalOffsetRef.current = y
                     }}

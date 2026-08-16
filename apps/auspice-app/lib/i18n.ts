@@ -461,6 +461,8 @@ export interface Strings {
   officers: Record<DayOfficer, string>
   personal: {
     forYou: string
+    /** 推送着陆徽标 — 点推送进来时显示在对你而言卡片上。 */
+    pushOriginBadge: string
     /** 文言判级标题 — 「黄历原声」开启时替换 forYou（于你/於你）。 */
     forYouClassical: string
     fit: Record<PersonalFit, string>
@@ -997,6 +999,7 @@ const zhHans: Strings = {
   personal: {
     forYou: '对你而言',
     forYouClassical: '于你',
+    pushOriginBadge: '今日推送',
     fit: { 吉: '可留意', 平: '平稳', 凶: '宜谨慎' },
     fitClassical: { 吉: '宜进', 平: '守常', 凶: '宜慎' },
     summary: {
@@ -1005,9 +1008,9 @@ const zhHans: Strings = {
       凶: '今日宜守不宜攻（文化参考）——低调收敛、避免冒进。',
     },
     summaryClassical: {
-      吉: '吉。今日五行相顺，诸事宜早，不宜迟疑。',
-      平: '平。诸事平稳，守常即可。',
-      凶: '凶。宜守不宜攻，收敛静待，不宜冒进。',
+      吉: '吉，此日五行相顺，诸事宜早，不宜迟疑。',
+      平: '平，此日诸事平稳，守常即可。',
+      凶: '凶，此日宜守不宜攻，收敛静待，不宜冒进。',
     },
     why: '了解原因',
     deepRead: '深入解读',
@@ -1478,6 +1481,7 @@ const zhHant: Strings = {
   personal: {
     forYou: '對你而言',
     forYouClassical: '於你',
+    pushOriginBadge: '今日推送',
     fit: { 吉: '可留意', 平: '平穩', 凶: '宜謹慎' },
     fitClassical: { 吉: '宜進', 平: '守常', 凶: '宜慎' },
     summary: {
@@ -1486,9 +1490,9 @@ const zhHant: Strings = {
       凶: '今日宜守不宜攻（文化參考）——低調收斂、避免冒進。',
     },
     summaryClassical: {
-      吉: '吉。今日五行相順，諸事宜早，不宜遲疑。',
-      平: '平。諸事平穩，守常即可。',
-      凶: '凶。宜守不宜攻，收斂靜待，不宜冒進。',
+      吉: '吉，此日五行相順，諸事宜早，不宜遲疑。',
+      平: '平，此日諸事平穩，守常即可。',
+      凶: '凶，此日宜守不宜攻，收斂靜待，不宜冒進。',
     },
     why: '了解原因',
     deepRead: '深入解讀',
@@ -1991,6 +1995,7 @@ const ja: Strings = {
     forYou: 'あなたへ',
     // ja 无黄历原声（不翻译原文）— 复用白话。
     forYouClassical: 'あなたへ',
+    pushOriginBadge: '今日の通知',
     fit: { 吉: '好機', 平: '平穏', 凶: '慎重に' },
     // ja 无黄历原声（不翻译原文）— 复用白话。
     fitClassical: { 吉: '好機', 平: '平穏', 凶: '慎重に' },
@@ -2514,6 +2519,7 @@ const en: Strings = {
     forYou: 'For you',
     // en has no classical register — vernacular only.
     forYouClassical: 'For you',
+    pushOriginBadge: "Today's push",
     fit: { 吉: 'Favorable', 平: 'Neutral', 凶: 'Caution' },
     // en has no classical register (no translations) — vernacular only.
     fitClassical: { 吉: 'Favorable', 平: 'Neutral', 凶: 'Caution' },

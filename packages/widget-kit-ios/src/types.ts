@@ -100,6 +100,8 @@ export interface YuunWidgetDay {
   ganZhiPinyin?: string | null
   /** 黄历模式 extras — 撕页黄历 large 组件用（值神/煞方/彭祖/纳音）。 */
   dayGod?: string | null
+  /** 判级原字（吉/平/凶，zh 黄历模式）— 组件画手绘圈 + 墨字；en/ja 为 null。 */
+  fitGlyph?: string | null
   evilDirection?: string | null
   pengZuStem?: string | null
   pengZuBranch?: string | null

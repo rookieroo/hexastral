@@ -251,7 +251,7 @@ app.post('/expo-push/send', async (c) => {
     throw new HTTPException(400, { message: 'tokens and body are required' })
   }
 
-  const { tickets, invalidTokens } = await sendExpoPush(body.tokens, {
+  const { tickets, invalidTokens, errors } = await sendExpoPush(body.tokens, {
     title: body.title,
     body: body.body,
     data: body.data,
@@ -259,7 +259,7 @@ app.post('/expo-push/send', async (c) => {
     badge: body.badge,
   })
 
-  return c.json({ success: true, tickets, invalidTokens })
+  return c.json({ success: true, tickets, invalidTokens, errors })
 })
 
 // ============ Error Handling ============
@@ -286,6 +286,8 @@ interface ExpoPushResult {
   tickets: { id: string }[]
   /** Expo push tokens that are no longer valid (DeviceNotRegistered). */
   invalidTokens: string[]
+  /** Non-DNR ticket failures, token-indexed — surfaced to dev-fire diagnostics. */
+  errors: Array<{ token?: string; error: string }>
 }
 
 interface ExpoTicket {
@@ -300,6 +302,7 @@ async function sendExpoPush(tokens: string[], payload: ExpoPushPayload): Promise
   const chunkSize = 100
   const tickets: { id: string }[] = []
   const invalidTokens: string[] = []
+  const errors: Array<{ token?: string; error: string }> = []
 
   for (let i = 0; i < tokens.length; i += chunkSize) {
     const chunk = tokens.slice(i, i + chunkSize)
@@ -330,11 +333,15 @@ async function sendExpoPush(tokens: string[], payload: ExpoPushPayload): Promise
         if (token) invalidTokens.push(token)
       } else if (item.status !== 'ok') {
         logger.warn('Expo push token issue', { message: item.message })
+        errors.push({
+          token: chunk[idx],
+          error: item.details?.error ?? item.message ?? 'send_error',
+        })
       }
     })
   }
 
-  return { tickets, invalidTokens }
+  return { tickets, invalidTokens, errors }
 }
 
 /** Like sendExpoPush but each message carries its OWN title/body/data (Auspice
