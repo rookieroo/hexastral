@@ -11,7 +11,13 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { getVoiceMode, setVoiceMode, subscribeVoiceMode, type VoiceMode } from './voice-mode'
+import {
+  getVoiceMode,
+  seedVoiceModeDefault,
+  setVoiceMode,
+  subscribeVoiceMode,
+  type VoiceMode,
+} from './voice-mode'
 
 interface VoiceModeContextValue {
   mode: VoiceMode
@@ -24,10 +30,26 @@ const VoiceModeContext = createContext<VoiceModeContextValue | null>(null)
 
 export function VoiceModeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<VoiceMode>('contemporary')
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    void getVoiceMode().then(setModeState)
-    return subscribeVoiceMode(setModeState)
+    let mounted = true
+    // Seed FIRST, then load — otherwise the initial async read (empty storage)
+    // races the first-launch seed and can clobber the classical default with
+    // 'contemporary', so new installs briefly showed the modern home.
+    void (async () => {
+      await seedVoiceModeDefault()
+      const next = await getVoiceMode()
+      if (mounted) {
+        setModeState(next)
+        setReady(true)
+      }
+    })()
+    const unsubscribe = subscribeVoiceMode(setModeState)
+    return () => {
+      mounted = false
+      unsubscribe()
+    }
   }, [])
 
   const setMode = useCallback(async (next: VoiceMode) => {
@@ -35,6 +57,8 @@ export function VoiceModeProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo(() => ({ mode, classical: mode === 'classical', setMode }), [mode, setMode])
+
+  if (!ready) return null
 
   return <VoiceModeContext.Provider value={value}>{children}</VoiceModeContext.Provider>
 }

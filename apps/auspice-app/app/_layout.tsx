@@ -45,7 +45,6 @@ import {
 } from '@/lib/push'
 import { migrateBirthdaysToServerOnce } from '@/lib/serverPush'
 import { useAppTheme } from '@/lib/theme'
-import { seedVoiceModeDefault } from '@/lib/voice-mode'
 import { VoiceModeProvider } from '@/lib/voice-mode-context'
 import { YijiModeProvider } from '@/lib/yiji-mode-context'
 
@@ -89,10 +88,8 @@ function RootLayoutInner() {
   const { locale } = useStrings()
   const router = useRouter()
 
-  // 首次启动 seed — zh 新安装默认黄历模式（老用户/en/ja 不动）。
-  useEffect(() => {
-    void seedVoiceModeDefault(locale)
-  }, [locale])
+  // 首次启动 seed 已移入 VoiceModeProvider（先 seed 再读取，避免竞态
+  // 导致新装首开显示现代首页）。
 
   // WidgetKit + Watch App Group — any route, not Home-only.
   useYuunWidgetSync(locale)
