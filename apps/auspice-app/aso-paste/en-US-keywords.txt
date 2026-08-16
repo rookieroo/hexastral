@@ -1,1 +1,1 @@
-huangli,lunar,yiji,bazi,widget,solar terms,birthday reminder,festival
+huangli,yiji,bazi,chinese calendar,lunar calendar,auspicious,widget,solar terms,birthday reminder
