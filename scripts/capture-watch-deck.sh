@@ -37,6 +37,27 @@ function run(argv) {
   return ''
 }
 JSEOF
+[ -f /tmp/watchbtn.js ] || cat > /tmp/watchbtn.js <<'JSEOF'
+function run(argv) {
+  const name = argv[0]
+  const btn = argv[1]
+  const se = Application('System Events')
+  const wins = se.processes.byName('Simulator').windows()
+  for (let i = 0; i < wins.length; i++) {
+    const w = wins[i]
+    if (String(w.name()).includes(name)) {
+      const buttons = w.buttons()
+      for (let j = 0; j < buttons.length; j++) {
+        try {
+          if (String(buttons[j].title()) === btn) { buttons[j].click(); return 'clicked ' + btn }
+        } catch (e) {}
+      }
+    }
+  }
+  return 'not found'
+}
+JSEOF
+press_crown() { osascript -l JavaScript /tmp/watchbtn.js "$WNAME" "Crown" 2>/dev/null; sleep 1.5; }
 geo() {
   local out tries
   for tries in 1 2 3 4 5 6 7 8; do
@@ -103,14 +124,67 @@ sleep 8
 xcrun simctl terminate "$WUDID" "$APP" 2>/dev/null || true
 sleep 2
 
-# ── three faces ──
-xcrun simctl io "$WUDID" screenshot "$OUT_ROOT/face1.png"
-swipe_left
-xcrun simctl io "$WUDID" screenshot "$OUT_ROOT/face2.png"
-swipe_left
-xcrun simctl io "$WUDID" screenshot "$OUT_ROOT/face3.png"
+# ── three faces（滑动后点按激活，否则停留在切换状态）──
+ensure_normal_face() {
+  local TXT i
+  for i in 1 2 3; do
+    xcrun simctl io "$WUDID" screenshot /tmp/fcheck.png >/dev/null 2>&1
+    TXT=$(ocr_of /tmp/fcheck.png)
+    case "$TXT" in
+      *"Edit"*|*"编辑"*|*"編輯"*|*"編集"*) press_crown ;;
+      *) return 0 ;;
+    esac
+  done
+}
+tap_face() { # 点按屏幕中心，激活滑动后的表盘
+  local G NX NY
+  G=$(geo)
+  read -r GX GY GW GH <<< "$(python3 -c "p = '''$G'''.split(); print(p[0], p[1], p[2], p[3])")"
+  NX=$(python3 -c "print(int($GX + 0.5*$GW))")
+  NY=$(python3 -c "print(int($GY + 0.5*$GH))")
+  osascript -l JavaScript /tmp/tap.js "$NX" "$NY"
+  sleep 1.5
+}
+swipe_face_left() { # 表盘切换：起点避开组件区域（下方）+ 快速短滑
+  local G NX1 NY1 NX2
+  G=$(geo)
+  read -r GX GY GW GH <<< "$(python3 -c "p = '''$G'''.split(); print(p[0], p[1], p[2], p[3])")"
+  NX1=$(python3 -c "print(int($GX + 0.85*$GW))"); NY1=$(python3 -c "print(int($GY + 0.85*$GH))")
+  NX2=$(python3 -c "print(int($GX + 0.15*$GW))")
+  osascript -l JavaScript /tmp/drag.js "$NX1" "$NY1" "$NX2" "$NY1" 0.35
+  sleep 2
+}
+capture_face() {
+  local p="$1" prev="$2" TXT i
+  for i in 1 2 3; do
+    xcrun simctl io "$WUDID" screenshot "$OUT_ROOT/$p.png"
+    TXT=$(ocr_of "$OUT_ROOT/$p.png")
+    case "$TXT" in
+      *"Edit"*|*"编辑"*|*"編輯"*|*"編集"*) press_crown; swipe_face_left; tap_face ;;
+      *)
+        if [ -n "$prev" ] && [ "$(md5 -q "$OUT_ROOT/$prev.png")" = "$(md5 -q "$OUT_ROOT/$p.png")" ]; then
+          swipe_face_left; tap_face
+          continue
+        fi
+        return 0 ;;
+    esac
+  done
+}
+ensure_normal_face
+capture_face face1 ""
+swipe_face_left
+tap_face
+capture_face face2 face1
+swipe_face_left
+tap_face
+capture_face face3 face2
 
-# ── app tabs ──
+# ── app tabs（FACE_ONLY=1 时跳过）──
+if [ "${FACE_ONLY:-0}" = "1" ]; then
+  echo "done(faces) -> $OUT_ROOT"
+  exit 0
+fi
+
 xcrun simctl launch "$WUDID" "$APP" 2>/dev/null || true
 sleep 6
 xcrun simctl io "$WUDID" screenshot "$OUT_ROOT/today.png"
