@@ -224,9 +224,8 @@ for _ in 1 2 3; do
   xcrun simctl io "$UDID" screenshot /tmp/probe.png >/dev/null 2>&1
   TXT=$(osascript -l JavaScript /tmp/ocr.js /tmp/probe.png 2>/dev/null || true)
   case "$TXT" in
-    *"App Library"*) swipe_right; swipe_right ;;
-    *"Calendar"*|*"Utilities"*|*"Maps"*) swipe_right ;;
-    *) break ;;
+    *"For you"*|*"对你而言"*|*"對你而言"*|*"あなたへ"*|*"于你"*|*"於你"*) break ;;
+    *) swipe_right ;;
   esac
   sleep 2
 done

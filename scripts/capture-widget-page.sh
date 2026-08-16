@@ -130,10 +130,10 @@ page_probe() {
 }
 for _ in 1 2 3; do
   TXT=$(page_probe)
+  # Widget-page anchor: the large widget's For-you line (locale-neutral markers).
   case "$TXT" in
-    *"App Library"*) swipe_right; swipe_right ;;
-    *"Calendar"*|*"Utilities"*|*"Maps"*) swipe_right ;;
-    *) break ;;
+    *"For you"*|*"对你而言"*|*"對你而言"*|*"あなたへ"*|*"于你"*|*"於你"*) break ;;
+    *) swipe_right ;;
   esac
   sleep 2
 done
