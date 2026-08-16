@@ -120,6 +120,27 @@ if (eas) {
   }
 }
 
+// EAS 云端构建机的 CocoaPods 固定 xcodeproj 1.27.0，其版本表不含 objectVersion 70
+// （Xcode 26 会把工程写回 70）→ pod install 必挂：`Unable to find compatibility
+// version string for object version '70'`。70/77 是同一代格式，77 可直接解析。
+// 本地 Xcode/prebuild 改写工程后，此处会拦住，防「本地能跑、云端必挂」再发生。
+{
+  const pbx = join(ROOT, 'apps/auspice-app/ios/Yuun.xcodeproj/project.pbxproj')
+  if (!existsSync(pbx)) {
+    fail('apps/auspice-app/ios/Yuun.xcodeproj/project.pbxproj missing — ios/ 必须保持提交，EAS 才会直接用它构建')
+  } else {
+    const raw = readFileSync(pbx, 'utf8')
+    const m = raw.match(/^\s*objectVersion\s*=\s*(\d+);/m)
+    if (m?.[1] === '70') {
+      fail(
+        'ios/Yuun.xcodeproj/project.pbxproj objectVersion=70 会让 EAS 云端 pod install 必挂 — 改回 77（Xcode 26 本地改动后检查这里）',
+      )
+    } else if (!m) {
+      warn('could not read objectVersion from ios/Yuun.xcodeproj/project.pbxproj')
+    }
+  }
+}
+
 const appJson = readJson('apps/auspice-app/app.json', 'app.json parse')
 if (appJson?.expo) {
   if (appJson.expo.version !== '1.0.0') {
