@@ -33,7 +33,7 @@ SIZE_DIR="$2"
 LOCALE="$3"
 APP_PATH="${APP_PATH:-apps/auspice-app/ios/build/Build/Products/Release-iphonesimulator/Yuun.app}"
 BUNDLE_ID="com.hexastral.yuun"
-OUT_ROOT="${OUT_ROOT:-docs/publish/screenshots/yuun/$SIZE_DIR/$LOCALE}"
+OUT_ROOT="${OUT_ROOT:-docs/publish/screenshots/yuun/$SIZE_DIR/$LOCALE/deck}"
 case "$LOCALE" in
   en) REGION="en_US" ;;
   zh-Hans) REGION="zh_CN" ;;
@@ -232,12 +232,14 @@ done
 sleep 3
 xcrun simctl io "$UDID" screenshot "$OUT_ROOT/02-widget.png"
 
-# ── 03 现代首页 ─────────────────────────────────────────────────────────
-echo "== 03 modern home =="
+# ── 03 现代首页（月历展开）──────────────────────────────────────────────
+echo "== 03 modern home (month expanded) =="
 seed contemporary
 xcrun simctl launch "$UDID" "$BUNDLE_ID"
 sleep 15
-xcrun simctl io "$UDID" screenshot "$OUT_ROOT/03-modern-home.png"
+tap 0.5 0.206   # expand chevron (modern home)
+sleep 3
+xcrun simctl io "$UDID" screenshot "$OUT_ROOT/03-month.png"
 
 # ── 04 文化深读 / 05 择日 / 08 时间轴 ──────────────────────────────────
 echo "== 04 culture deep =="
@@ -264,6 +266,6 @@ echo "== 07 lock screen =="
 seed classical
 sync_widget_payload
 read -r -p "Press ⌘L in the Simulator to lock, then press Enter here... " _ || true
-xcrun simctl io "$UDID" screenshot "$OUT_ROOT/07-lock.png"
+xcrun simctl io "$UDID" screenshot "$OUT_ROOT/07-lock-real.png"
 
 echo "done -> $OUT_ROOT"

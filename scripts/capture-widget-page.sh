@@ -8,7 +8,7 @@ set -euo pipefail
 DEVICE_NAME="$1"; SIZE_DIR="$2"; LOCALE="$3"
 APP_PATH="${APP_PATH:-apps/auspice-app/ios/build/Build/Products/Release-iphonesimulator/Yuun.app}"
 BUNDLE_ID="com.hexastral.yuun"
-OUT_ROOT="${OUT_ROOT:-docs/publish/screenshots/yuun/$SIZE_DIR/$LOCALE}"
+OUT_ROOT="${OUT_ROOT:-docs/publish/screenshots/yuun/$SIZE_DIR/$LOCALE/deck}"
 case "$LOCALE" in
   zh-Hans|zh-Hant) WIDGET_MODE="classical" ;;
   *) WIDGET_MODE="contemporary" ;;
