@@ -109,6 +109,26 @@ function run(argv) {
   return 'drag'
 }
 JSEOF
+[ -f /tmp/ocr.js ] || cat > /tmp/ocr.js <<'JSEOF'
+ObjC.import('Vision')
+ObjC.import('AppKit')
+function run(argv) {
+  const data = $.NSData.dataWithContentsOfFile(argv[0])
+  const nsimg = $.NSImage.alloc.initWithData(data)
+  const cg = nsimg.CGImageForProposedRectContextHints($(), $(), $())
+  const req = $.VNRecognizeTextRequest.alloc.init
+  req.recognitionLevel = $.VNRequestTextRecognitionLevelAccurate
+  req.recognitionLanguages = $('zh-Hans', 'zh-Hant', 'en-US', 'ja-JP')
+  const handler = $.VNImageRequestHandler.alloc.initWithCGImageOptions(cg, $.NSDictionary.dictionary)
+  handler.performRequestsError($.NSArray.arrayWithObject(req), null)
+  const out = []
+  const results = req.results
+  for (let i = 0; i < results.count; i++) {
+    out.push(results.objectAtIndex(i).topCandidates(1).objectAtIndex(0).string.js)
+  }
+  return out.join(' | ')
+}
+JSEOF
 
 geopoint() { # $1 nx $2 ny -> global x y from Simulator content rect
   local G NX NY
@@ -129,15 +149,31 @@ swipe_left_page() {
   osascript -l JavaScript /tmp/drag.js "$X1" "$Y1" "$X2" "$Y2" 0.7
 }
 
-seed() { # $1 voiceMode (classical|contemporary)
+seed() { # $1 voiceMode (classical|contemporary) — merge-seed, never uninstalls
   local APPDATA ASDIR
   xcrun simctl terminate "$UDID" "$BUNDLE_ID" 2>/dev/null || true
-  xcrun simctl uninstall "$UDID" "$BUNDLE_ID" 2>/dev/null || true
-  xcrun simctl install "$UDID" "$APP_PATH"
-  APPDATA=$(xcrun simctl get_app_container "$UDID" "$BUNDLE_ID" data)
+  APPDATA=$(xcrun simctl get_app_container "$UDID" "$BUNDLE_ID" data 2>/dev/null || true)
+  if [ -z "$APPDATA" ]; then
+    xcrun simctl install "$UDID" "$APP_PATH"
+    APPDATA=$(xcrun simctl get_app_container "$UDID" "$BUNDLE_ID" data)
+  fi
   ASDIR="$APPDATA/Library/Application Support/com.hexastral.yuun/RCTAsyncLocalStorage_V1"
   mkdir -p "$ASDIR"
-  printf '{"auspice.onboarding.seen.v1":"1","auspice.voice.mode":"%s","auspice.birthDate":"1992-08-15","auspice.birthInfo":"{\\"solarDate\\":\\"1992-08-15\\",\\"calendar\\":\\"solar\\",\\"timeIndex\\":6,\\"gender\\":\\"女\\",\\"timezone\\":\\"Asia/Shanghai\\"}"}' "$1" > "$ASDIR/manifest.json"
+  python3 - <<EOF
+import json, os
+p = "$ASDIR/manifest.json"
+d = {}
+if os.path.exists(p):
+    try: d = json.load(open(p))
+    except Exception: d = {}
+d.update({
+  "auspice.onboarding.seen.v1": "1",
+  "auspice.voice.mode": "$1",
+  "auspice.birthDate": "1992-08-15",
+  "auspice.birthInfo": '{"solarDate":"1992-08-15","calendar":"solar","timeIndex":6,"gender":"女","timezone":"Asia/Shanghai"}',
+})
+json.dump(d, open(p, "w"), ensure_ascii=False)
+EOF
 }
 
 sync_widget_payload() { # launch app + open display page (writes payload) + terminate
@@ -178,7 +214,22 @@ echo "== 02 widgets ($WIDGET_MODE large) =="
 seed "$WIDGET_MODE"
 sync_widget_payload
 reboot          # WidgetKit refetches timelines on boot — reliable refresh
-swipe_left_page # page 1 -> page 2 (widgets page)
+swipe_right() {
+  read -r X1 Y1 <<< "$(geopoint 0.15 0.5)"
+  read -r X2 Y2 <<< "$(geopoint 0.88 0.5)"
+  osascript -l JavaScript /tmp/drag.js "$X1" "$Y1" "$X2" "$Y2" 0.8
+  sleep 2.5
+}
+for _ in 1 2 3; do
+  xcrun simctl io "$UDID" screenshot /tmp/probe.png >/dev/null 2>&1
+  TXT=$(osascript -l JavaScript /tmp/ocr.js /tmp/probe.png 2>/dev/null || true)
+  case "$TXT" in
+    *"App Library"*) swipe_right; swipe_right ;;
+    *"Calendar"*|*"Utilities"*|*"Maps"*) swipe_right ;;
+    *) break ;;
+  esac
+  sleep 2
+done
 sleep 3
 xcrun simctl io "$UDID" screenshot "$OUT_ROOT/02-widget.png"
 
