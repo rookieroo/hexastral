@@ -84,3 +84,4 @@ node_modules/
 
 # Local agent worktrees (never commit)
 .claude/worktrees/
+docs/publish/screenshots/
