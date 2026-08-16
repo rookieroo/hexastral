@@ -60,12 +60,14 @@ JSEOF
 press_crown() { osascript -l JavaScript /tmp/watchbtn.js "$WNAME" "Crown" 2>/dev/null; sleep 1.5; }
 geo() {
   local out tries
-  for tries in 1 2 3 4 5 6 7 8; do
+  for tries in $(seq 1 40); do
     out=$(osascript -l JavaScript /tmp/geo.js "$WNAME" 2>/dev/null)
     case "$out" in
       *" "*" "*" "*) echo "$out"; return 0 ;;
     esac
-    sleep 2
+    # 窗口未开：拉起 Simulator App 再等（设备窗口可能因重启被关闭）
+    open -a Simulator >/dev/null 2>&1 || true
+    sleep 3
   done
   return 1
 }
