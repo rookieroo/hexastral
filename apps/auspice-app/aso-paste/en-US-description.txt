@@ -2,32 +2,27 @@ Yuun is a Chinese almanac (huangli) for everyday life: daily Good/Avoid activiti
 
 TODAY
 - Today home with week strip, stem-branch, Good/Avoid, and optional For you from birth
-- Free Home Screen widgets, Lock Screen, and Apple Watch complications
-- Swipe right for month calendar (solar, lunar, solar terms, festivals)
-- Swipe left for Settings
+- The public almanac is free for everyone, every day
+- Month calendar via the chevron under the week strip (solar, lunar, solar terms, festivals)
+- Settings via the icon in the home header
 - Culture library in Settings
 
 FOR YOU
-- Add one birth profile for daily For you (summary on Free; detail on Pro)
-- Personal Ba Zi and Zi Wei deep-read, timeline, and what-if on Pro
+- Add one birth profile for daily For you summary
+- Deeper personal reads and timeline tools arrive in a later update
 
 FAMILY
-- Family lunar or solar birthday reminders
+- Family lunar or solar birthday reminders (up to 3 on Free)
 - Morning push and optional evening heads-up
 
 NOT
 - Not Western astrology or horoscopes
 - Not predictive
 
-FREE vs PRO
-Free: Today Good/Avoid, calendar, widgets, one birth profile, For you summary, push, up to 3 family reminders.
-Pro 4.99 USD/month or 39.99 USD/year: full For you reasons, timeline, deep-read, unlimited family reminders.
-
 PRIVACY
-Birth can stay on-device or sync when multi-device is on. Purchases via RevenueCat. Delete account in Settings. No tracking ads.
+Your birth profile personalizes the daily For you summary, and syncs to your account only when multi-device is on. Delete account in Settings. No tracking ads.
 
 ABOUT
 Yuun is published by UseONE, LLC.
 Privacy: https://yuun.hexastral.com/privacy/yuun
 Terms: https://yuun.hexastral.com/terms
-
