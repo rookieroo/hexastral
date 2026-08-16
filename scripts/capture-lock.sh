@@ -14,4 +14,4 @@ mkdir -p "$OUT_ROOT"
 read -r -p "Press ⌘L in the Simulator to lock, then press Enter... " _ || true
 sleep 2
 xcrun simctl io "$UDID" screenshot "$OUT_ROOT/07-lock-real.png"
-echo "done -> $OUT_ROOT/07-lock.png"
+echo "done -> $OUT_ROOT/07-lock-real.png"
