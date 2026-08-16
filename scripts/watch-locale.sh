@@ -14,7 +14,15 @@ case "$LOCALE" in
   *) echo "locale must be en|zh-Hans|zh-Hant|ja" >&2; exit 1 ;;
 esac
 
-WUDID=$(xcrun simctl list devices | grep -F "$DEVICE_NAME" | grep -Eo '[0-9A-F]{8}-[0-9A-F-]{27,}' | head -1)
+if echo "$DEVICE_NAME" | grep -qE '^[0-9A-F]{8}-[0-9A-F-]{27,}$'; then
+  WUDID="$DEVICE_NAME"   # 直接传了 UDID
+else
+  # 同名实例可能多台：优先选已启动的
+  WUDID=$(xcrun simctl list devices | grep -F "$DEVICE_NAME" | grep -F '(Booted)' | grep -Eo '[0-9A-F]{8}-[0-9A-F-]{27,}' | head -1)
+  if [ -z "$WUDID" ]; then
+    WUDID=$(xcrun simctl list devices | grep -F "$DEVICE_NAME" | grep -Eo '[0-9A-F]{8}-[0-9A-F-]{27,}' | head -1)
+  fi
+fi
 [ -n "$WUDID" ] || { echo "no booted/existing simulator named $DEVICE_NAME" >&2; exit 1; }
 echo "watch=$WUDID -> $LOCALE / $REGION"
 
