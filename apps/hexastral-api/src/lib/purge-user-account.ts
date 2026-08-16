@@ -244,7 +244,10 @@ async function resolvePurgeScope(
     userId,
     auspiceOwners: [userOwnerKey(userId), ...deviceOwners],
     auspiceDeviceIds: [
-      ...new Set([...linkedSubs.map((s) => s.deviceId), ...(opts?.deviceId ? [opts.deviceId] : [])]),
+      ...new Set([
+        ...linkedSubs.map((s) => s.deviceId),
+        ...(opts?.deviceId ? [opts.deviceId] : []),
+      ]),
     ],
     conversationIds: convRows.map((r) => r.id),
     bondIds,
