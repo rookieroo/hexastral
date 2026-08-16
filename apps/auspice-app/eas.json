@@ -69,7 +69,8 @@
     "production": {
       "ios": {
         "appleTeamId": "L9Z47DW56X",
-        "ascAppId": "6796927374"
+        "ascAppId": "6796927374",
+        "bundleIdentifier": "com.hexastral.yuun"
       }
     }
   }
