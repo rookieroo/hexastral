@@ -1,0 +1,37 @@
+=== Yuun Google Play 商店文案 — en-US ===
+
+[应用名称 / App name]
+Yuun: Chinese Almanac
+
+[简短说明 / Short description]
+Chinese almanac — Good/Avoid, lunar dates. Optional For you from birth.
+
+[完整说明 / Full description]
+Yuun is a Chinese almanac (huangli) for everyday life: daily Good/Avoid activities, solar terms, lunisolar dates, and culture from classical sources.
+
+TODAY
+- Today home with week strip, stem-branch, Good/Avoid, and optional For you from birth
+- Month calendar (solar, lunar, solar terms, festivals)
+- Culture library in Settings
+
+FOR YOU
+- Add one birth profile for a daily For you summary
+- Deeper personal reads arrive in a later update
+
+FAMILY
+- Family lunar or solar birthday reminders (up to 3)
+- Morning push and optional evening heads-up
+
+NOT
+- Not Western astrology or horoscopes
+- Not predictive
+
+PRIVACY
+Your birth profile personalizes the daily For you summary. Delete account in Settings. No tracking ads.
+
+Yuun is published by UseONE, LLC.
+Privacy: https://yuun.hexastral.com/privacy/yuun
+Terms: https://yuun.hexastral.com/terms
+
+DISCLAIMER
+Based on traditional almanac and chart culture - for entertainment, cultural exploration, and personal reflection only. Not medical, legal, financial, or life advice.

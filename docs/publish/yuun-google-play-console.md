@@ -140,6 +140,7 @@ Yuun 实际数据流：匿名 `deviceId` + Expo push token（本地/推送注册
 | Target audience | **13+**（有账号体系 + 收集可选个人数据，不选儿童） |
 | News / 政府信息 | 不适用 |
 | Financial features | **无**（免费版无任何支付） |
+| 敏感权限声明（Sensitive permissions） | Expo prebuild 模板默认声明 `RECORD_AUDIO`/`SYSTEM_ALERT_WINDOW` 权限但 App **运行时从不请求**。表单按事实答：不录音、无悬浮窗用途。后续版本可用 config plugin 从 manifest 剥掉这两行（见 `apps/auspice-app/plugins/` 惯例） |
 
 ---
 

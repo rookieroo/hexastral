@@ -1,0 +1,16 @@
+=== Yuun 发布说明 / Release notes(每条轨道粘贴对应语言)===
+
+[en-US]
+First release: today almanac with Good/Avoid, lunar calendar, solar terms and culture library. Optional For you summary from your birth profile, family birthday reminders, morning push.
+
+
+[zh-Hans]
+首个版本:今日黄历宜忌、农历与节气、文化库。可选生辰「对你而言」摘要、家人农历/公历生日提醒与早间推送。
+
+
+[zh-Hant]
+首個版本:今日黃曆宜忌、農曆與節氣、文化庫。可選生辰「對你而言」摘要、家人農曆/國曆生日提醒與早間推播。
+
+
+[ja]
+初版:今日の黄暦・宜忌、旧暦・節気、文化ライブラリ。任意で生年月日による「あなたへ」要約、家族の誕生日リマインダー、朝のプッシュ通知。
