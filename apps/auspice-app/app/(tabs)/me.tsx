@@ -54,6 +54,7 @@ import { SettingsCard, SettingsRow, SettingsSection } from '@/components/setting
 import { requestYuunWidgetSync } from '@/hooks/useYuunWidgetSync'
 import { fetchAccountProfile, isSignedIn, signOut, type YuunAccountProfile } from '@/lib/account'
 import { deleteYuunAccount } from '@/lib/account-delete'
+import { useAlmanacTheme } from '@/lib/almanac-theme-context'
 import { clearAuspiceGetCache } from '@/lib/api'
 import { type AuspiceBirthInfo, getAuspiceBirthInfo, setAuspiceBirthInfo } from '@/lib/birth'
 import {
@@ -87,7 +88,6 @@ import { pushTypeById } from '@/lib/pushRegistry'
 import { devFireDailyPush } from '@/lib/serverPush'
 import { isServerPushActive } from '@/lib/serverPushFlag'
 import { TWELVE_SHICHEN } from '@/lib/shichen-content'
-import { useAlmanacTheme } from '@/lib/almanac-theme-context'
 import { useVoiceMode } from '@/lib/voice-mode-context'
 
 const LOCALES: { key: Locale; label: string }[] = [

@@ -18,22 +18,16 @@ import {
 } from '@zhop/astro-core'
 import { useTheme } from '@zhop/core-ui'
 import { useEffect, useRef, useState } from 'react'
-import {
-  StyleSheet,
-  Text,
-  type TextStyle,
-  useWindowDimensions,
-  View,
-} from 'react-native'
+import { StyleSheet, Text, type TextStyle, useWindowDimensions, View } from 'react-native'
 import { Pressable } from 'react-native-gesture-handler'
 import Svg, { Path as SvgPath } from 'react-native-svg'
-import { YiJiMeaningSheet } from '@/components/YiJiMeaningSheet'
 import { AlmanacCalendarSheet } from '@/components/AlmanacCalendarSheet'
 import { ClassicAlmanacPaper } from '@/components/ClassicAlmanacPaper'
+import { YiJiMeaningSheet } from '@/components/YiJiMeaningSheet'
 import { almanacCopy } from '@/lib/almanac-copy'
-import type { AuspiceDayPayload } from '@/lib/api'
 import { almanacPalette, verdictCircleColor, weekdayFromIso } from '@/lib/almanac-palette'
 import { useAlmanacTheme } from '@/lib/almanac-theme-context'
+import type { AuspiceDayPayload } from '@/lib/api'
 import { localizeSolarTermName } from '@/lib/culture'
 import { dayGodEntry, officerEntry } from '@/lib/culture/classical-glossary'
 import { heroTermExplanation } from '@/lib/culture/hero-terms'

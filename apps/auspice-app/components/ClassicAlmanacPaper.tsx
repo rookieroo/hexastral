@@ -17,8 +17,8 @@ import { Text, type TextStyle, View } from 'react-native'
 import { Pressable } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { almanacCopy } from '@/lib/almanac-copy'
-import type { AuspiceDay } from '@/lib/api'
 import type { AlmanacPalette } from '@/lib/almanac-palette'
+import type { AuspiceDay } from '@/lib/api'
 import { localizeSolarTermName } from '@/lib/culture'
 import {
   caishenDirection,
@@ -260,6 +260,7 @@ export function ClassicAlmanacPaper({
 }) {
   const C = almanacCopy(locale)
   const insets = useSafeAreaInsets()
+  const heroGutter = 16
   const register = resolveRegisterSync(locale, true)
   const verb = (v: string) => formatYijiVerb(v, locale, register)
   const d = new Date(`${date}T00:00:00`)
@@ -282,12 +283,9 @@ export function ClassicAlmanacPaper({
       ? localizeSolarTermName(day.solarTerm.next.name, locale)
       : '—'
 
-  const pillars = [
-    yg ? `${yg.stem}${yg.branch}` : '',
-    monthP ?? '',
-    day.ganZhi,
-    hourPillar,
-  ].filter(Boolean)
+  const pillars = [yg ? `${yg.stem}${yg.branch}` : '', monthP ?? '', day.ganZhi, hourPillar].filter(
+    Boolean
+  )
   const stemLine = pillars.map((p) => p[0] ?? '').join('')
   const branchLine = pillars.map((p) => p[1] ?? '').join('')
 
@@ -368,7 +366,8 @@ export function ClassicAlmanacPaper({
       style={{
         flex: 1,
         minHeight: 0,
-        paddingHorizontal: 6,
+        paddingLeft: Math.max(insets.left, heroGutter),
+        paddingRight: Math.max(insets.right, heroGutter),
         paddingBottom: Math.max(insets.bottom, 8) + 6,
       }}
     >
@@ -382,7 +381,7 @@ export function ClassicAlmanacPaper({
           justifyContent: 'space-between',
         }}
       >
-        <View style={{ width: 28, alignItems: 'center', gap: 8 }}>
+        <View style={{ width: 36, alignItems: 'center', gap: 8 }}>
           <VStrip
             text={`${day.ganZhi}日`}
             onPress={interactive ? () => tap('干支') : undefined}
@@ -403,7 +402,7 @@ export function ClassicAlmanacPaper({
             heroStack
           )}
         </View>
-        <View style={{ width: 28, alignItems: 'center' }}>
+        <View style={{ width: 36, alignItems: 'center' }}>
           {day.lunarDate ? (
             <VStrip
               text={`${lunarMonth}${lunarDay}`}

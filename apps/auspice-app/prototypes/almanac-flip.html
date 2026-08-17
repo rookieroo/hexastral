@@ -645,7 +645,7 @@
       const dur = version === 'C' ? 420 : 340
       function frame(t) {
         const k = clamp((t - t0) / dur, 0, 1)
-        const e = 1 - Math.pow(1 - k, 3)
+        const e = 1 - (1 - k) ** 3
         applyProgress(from + (target - from) * e)
         if (k < 1) requestAnimationFrame(frame)
         else { busy = false; then && then() }

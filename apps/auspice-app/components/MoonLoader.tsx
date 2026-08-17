@@ -1,12 +1,10 @@
 /**
- * MoonLoader — Yuun's brand loading spinner: the shared Skia moon-phase loader in
- * the 苍墨 ink skin (the cinnabar twin is Yuel's). One motion language across the
- * suite, locked to the ink brand.
+ * MoonLoader — Yuun's brand loading spinner: the shared Skia moon-phase loader
+ * with a 月白 lit face (苍墨 terminator). One motion language across the suite.
  *
- * Adapts to light/dark: the dark skin's pale lit face blends into the cream 黄历纸,
- * so `SKIN_INK_LIGHT` (a darker face) is used in light mode. Pass `fullScreen` to
- * render a single centred moon on the theme ground — used for the home's initial
- * load so the screen shows ONE moon instead of several inline ones.
+ * Light mode uses SKIN_INK_LIGHT so the disc stays moon-white on cream paper;
+ * dark mode uses SKIN_INK. Pass `fullScreen` to centre a single moon on the
+ * theme ground (home initial load).
  */
 import { useTheme } from '@zhop/core-ui'
 import { AutoMoonPhaseLoader } from '@zhop/core-ui/motion'

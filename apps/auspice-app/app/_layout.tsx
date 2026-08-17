@@ -26,6 +26,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { AuspiceErrorBoundary } from '@/components/AuspiceErrorBoundary'
 import { useYuunWidgetSync } from '@/hooks/useYuunWidgetSync'
+import { AlmanacThemeProvider } from '@/lib/almanac-theme-context'
 import { reportPushOpen } from '@/lib/api'
 import { getAuspiceBirthDate, getAuspiceBirthInfo } from '@/lib/birth'
 import { getAuspiceDeviceId } from '@/lib/device'
@@ -45,7 +46,6 @@ import {
 } from '@/lib/push'
 import { migrateBirthdaysToServerOnce } from '@/lib/serverPush'
 import { useAppTheme } from '@/lib/theme'
-import { AlmanacThemeProvider } from '@/lib/almanac-theme-context'
 import { VoiceModeProvider } from '@/lib/voice-mode-context'
 import { YijiModeProvider } from '@/lib/yiji-mode-context'
 

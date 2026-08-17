@@ -166,7 +166,9 @@ export function DayView({
             }}
           >
             <View>
-              <Text style={{ color: colors.text, fontSize: 22, fontWeight: '500', letterSpacing: 1 }}>
+              <Text
+                style={{ color: colors.text, fontSize: 22, fontWeight: '500', letterSpacing: 1 }}
+              >
                 {dayGanzhiLabel}
               </Text>
               {dayGanzhiPinyin ? (

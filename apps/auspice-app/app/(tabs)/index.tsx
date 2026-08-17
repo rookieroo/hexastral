@@ -21,6 +21,9 @@ import { DayPageTurn } from '@/components/DayPageTurn'
 import { DayView } from '@/components/DayView'
 import { DualTzBanner } from '@/components/DualTzBanner'
 import { PhaseLogo } from '@/components/PhaseLogo'
+import { almanacPalette, weekdayFromIso } from '@/lib/almanac-palette'
+import { getTornCivilDay, setTornCivilDay } from '@/lib/almanac-theme'
+import { useAlmanacTheme } from '@/lib/almanac-theme-context'
 import {
   type AuspiceDayPayload,
   fetchAuspiceBootstrap,
@@ -28,9 +31,6 @@ import {
   fetchAuspiceMonth,
   primeFromBootstrap,
 } from '@/lib/api'
-import { almanacPalette, weekdayFromIso } from '@/lib/almanac-palette'
-import { getTornCivilDay, setTornCivilDay } from '@/lib/almanac-theme'
-import { useAlmanacTheme } from '@/lib/almanac-theme-context'
 import { getAuspiceBirthDate } from '@/lib/birth'
 import { lunarCellLabel } from '@/lib/calendar-display'
 import { localizeCultureEntry, localizeSolarTermName } from '@/lib/culture'
@@ -94,8 +94,7 @@ export default function HomeScreen() {
 
   const initialDay = useMemo(() => {
     const candidate = Array.isArray(params.day) ? params.day[0] : params.day
-    const raw =
-      typeof candidate === 'string' && DATE_RE.test(candidate) ? candidate : todayIso
+    const raw = typeof candidate === 'string' && DATE_RE.test(candidate) ? candidate : todayIso
     return classical ? clampDayToMin(raw, todayIso) : raw
   }, [params.day, todayIso, classical])
 
@@ -153,30 +152,33 @@ export default function HomeScreen() {
   const dayDataRef = useRef<AuspiceDayPayload | null>(null)
   dayDataRef.current = dayData
 
-  const loadDay = useCallback((day: string = selectedDay) => {
-    setDayError(null)
-    const already = dayDataRef.current?.date === day
-    if (!already) setDayLoading(true)
-    getAuspiceBirthDate()
-      .then((birthDate) => {
-        if (!primedRef.current) {
-          primedRef.current = true
-          return fetchAuspiceBootstrap(day, locale, birthDate).then((b) => {
-            primeFromBootstrap(b, day, locale, birthDate)
-            return b as AuspiceDayPayload
-          })
-        }
-        return fetchAuspiceDay(day, birthDate)
-      })
-      .then((d) => {
-        setDayData(d)
-        setDayLoading(false)
-      })
-      .catch((e: unknown) => {
-        setDayError(e instanceof Error ? e.message : String(e))
-        setDayLoading(false)
-      })
-  }, [selectedDay, locale])
+  const loadDay = useCallback(
+    (day: string = selectedDay) => {
+      setDayError(null)
+      const already = dayDataRef.current?.date === day
+      if (!already) setDayLoading(true)
+      getAuspiceBirthDate()
+        .then((birthDate) => {
+          if (!primedRef.current) {
+            primedRef.current = true
+            return fetchAuspiceBootstrap(day, locale, birthDate).then((b) => {
+              primeFromBootstrap(b, day, locale, birthDate)
+              return b as AuspiceDayPayload
+            })
+          }
+          return fetchAuspiceDay(day, birthDate)
+        })
+        .then((d) => {
+          setDayData(d)
+          setDayLoading(false)
+        })
+        .catch((e: unknown) => {
+          setDayError(e instanceof Error ? e.message : String(e))
+          setDayLoading(false)
+        })
+    },
+    [selectedDay, locale]
+  )
 
   const onTearFinished = useCallback(() => {
     void setTornCivilDay(todayIso)
@@ -461,11 +463,7 @@ export default function HomeScreen() {
       }
       autoTopLeaf={
         paperHome ? (
-          <AlmanacTearStub
-            dayNum={dayNumFromIso(yesterdayIso)}
-            ganZhi={stubGanZhi}
-            P={stubP}
-          />
+          <AlmanacTearStub dayNum={dayNumFromIso(yesterdayIso)} ganZhi={stubGanZhi} P={stubP} />
         ) : undefined
       }
       onAutoFinished={paperHome ? onTearFinished : undefined}
@@ -474,7 +472,9 @@ export default function HomeScreen() {
     >
       {classicalActive ? (
         dayError ? (
-          <View style={{ gap: spacing.md, paddingVertical: spacing.xl, paddingHorizontal: spacing.xl }}>
+          <View
+            style={{ gap: spacing.md, paddingVertical: spacing.xl, paddingHorizontal: spacing.xl }}
+          >
             <Text style={{ color: colors.secondary }}>
               {t.loadFailed}: {dayError}
             </Text>
@@ -534,11 +534,7 @@ export default function HomeScreen() {
     </DayPageTurn>
   )
 
-  const headerLink = (
-    label: string,
-    onPress: () => void,
-    opts?: { strong?: boolean }
-  ) => (
+  const headerLink = (label: string, onPress: () => void, opts?: { strong?: boolean }) => (
     <Pressable
       onPress={onPress}
       hitSlop={8}
@@ -589,7 +585,9 @@ export default function HomeScreen() {
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 0 }}>
               {isViewingToday ? (
-                <Text style={{ color: headerP.dim, fontSize: 10, letterSpacing: 3 }}>{t.today}</Text>
+                <Text style={{ color: headerP.dim, fontSize: 10, letterSpacing: 3 }}>
+                  {t.today}
+                </Text>
               ) : (
                 headerLink(t.today, goToToday, { strong: true })
               )}
@@ -631,9 +629,7 @@ export default function HomeScreen() {
                   </Text>
                 </Pressable>
               )}
-              {!isViewingToday ? (
-                <Text style={{ color: colors.dim, fontSize: 13 }}>·</Text>
-              ) : null}
+              {!isViewingToday ? <Text style={{ color: colors.dim, fontSize: 13 }}>·</Text> : null}
               <Pressable
                 onPress={goToMe}
                 hitSlop={10}

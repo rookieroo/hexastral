@@ -147,16 +147,13 @@ export function DayPageTurn({
     autoSV.value = autoPlay ? 1 : 0
   }, [autoPlay, autoSV])
 
-  // Gesture commits already parked the camera. Only snap on external jumps
-  // (今日 / deep link). Always drop busy so the next pan can start.
+  // Park on the integer civil index so leftover float from withTiming cannot
+  // peek the adjacent page (looks like uneven left/right gutters after a swipe).
   useLayoutEffect(() => {
     const idx = civilIndex(dayKey)
     busy.value = 0
     setPressLocked(false)
-    if (pendingDelta.current != null) {
-      pendingDelta.current = null
-      return
-    }
+    pendingDelta.current = null
     camera.value = idx
   }, [dayKey, camera, busy])
 
@@ -183,9 +180,13 @@ export function DayPageTurn({
       hapticTick()
       onAutoFinished?.()
     }
-    camera.value = withTiming(origin + 1, { duration: TEAR_MS, easing: Easing.inOut(Easing.cubic) }, (ok) => {
-      if (ok) runOnJS(done)()
-    })
+    camera.value = withTiming(
+      origin + 1,
+      { duration: TEAR_MS, easing: Easing.inOut(Easing.cubic) },
+      (ok) => {
+        if (ok) runOnJS(done)()
+      }
+    )
   }, [autoPlay, camera, busy, dayKey, onAutoFinished])
 
   const commit = useCallback(
@@ -274,8 +275,10 @@ export function DayPageTurn({
         { duration: EXIT_MS, easing: Easing.out(Easing.cubic) },
         (done) => {
           busy.value = 0
-          if (done) runOnJS(commit)(delta)
-          else runOnJS(unlockPress)()
+          if (done) {
+            camera.value = target
+            runOnJS(commit)(delta)
+          } else runOnJS(unlockPress)()
         }
       )
     })

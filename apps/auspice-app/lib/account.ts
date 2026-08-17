@@ -174,9 +174,7 @@ export async function signInWithGoogle(): Promise<string | null> {
     if (result?.type === 'cancelled') return null
     // v13+ nests idToken under `.data`; older shapes keep it top-level.
     const idToken =
-      result?.data?.idToken ??
-      (result as { idToken?: string | null } | null)?.idToken ??
-      null
+      result?.data?.idToken ?? (result as { idToken?: string | null } | null)?.idToken ?? null
     if (!idToken) {
       throw new Error('Google did not return an idToken (webClientId required)')
     }

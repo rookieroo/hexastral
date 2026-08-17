@@ -56,9 +56,13 @@ export function AlmanacTearLeaf({
       hapticTick()
       onFinished()
     }
-    progress.value = withTiming(1, { duration: TEAR_MS, easing: Easing.inOut(Easing.cubic) }, (ok) => {
-      if (ok) runOnJS(done)()
-    })
+    progress.value = withTiming(
+      1,
+      { duration: TEAR_MS, easing: Easing.inOut(Easing.cubic) },
+      (ok) => {
+        if (ok) runOnJS(done)()
+      }
+    )
   }, [play, progress, onFinished])
 
   const topStyle = useAnimatedStyle(() => {
@@ -68,11 +72,7 @@ export function AlmanacTearLeaf({
     const opacity = interpolate(p, [0, 0.75, 1], [1, 0.85, 0.2], Extrapolation.CLAMP)
     return {
       opacity,
-      transform: [
-        { perspective: 1200 },
-        { translateY: lift },
-        { rotateX: `${rotateX}deg` },
-      ],
+      transform: [{ perspective: 1200 }, { translateY: lift }, { rotateX: `${rotateX}deg` }],
       zIndex: 2,
     }
   })

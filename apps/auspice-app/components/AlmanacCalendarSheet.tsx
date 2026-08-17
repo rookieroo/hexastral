@@ -11,14 +11,15 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   Pressable,
+  StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from 'react-native'
 import { MoonLoader } from '@/components/MoonLoader'
-import { type AuspiceMonthDay, type AuspiceMonthPayload, fetchAuspiceMonth } from '@/lib/api'
 import { almanacPalette, weekdayFromIso } from '@/lib/almanac-palette'
 import { useAlmanacTheme } from '@/lib/almanac-theme-context'
+import { type AuspiceMonthDay, type AuspiceMonthPayload, fetchAuspiceMonth } from '@/lib/api'
 import {
   defaultCalendarDisplayMode,
   lunarCellLabel,
@@ -29,6 +30,10 @@ import { useStrings } from '@/lib/i18n-context'
 
 const WINDOW = 24
 const CELL_ASPECT = 1.15
+/** Always 6 week rows so Feb (4) and 31-day Saturday-start months share one sheet height. */
+const GRID_WEEKS = 6
+const CELL_PAD_X = 16
+const WEEK_RULE = 0.5
 
 const WEEKDAYS_BY_LOCALE: Record<Locale, readonly string[]> = {
   'zh-Hans': ['日', '一', '二', '三', '四', '五', '六'],
@@ -95,9 +100,7 @@ export function AlmanacCalendarSheet({
     return months.findIndex((ref) => ref.year === y && ref.month === m)
   }, [selectedDay, months, anchorIndex])
 
-  const [visibleIndex, setVisibleIndex] = useState(
-    selectedIndex >= 0 ? selectedIndex : anchorIndex
-  )
+  const [visibleIndex, setVisibleIndex] = useState(selectedIndex >= 0 ? selectedIndex : anchorIndex)
   const listRef = useRef<FlatList<MonthRef>>(null)
   const cacheRef = useRef<Map<string, AuspiceMonthPayload>>(new Map())
   const [lunarHeaders, setLunarHeaders] = useState<Record<string, string>>({})
@@ -127,6 +130,12 @@ export function AlmanacCalendarSheet({
     }),
     [screenWidth]
   )
+
+  const gridHeight = useMemo(() => {
+    const cellW = (screenWidth - CELL_PAD_X * 2) / 7
+    const cellH = cellW / CELL_ASPECT
+    return GRID_WEEKS * (cellH + WEEK_RULE) + 4
+  }, [screenWidth])
 
   const onMomentumScrollEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -170,6 +179,8 @@ export function AlmanacCalendarSheet({
     [locale, todayIso, selectedDay, minIso, onCellHeader, pick, screenWidth, P]
   )
 
+  const showTodayChip = visibleIndex !== anchorIndex || selectedDay !== todayIso
+
   const title =
     locale === 'en'
       ? `${t.openMonth} · ${visibleMonth.year}.${pad(visibleMonth.month)}`
@@ -189,23 +200,22 @@ export function AlmanacCalendarSheet({
           <Text style={{ color: P.dim, fontSize: 12, letterSpacing: 1 }} numberOfLines={1}>
             {visibleLunarHeader ? lunarHeaderLabel(visibleLunarHeader, locale) : ' '}
           </Text>
-          {visibleIndex !== anchorIndex || selectedDay !== todayIso ? (
-            <Pressable
-              onPress={goToToday}
-              hitSlop={8}
-              accessibilityRole='button'
-              accessibilityLabel={t.goToday}
-              style={({ pressed }) => ({
-                paddingHorizontal: 10,
-                paddingVertical: 5,
-                borderWidth: 0.5,
-                borderColor: P.ink,
-                opacity: pressed ? 0.55 : 1,
-              })}
-            >
-              <Text style={{ color: P.gold, fontSize: 12, letterSpacing: 1 }}>{t.today}</Text>
-            </Pressable>
-          ) : null}
+          <Pressable
+            onPress={goToToday}
+            hitSlop={8}
+            accessibilityRole='button'
+            accessibilityLabel={t.goToday}
+            pointerEvents={showTodayChip ? 'auto' : 'none'}
+            style={({ pressed }) => ({
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderWidth: 0.5,
+              borderColor: showTodayChip ? P.ink : 'transparent',
+              opacity: showTodayChip ? (pressed ? 0.55 : 1) : 0,
+            })}
+          >
+            <Text style={{ color: P.gold, fontSize: 12, letterSpacing: 1 }}>{t.today}</Text>
+          </Pressable>
         </View>
 
         <View style={{ flexDirection: 'row', paddingHorizontal: 4 }}>
@@ -243,7 +253,7 @@ export function AlmanacCalendarSheet({
           windowSize={3}
           maxToRenderPerBatch={3}
           initialNumToRender={3}
-          style={{ maxHeight: 340 }}
+          style={{ height: gridHeight }}
         />
       </View>
     </SatelliteBottomSheet>
@@ -315,27 +325,35 @@ function InkMonthCell({
     })),
   ]
 
-  const padX = 16
-  const innerWidth = width - padX * 2
+  const innerWidth = width - CELL_PAD_X * 2
   const cellW = innerWidth / 7
   const cellH = cellW / CELL_ASPECT
   const weeks: Array<typeof cells> = []
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7))
+  const last = weeks[weeks.length - 1]
+  if (last) {
+    while (last.length < 7) last.push(null)
+  }
+  while (weeks.length < GRID_WEEKS) {
+    weeks.push(Array.from({ length: 7 }, () => null))
+  }
   const mode = defaultCalendarDisplayMode(locale)
 
   return (
-    <View style={{ width, paddingHorizontal: padX, paddingTop: 4 }}>
-      {loading && !data ? (
-        <View style={{ alignItems: 'center', paddingVertical: 24 }}>
-          <MoonLoader />
-        </View>
-      ) : null}
+    <View
+      style={{
+        width,
+        height: GRID_WEEKS * (cellH + WEEK_RULE) + 4,
+        paddingHorizontal: CELL_PAD_X,
+        paddingTop: 4,
+      }}
+    >
       {weeks.map((week, wi) => (
         <View
           key={`w-${wi}`}
           style={{
             flexDirection: 'row',
-            borderBottomWidth: 0.5,
+            borderBottomWidth: WEEK_RULE,
             borderBottomColor: P.line,
           }}
         >
@@ -360,7 +378,7 @@ function InkMonthCell({
                   height: cellH,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderLeftWidth: ci === 0 ? 0 : 0.5,
+                  borderLeftWidth: ci === 0 ? 0 : WEEK_RULE,
                   borderLeftColor: P.line,
                   backgroundColor: isSelected ? P.goldSoft : 'transparent',
                   opacity: isPast ? 0.35 : 1,
@@ -400,6 +418,18 @@ function InkMonthCell({
           })}
         </View>
       ))}
+      {loading && !data ? (
+        <View
+          pointerEvents='none'
+          style={{
+            ...StyleSheet.absoluteFillObject,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <MoonLoader />
+        </View>
+      ) : null}
     </View>
   )
 }
