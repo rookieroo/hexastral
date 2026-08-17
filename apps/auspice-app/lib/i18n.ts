@@ -171,7 +171,11 @@ export interface Strings {
   /** Opens Apple subscription management before / after account delete. */
   manageSubscription: string
   accountSection: string
-  signedInLabel: string
+  /** Row label above the current account's email / provider. */
+  signedInAs: string
+  /** Sign-out row + confirm sheet (local session invalidation; data stays on-device). */
+  signOut: string
+  signOutConsent: { title: string; body: string; confirm: string; cancel: string }
   /** Indicator on /event when specialized scoring is active (Pro + a specialized event). */
   specializedActive: string
   /** Upsell pill on /event when user picks a specialized event but isn't Pro yet. */
@@ -779,7 +783,14 @@ const zhHans: Strings = {
   deleteAccountWorking: '正在删除…',
   manageSubscription: '管理订阅',
   accountSection: '账号',
-  signedInLabel: '已登录',
+  signedInAs: '登录账号',
+  signOut: '退出登录',
+  signOutConsent: {
+    title: '退出登录？',
+    body: '本机将退出登录。生辰与亲友仍保存在本机，不会删除；可随时重新登录同步。',
+    confirm: '退出',
+    cancel: '取消',
+  },
   specializedActive: '专项时日参考 已启用',
   specializedUpsell: 'Pro · 解锁专项时日参考',
   eventRangeSection: '时间范围',
@@ -1275,7 +1286,14 @@ const zhHant: Strings = {
   deleteAccountWorking: '正在刪除…',
   manageSubscription: '管理訂閱',
   accountSection: '帳號',
-  signedInLabel: '已登入',
+  signedInAs: '登入帳號',
+  signOut: '登出',
+  signOutConsent: {
+    title: '登出？',
+    body: '本機將登出。生辰與親友仍保存在本機，不會刪除；可隨時重新登入同步。',
+    confirm: '登出',
+    cancel: '取消',
+  },
   specializedActive: '專項時日參考 已啟用',
   specializedUpsell: 'Pro · 解鎖專項擇日',
   eventRangeSection: '時間範圍',
@@ -1786,7 +1804,14 @@ const ja: Strings = {
   deleteAccountWorking: '削除中…',
   manageSubscription: 'サブスクリプションを管理',
   accountSection: 'アカウント',
-  signedInLabel: 'サインイン済み',
+  signedInAs: 'アカウント',
+  signOut: 'サインアウト',
+  signOutConsent: {
+    title: 'サインアウトしますか？',
+    body: 'この端末からサインアウトします。生年月日と家族の情報は端末に残り、削除されません。いつでも再サインインして同期できます。',
+    confirm: 'サインアウト',
+    cancel: 'キャンセル',
+  },
   specializedActive: '専門日時参考 適用中',
   specializedUpsell: 'Pro · 専門日時参考を解放',
   eventRangeSection: '期間',
@@ -2292,7 +2317,14 @@ const en: Strings = {
   deleteAccountWorking: 'Deleting…',
   manageSubscription: 'Manage subscription',
   accountSection: 'Account',
-  signedInLabel: 'Signed in',
+  signedInAs: 'Signed in as',
+  signOut: 'Sign out',
+  signOutConsent: {
+    title: 'Sign out?',
+    body: 'You will be signed out on this device. Your birth profile and family stay on-device — nothing is deleted. Sign back in anytime to sync.',
+    confirm: 'Sign out',
+    cancel: 'Cancel',
+  },
   specializedActive: 'Specialized timing reference on',
   specializedUpsell: 'Pro · unlock specialized scoring',
   eventRangeSection: 'Date range',

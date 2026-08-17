@@ -98,11 +98,15 @@ describe('renderAuspicePush — daily hook (en slice)', () => {
       typeof renderAuspicePush
     >[2]
 
-  test('anonymous with birth still gets public 黄历 (no personal hook)', () => {
+  test('birth on file gets the personal hook — sign-in NOT required', () => {
+    // No portfolioUserId, but birthDate present → the device still receives the
+    // deterministic corpus hook (MVP: hook keys on 生辰, not identity).
     const msg = renderAuspicePush('morning', ymd, mkSub({ locale: 'en' }))
     expect(msg).not.toBeNull()
-    expect(msg?.body).toMatch(/Good|Avoid|—/)
-    expect(msg?.data.hookKey).toBeUndefined()
+    expect(msg?.title).not.toMatch(/[一-鿿]/)
+    expect(msg?.body).not.toMatch(/Good|Avoid/)
+    expect(msg?.data.type).toBe('auspice_daily')
+    expect(typeof msg?.data.hookKey).toBe('string')
   })
 
   test('signed-in en morning push leads with the hook, not the 干支 day-label', () => {
@@ -261,9 +265,9 @@ describe('pushVariation — free push repetition guard', () => {
     expect(en?.body).not.toMatch(/[一-鿿]/)
   })
 
-  test('signed-in zh body adds the rotating corpus hook; anonymous stays bare', () => {
+  test('zh body adds the rotating corpus hook keyed on birth — sign-in changes nothing', () => {
     const ymd = { year: 2026, month: 6, day: 12 }
-    const anon = renderAuspicePush('morning', ymd, {
+    const birthOnly = renderAuspicePush('morning', ymd, {
       locale: 'zh-Hans',
       birthDate: '1990-08-15',
       isPro: false,
@@ -278,9 +282,9 @@ describe('pushVariation — free push repetition guard', () => {
     })
     expect(signed?.title).toContain('丁巳日') // 干支-led convention stays
     expect(signed?.body).toContain('宜')
-    // The hook line is the only difference between the two tiers for this device.
-    expect(signed?.body.length).toBeGreaterThan(anon?.body.length ?? 0)
-    expect(signed?.body).not.toBe(anon?.body)
+    // MVP: the hook keys on birth info — signing in renders the identical body.
+    expect(signed?.body).toBe(birthOnly?.body)
+    expect(signed?.title).toBe(birthOnly?.title)
   })
 
   test('variationOffset shifts the rendered body (guard fallback path)', () => {

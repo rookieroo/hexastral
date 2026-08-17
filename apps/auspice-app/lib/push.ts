@@ -90,18 +90,6 @@ const EVENING_TEXT: Record<
   },
 }
 
-/** Short compliance tail on all local push bodies (Terms §3). */
-const PUSH_DISCLAIMER: Record<Locale, string> = {
-  'zh-Hans': ' · 仅供娱乐与文化参照',
-  'zh-Hant': ' · 僅供娛樂與文化參照',
-  ja: ' · 娯楽・文化参照のみ',
-  en: ' · Entertainment & cultural reference only',
-}
-
-function withPushDisclaimer(locale: Locale, body: string): string {
-  return body + PUSH_DISCLAIMER[locale]
-}
-
 /** 五行 → English element — for the readable en day label. */
 const WUXING_EN: Record<string, string> = {
   金: 'Metal',
@@ -166,16 +154,13 @@ function eveningHeadsUp(
     if (!special && !fitClause) return null
     return {
       title: ev.title,
-      body: withPushDisclaimer(
-        locale,
-        special && fitClause ? `${special}${ev.sep}${fitClause}` : (special ?? fitClause ?? '')
-      ),
+      body: special && fitClause ? `${special}${ev.sep}${fitClause}` : (special ?? fitClause ?? ''),
     }
   }
   const fitClause = pers?.fit === '吉' ? ev.good : pers?.fit === '凶' ? ev.caution : null
   if (!special && !fitClause) return null
   const x = special && fitClause ? `${special}${ev.sep}${fitClause}` : (special ?? fitClause ?? '')
-  return { title: ev.title, body: withPushDisclaimer(locale, ev.is.replace('{x}', x)) }
+  return { title: ev.title, body: ev.is.replace('{x}', x) }
 }
 
 /** Retro-check copy ({event} = the localized event label). */
@@ -348,7 +333,7 @@ function dailyContent(
       ? ` · ${t.personal.forYou}${colon}${t.personal.fit[pers.fit]} — ${t.timelineAdviceClassical[pers.fit]}`
       : ` · ${t.personal.forYou}${colon}${t.personal.fit[pers.fit]} — ${t.personal.summary[pers.fit]}`
   }
-  return { title, body: withPushDisclaimer(locale, body) }
+  return { title, body }
 }
 
 /* ── local variation — mirrors the server's pushVariation space ────────────── */

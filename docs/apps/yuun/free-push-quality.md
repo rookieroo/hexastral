@@ -8,8 +8,8 @@ render: `renderAuspicePush` in `apps/hexastral-api/src/routes/auspice.ts` · cli
 
 | Slot | Who | Content | Repetition risk |
 |---|---|---|---|
-| 08:00 daily | Anonymous (public tier) | Title `{干支}日` (+节气/节日) · body `宜 X、Y、Z · 忌 A、B、C` (top-3, deterministic `buildDay`) | **High** — see below |
-| 08:00 daily | Signed-in Free | Same body + `· 你{吉/平/凶}` in title; **en** leads with the rotating corpus `dailyHook` instead of the 干支 label | **Medium** for zh/ja (宜忌 body still repeats; only the fit verdict varies), **Low** for en |
+| 08:00 daily | No birth on file | Title `{干支}日` (+节气/节日) · body `宜 X、Y、Z · 忌 A、B、C` (top-3, deterministic `buildDay`) | **High** — see below |
+| 08:00 daily | **Birth on file (sign-in NOT required)** | Same body + `· 你{吉/平/凶}` in title; **en** leads with the rotating corpus `dailyHook` instead of the 干支 label | **Medium** for zh/ja (宜忌 body still repeats; only the fit verdict varies), **Low** for en |
 | 20:00 evening | Free | Event-driven only: tomorrow is a 节气/节日 → heads-up; otherwise **silent** | Low — ~30 events/year |
 | Birthday | Free (≤3 亲友) | Static "还有 N 天 / 明天 / 今天" per person | None — fires ≤2× per person per year |
 | Timeline node | Pro only | 流月/流年/大运 teaser | N/A (not free) |

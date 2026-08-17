@@ -6,9 +6,9 @@ Yuun is a Chinese almanac (中华黄历) with Today-first navigation and a three
 
 | Tier | Identity | For you | Push | Widget / Watch |
 |---|---|---|---|---|
-| Anonymous Free | local `deviceId` | conclusion summary (on-device birth) | public 黄历 | public 黄历 + optional Fit via WatchConnectivity **(iOS)** |
-| Signed-in Free | Apple/Google | same + restore | personal conclusion | + Watch credential for independent refresh **(iOS)** |
-| Pro (`auspice_pro`) | + RC entitlement | full reasons | conclusion + deterministic tips | full explanation stays in-app; LLM only on tap |
+| Anonymous Free | local `deviceId` | conclusion summary (on-device birth) | public 黄历; **with birth on file → + 判语 + corpus hook** (birth-keyed, not sign-in-keyed) | public 黄历 + optional Fit via WatchConnectivity **(iOS)** |
+| Signed-in Free | Apple/Google | same + restore | same as anonymous (sign-in only adds sync / restore) | + Watch credential for independent refresh **(iOS)** |
+| Pro (`auspice_pro`) | + RC entitlement | full reasons | + deterministic tips | full explanation stays in-app; LLM only on tap |
 
 > **No-IAP first ship:** Production / preview set `EXPO_PUBLIC_IAP_ENABLED=false`. Paywall shows Coming soon (no StoreKit / Play Billing). Do not create store subscriptions until banking is ready. See [release-config-gate.md](./release-config-gate.md).
 

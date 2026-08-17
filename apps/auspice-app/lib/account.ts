@@ -15,6 +15,9 @@ import {
   exchangeAppleCredentialForPortfolio,
   exchangeGoogleCredentialForPortfolio,
   getPortfolioUserId,
+  invalidatePortfolioSession,
+  resolvePortfolioApiUrl,
+  signRequest,
   storeAppleUserId,
 } from '@zhop/satellite-runtime'
 import * as AppleAuthentication from 'expo-apple-authentication'
@@ -22,6 +25,7 @@ import { Platform } from 'react-native'
 import Purchases from 'react-native-purchases'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from './growth-config'
 import { isIapEnabled } from './iap-enabled'
+import { clearYuunWatchCredential } from './watch-provision'
 
 /**
  * Alias RevenueCat to the portfolio userId so purchases restore across devices.
@@ -47,15 +51,28 @@ async function aliasRevenueCatIfEnabled(userId: string): Promise<void> {
 type GoogleSigninModule = typeof import('@react-native-google-signin/google-signin')
 let isGoogleSigninConfigured = false
 
+function googleClientIds(): { iosClientId?: string; webClientId?: string } {
+  const ios = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim()
+  const web = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim()
+  return {
+    iosClientId: ios && ios.length > 0 ? ios : undefined,
+    webClientId: web && web.length > 0 ? web : undefined,
+  }
+}
+
 /** Dynamic import — the native module is only present in dev/prod builds, not Expo Go. */
 async function getGoogleSigninModule(): Promise<GoogleSigninModule | null> {
   try {
     const mod = (await import('@react-native-google-signin/google-signin')) as GoogleSigninModule
     if (!isGoogleSigninConfigured) {
+      // webClientId (OAuth "Web application" client) is required for idToken on
+      // both iOS and Android — same contract as Yuel / SatelliteGoogleAuth.
+      // Do not pass the Android client id as webClientId.
+      const { iosClientId, webClientId } = googleClientIds()
       mod.GoogleSignin.configure({
-        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-        webClientId:
-          Platform.OS === 'android' ? process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID : undefined,
+        iosClientId,
+        webClientId,
+        offlineAccess: false,
       })
       isGoogleSigninConfigured = true
     }
@@ -130,6 +147,9 @@ export async function signInWithApple(): Promise<string | null> {
 }
 
 export async function isGoogleSignInAvailable(): Promise<boolean> {
+  const { webClientId, iosClientId } = googleClientIds()
+  if (!webClientId && !iosClientId) return false
+  if (!webClientId) return false
   return (await getGoogleSigninModule()) != null
 }
 
@@ -138,13 +158,28 @@ export async function isGoogleSignInAvailable(): Promise<boolean> {
  * Returns the userId, or null if the user cancelled. Throws on a real failure.
  */
 export async function signInWithGoogle(): Promise<string | null> {
+  const { webClientId } = googleClientIds()
+  if (!webClientId) {
+    throw new Error(
+      'Missing EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID — create a Web OAuth client in Google Cloud and put it in .env.local / eas.json (required for idToken).'
+    )
+  }
   const mod = await getGoogleSigninModule()
   if (!mod) throw new Error('Google Sign-In requires a development build, not Expo Go.')
   try {
-    await mod.GoogleSignin.hasPlayServices()
+    if (Platform.OS === 'android') {
+      await mod.GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true })
+    }
     const result = await mod.GoogleSignin.signIn()
-    const idToken = result?.data?.idToken
-    if (!idToken) return null
+    if (result?.type === 'cancelled') return null
+    // v13+ nests idToken under `.data`; older shapes keep it top-level.
+    const idToken =
+      result?.data?.idToken ??
+      (result as { idToken?: string | null } | null)?.idToken ??
+      null
+    if (!idToken) {
+      throw new Error('Google did not return an idToken (webClientId required)')
+    }
 
     const { userId } = await exchangeGoogleCredentialForPortfolio({
       idToken,
@@ -157,6 +192,7 @@ export async function signInWithGoogle(): Promise<string | null> {
   } catch (err) {
     const code = (err as { code?: string }).code
     if (code && mod.statusCodes && code === mod.statusCodes.SIGN_IN_CANCELLED) return null
+    if (code === 'SIGN_IN_CANCELLED' || code === '-5' || code === '12501') return null
     throw err
   }
 }
@@ -173,4 +209,67 @@ async function transferBondsInBackground(): Promise<void> {
 export async function retryBondsTransfer(): Promise<void> {
   if (!(await isSignedIn())) return
   await transferBondsInBackground()
+}
+
+export interface YuunAccountProfile {
+  email: string | null
+  /** Apple first-auth display name — fallback when Apple never reshipped email. */
+  name: string | null
+  /** Which linked providers exist server-side. Both false = anonymous session. */
+  apple: boolean
+  google: boolean
+}
+
+/**
+ * Signed GET /api/user/:userId — profile fields for the Settings account section
+ * (email + linked providers). Mirrors Yuel's lib/user-api.ts; returns null when
+ * not signed in or the device secret is missing.
+ */
+export async function fetchAccountProfile(): Promise<YuunAccountProfile | null> {
+  const userId = await getPortfolioUserId()
+  if (!userId) return null
+  const path = `/api/user/${userId}`
+  const sig = await signRequest({ method: 'GET', path, body: '', userId })
+  if (!sig) return null
+  const res = await fetch(`${resolvePortfolioApiUrl()}${path}`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${userId}`, ...sig },
+  })
+  if (!res.ok) return null
+  const json = (await res.json().catch(() => ({}))) as {
+    data?: {
+      email?: string | null
+      name?: string | null
+      appleUserId?: string | null
+      googleUserId?: string | null
+    }
+  }
+  const email = typeof json.data?.email === 'string' ? json.data.email : null
+  const name =
+    typeof json.data?.name === 'string' && json.data.name.length > 0 ? json.data.name : null
+  const apple = typeof json.data?.appleUserId === 'string' && json.data.appleUserId.length > 0
+  const google = typeof json.data?.googleUserId === 'string' && json.data.googleUserId.length > 0
+  return { email, name, apple, google }
+}
+
+/**
+ * Sign out — LOCAL session invalidation only (no server deletion; that's
+ * `deleteYuunAccount`). Clears the portfolio identity + device HMAC secret,
+ * the Watch credential, and the RevenueCat alias when IAP is on. Birth data
+ * and 亲友 stay on-device; the user can sign back in anytime to re-sync.
+ */
+export async function signOut(): Promise<void> {
+  try {
+    await clearYuunWatchCredential()
+  } catch (err) {
+    console.warn('[yuun.account] clear watch credential failed on sign-out', err)
+  }
+  if (isIapEnabled()) {
+    try {
+      await Purchases.logOut()
+    } catch (err) {
+      console.warn('[yuun.account] RevenueCat logOut failed on sign-out', err)
+    }
+  }
+  await invalidatePortfolioSession()
 }

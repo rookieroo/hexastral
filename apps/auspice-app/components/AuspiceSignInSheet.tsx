@@ -30,12 +30,12 @@ export function AuspiceSignInSheet({
   const scheme = useColorScheme()
   const [checking, setChecking] = useState(true)
   const [signingIn, setSigningIn] = useState(false)
-  const [failed, setFailed] = useState(false)
+  const [failedMsg, setFailedMsg] = useState<string | null>(null)
 
   useEffect(() => {
     if (!visible) return
     setChecking(true)
-    setFailed(false)
+    setFailedMsg(null)
     isSignedIn()
       .then((ok) => {
         if (ok) {
@@ -49,12 +49,17 @@ export function AuspiceSignInSheet({
 
   const runSignIn = async (fn: () => Promise<string | null>) => {
     setSigningIn(true)
-    setFailed(false)
+    setFailedMsg(null)
     try {
       const userId = await fn()
       if (userId) onSignedIn(userId)
-    } catch {
-      setFailed(true)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.warn('[yuun.signin] failed', msg)
+      // Pre-launch: surface the REAL reason — the generic copy hides everything
+      // ("portfolio auth failed: 401" vs "development build required" vs native
+      // Google errors are all different fixes). Re-gate to DEV-only at launch polish.
+      setFailedMsg(msg)
     } finally {
       setSigningIn(false)
     }
@@ -115,8 +120,13 @@ export function AuspiceSignInSheet({
             </Pressable>
           </View>
         )}
-        {failed ? (
-          <Text style={{ color: colors.danger, fontSize: 12 }}>{t.signInError}</Text>
+        {failedMsg ? (
+          <View style={{ gap: 4 }}>
+            <Text style={{ color: colors.danger, fontSize: 12 }}>{t.signInError}</Text>
+            <Text style={{ color: colors.danger, fontSize: 11, lineHeight: 15 }}>
+              [{failedMsg}]
+            </Text>
+          </View>
         ) : null}
       </View>
     </SatelliteBottomSheet>

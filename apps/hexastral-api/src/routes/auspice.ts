@@ -2447,9 +2447,6 @@ interface PushLabelSet {
   eveningCaution: string
   eveningSep: string
   fit: Record<string, string>
-  /** Compliance tail appended to every daily/evening body — mirrors the app's
-   *  local-fallback push disclaimer (Terms §3; ADR-0003 cultural reference). */
-  disclaimer: string
 }
 
 const EN_PUSH_LABELS: PushLabelSet = {
@@ -2463,7 +2460,6 @@ const EN_PUSH_LABELS: PushLabelSet = {
   eveningCaution: 'a day to stay careful — take it steady',
   eveningSep: ' · ',
   fit: { 吉: 'favorable', 平: 'steady', 凶: 'cautious' },
-  disclaimer: 'Entertainment & cultural reference only',
 }
 
 const PUSH_LABELS: Record<string, PushLabelSet> = {
@@ -2478,7 +2474,6 @@ const PUSH_LABELS: Record<string, PushLabelSet> = {
     eveningCaution: '对你而言宜谨慎，凡事缓行',
     eveningSep: ' · ',
     fit: { 吉: '宜把握', 平: '平稳', 凶: '宜谨慎' },
-    disclaimer: '仅供娱乐与文化参照',
   },
   'zh-Hant': {
     yi: '宜',
@@ -2491,7 +2486,6 @@ const PUSH_LABELS: Record<string, PushLabelSet> = {
     eveningCaution: '對你而言宜謹慎，凡事緩行',
     eveningSep: ' · ',
     fit: { 吉: '宜把握', 平: '平穩', 凶: '宜謹慎' },
-    disclaimer: '僅供娛樂與文化參照',
   },
   ja: {
     yi: '吉',
@@ -2504,7 +2498,6 @@ const PUSH_LABELS: Record<string, PushLabelSet> = {
     eveningCaution: 'あなたには慎重な日、無理せず穏やかに',
     eveningSep: ' · ',
     fit: { 吉: '好機', 平: '平穏', 凶: '慎重に' },
-    disclaimer: '娯楽・文化参照のみ',
   },
   en: EN_PUSH_LABELS,
 }
@@ -2532,7 +2525,11 @@ interface AuspicePushSubRow {
   lastBodyKey?: string | null
 }
 
-/** Push personalization ladder: anonymous = public only; signed-in = fit; Pro = fit + tips. */
+/**
+ * Push tier ladder: Pro = fit + tips. Everything below Pro (signed-in or
+ * anonymous) renders the same birth-keyed content — `renderAuspicePush` keys
+ * personalization on the registered birthDate, NOT on portfolio identity.
+ */
 function pushPersonalTier(sub: AuspicePushSubRow): 'public' | 'signed' | 'pro' {
   if (sub.isPro) return 'pro'
   if (sub.portfolioUserId) return 'signed'
@@ -2832,11 +2829,11 @@ export function renderAuspicePush(
           : (special ?? fitClause ?? '')
       return {
         title: L.eveningTitle,
-        body: `${body}${L.eveningSep}${L.disclaimer}`,
+        body,
         data: {
           type: 'auspice_evening',
           day: fmtUtc(ymdToDate(dateYmd)),
-          bk: pushBodyKey(L.eveningTitle, `${body}${L.eveningSep}${L.disclaimer}`),
+          bk: pushBodyKey(L.eveningTitle, body),
         },
       }
     }
@@ -2849,7 +2846,7 @@ export function renderAuspicePush(
     if (!special && !fitClause) return null
     const x =
       special && fitClause ? `${special}${L.eveningSep}${fitClause}` : (special ?? fitClause ?? '')
-    const body = `${L.eveningIs.replace('{x}', x)}${L.eveningSep}${L.disclaimer}`
+    const body = `${L.eveningIs.replace('{x}', x)}`
     return {
       title: L.eveningTitle,
       body,
@@ -2862,18 +2859,22 @@ export function renderAuspicePush(
   }
 
   // Morning (08:00): today's almanac.
-  // Tier 1 anonymous = public 黄历 only.
-  // Tier 2 signed-in Free = personal fit conclusion.
-  // Tier 3 Pro = fit + deterministic reason codes (no LLM).
+  // No birth → public 宜忌 only.
+  // Birth on file (sign-in NOT required — the device already registers its 生辰
+  // with /push/register) → personal fit verdict + corpus hook.
+  // Pro → + deterministic reason codes (no LLM).
   const { day, personalization, dailyHook } = buildDay(dateYmd, subject, {
     seed: sub.birthDate ?? undefined,
     locale: sub.locale,
   })
   const dateStr = fmtUtc(ymdToDate(dateYmd))
   const tier = pushPersonalTier(sub)
-  const showPersonal = tier !== 'public' && personalization
+  // MVP (no IAP, volume app): personal push content keys on BIRTH INFO, not
+  // sign-in — the hook + fit verdict are deterministic corpus renders of the
+  // locally-saved 生辰. `tier` now only escalates the Pro reason codes.
+  const showPersonal = personalization != null
 
-  // en: personalized hook only for signed-in+; anonymous stays on public 干支 path below.
+  // en: personalized hook only for birth-on-file; no birth stays on the public 干支 path below.
   if (sub.locale.startsWith('en') && showPersonal && dailyHook) {
     const title =
       tier === 'pro' && personalization
@@ -2883,7 +2884,6 @@ export function renderAuspicePush(
     if (tier === 'pro' && personalization?.reasons?.length) {
       body += ` · ${personalization.reasons.slice(0, 2).join(', ')}`
     }
-    body += `${L.eveningSep}${L.disclaimer}`
     return {
       title,
       body,
@@ -2912,7 +2912,7 @@ export function renderAuspicePush(
   const dayId = `${day.ganZhi}${L.daySuffix}`
   const pers = showPersonal ? personalization : null
   // Classical (黄历原声) subscribers keep the push pure 行话 — no 对你而言 verdict
-  // title and no modern reason codes; the body stays 干支/宜忌/冲煞/值神/彭祖 + disclaimer.
+  // title and no modern reason codes; the body stays 干支/宜忌/冲煞/值神/彭祖.
   const classicalZh = sub.voiceMode === 'classical' && sub.locale.startsWith('zh')
   const title =
     pers && !classicalZh
@@ -2953,8 +2953,6 @@ export function renderAuspicePush(
   if (tier === 'pro' && !classicalZh && pers?.reasons?.length) {
     body += ` · ${pers.reasons.slice(0, 2).join(' · ')}`
   }
-  // Compliance tail — mirrors the app's local-fallback disclaimer (Terms §3).
-  body += `${L.eveningSep}${L.disclaimer}`
   return {
     title,
     body,

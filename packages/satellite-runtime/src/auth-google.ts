@@ -26,7 +26,15 @@ export async function exchangeGoogleCredentialForPortfolio(opts: {
       target_app: opts.targetApp,
     }),
   })
-  if (!res.ok) throw new Error(`portfolio auth failed: ${res.status}`)
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    const clipped = detail.replace(/\s+/g, ' ').trim().slice(0, 160)
+    throw new Error(
+      clipped.length > 0
+        ? `portfolio auth failed: ${res.status} ${clipped}`
+        : `portfolio auth failed: ${res.status}`
+    )
+  }
   const payload = (await res.json()) as { userId: string; deviceSecret: string }
   await storeDeviceSecret(payload.deviceSecret)
   await setPortfolioUserId(payload.userId)

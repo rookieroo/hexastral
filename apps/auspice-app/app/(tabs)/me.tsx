@@ -52,7 +52,7 @@ import {
 } from '@/components/settings/NotificationsSection'
 import { SettingsCard, SettingsRow, SettingsSection } from '@/components/settings/SettingsSection'
 import { requestYuunWidgetSync } from '@/hooks/useYuunWidgetSync'
-import { isSignedIn } from '@/lib/account'
+import { fetchAccountProfile, isSignedIn, signOut, type YuunAccountProfile } from '@/lib/account'
 import { deleteYuunAccount } from '@/lib/account-delete'
 import { clearAuspiceGetCache } from '@/lib/api'
 import { type AuspiceBirthInfo, getAuspiceBirthInfo, setAuspiceBirthInfo } from '@/lib/birth'
@@ -213,6 +213,7 @@ export default function MeScreen() {
   // when switching back to shichen so the engine cannot keep a stale clock.
   const [timeMode, setTimeMode] = useState<BirthTimeMode>('shichen')
   const [signedIn, setSignedIn] = useState(false)
+  const [accountInfo, setAccountInfo] = useState<YuunAccountProfile | null>(null)
   const [signInForBirthOpen, setSignInForBirthOpen] = useState(false)
   const [birthSaving, setBirthSaving] = useState(false)
   const [multiDeviceOn, setMultiDeviceOn] = useState(true)
@@ -324,6 +325,31 @@ export default function MeScreen() {
       .then(setSignedIn)
       .catch(() => setSignedIn(false))
   }, [])
+
+  // Account section: email / linked provider + sign-out (local only).
+  useEffect(() => {
+    if (!signedIn) return
+    void fetchAccountProfile()
+      .then(setAccountInfo)
+      .catch(() => setAccountInfo(null))
+  }, [signedIn])
+
+  const runSignOut = () => {
+    // Best-effort local invalidation; birth + 亲友 stay on-device.
+    void signOut()
+      .catch((err) => console.warn('[yuun.me] sign-out failed', err))
+      .finally(() => {
+        setSignedIn(false)
+        setAccountInfo(null)
+      })
+  }
+
+  const confirmSignOut = () => {
+    Alert.alert(t.signOutConsent.title, t.signOutConsent.body, [
+      { text: t.signOutConsent.cancel, style: 'cancel' },
+      { text: t.signOutConsent.confirm, style: 'destructive', onPress: runSignOut },
+    ])
+  }
 
   const applyBirthToForm = (info: AuspiceBirthInfo) => {
     setBirth(info)
@@ -1230,12 +1256,18 @@ export default function MeScreen() {
           <SettingsSection title={t.accountSection}>
             <SettingsCard>
               <SettingsRow
-                label={t.signedInLabel}
-                hint={undefined}
+                label={t.signedInAs}
+                hint={
+                  accountInfo?.email ??
+                  accountInfo?.name ??
+                  (accountInfo?.apple ? 'Apple' : accountInfo?.google ? 'Google' : null) ??
+                  undefined
+                }
                 onPress={() => {}}
                 divider
                 disabled
               />
+              <SettingsRow label={t.signOut} onPress={confirmSignOut} divider />
               {isIapEnabled() ? (
                 <SettingsRow
                   label={t.manageSubscription}

@@ -155,6 +155,10 @@ export const portfolioAuthRoutes = new Hono<{
     const { identityToken } = parsed.data
 
     let sub: string
+    // Google ships `email` + `email_verified` on EVERY id_token — persist it for
+    // the Settings account display (mirrors the Apple handler; never overwrite
+    // an existing email, so an OTP-bound address wins).
+    let emailFromToken: string | null = null
     try {
       const { payload } = await jwtVerify(identityToken, googleJwks, {
         issuer: GOOGLE_ISSUERS,
@@ -164,6 +168,13 @@ export const portfolioAuthRoutes = new Hono<{
         throw new HTTPException(401, { message: 'Invalid Google token' })
       }
       sub = payload.sub
+      if (
+        payload.email_verified === true &&
+        typeof payload.email === 'string' &&
+        payload.email.includes('@')
+      ) {
+        emailFromToken = payload.email.trim().toLowerCase()
+      }
     } catch (err) {
       if (err instanceof HTTPException) throw err
       console.warn('[portfolio-auth/google] jwtVerify failed', err)
@@ -175,15 +186,24 @@ export const portfolioAuthRoutes = new Hono<{
     const existing = await db.select().from(users).where(eq(users.googleUserId, sub)).get()
 
     if (existing) {
-      if (!existing.deviceSecret) {
-        const deviceSecret = crypto.randomUUID()
-        await db
-          .update(users)
-          .set({ deviceSecret, updatedAt: new Date().toISOString() })
-          .where(eq(users.id, existing.id))
-        return c.json({ userId: existing.id, deviceSecret })
+      const patch: {
+        deviceSecret?: string
+        email?: string
+        updatedAt: string
+      } = {
+        updatedAt: new Date().toISOString(),
       }
-      return c.json({ userId: existing.id, deviceSecret: existing.deviceSecret })
+      if (!existing.deviceSecret) patch.deviceSecret = crypto.randomUUID()
+      // Backfill email for accounts created before this capture fix (or where
+      // the first token was rejected) — the next sign-in heals the display.
+      if (!existing.email && emailFromToken) patch.email = emailFromToken
+      if (patch.deviceSecret !== undefined || patch.email !== undefined) {
+        await db.update(users).set(patch).where(eq(users.id, existing.id))
+      }
+      return c.json({
+        userId: existing.id,
+        deviceSecret: patch.deviceSecret ?? (existing.deviceSecret as string),
+      })
     }
 
     const id = nanoid()
@@ -191,6 +211,7 @@ export const portfolioAuthRoutes = new Hono<{
     await db.insert(users).values({
       id,
       googleUserId: sub,
+      email: emailFromToken,
       deviceSecret,
       unlockedChapterCount: CHAPTER_UNLOCK_DEFAULT,
     })
