@@ -13,7 +13,7 @@ import {
   getLunarMonthDays,
 } from '@zhop/astro-core'
 import type { ReactNode } from 'react'
-import { Text, type TextStyle, View } from 'react-native'
+import { Platform, Text, type TextStyle, View } from 'react-native'
 import { Pressable } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { almanacCopy } from '@/lib/almanac-copy'
@@ -97,8 +97,8 @@ function InkCell({
 const SLOT_FORYOU = 44
 const SLOT_HEAD = 42
 const SLOT_HOURS = 40
-/** 今日八字 / 五行 / 彭祖 共用底栏，三列标题齐平. */
-const SLOT_FOOTER = 76
+/** 今日八字 / 五行 / 彭祖 共用底栏。Android 默认 includeFontPadding，76 会把地支顶出格. */
+const SLOT_FOOTER = Platform.OS === 'android' ? 92 : 76
 
 function padSlots(
   items: Array<{ canonical: string; label: string }>,
@@ -187,6 +187,8 @@ function YiJiColumn({
           style={{
             height: SLOT_FOOTER,
             width: '100%',
+            flexShrink: 0,
+            overflow: 'hidden',
             paddingTop: 6,
             paddingHorizontal: 2,
             borderTopWidth: 0.5,
@@ -427,8 +429,8 @@ export function ClassicAlmanacPaper({
 
       {/* 下表：固定表头/时辰，余下三列等宽 */}
       <View style={{ flex: 1.35, minHeight: 0, paddingBottom: 4, paddingTop: 4 }}>
-        <View style={{ flex: 1, borderWidth: 2, borderColor: P.ink, padding: 2 }}>
-          <View style={{ flex: 1, borderWidth: 0.5, borderColor: P.ink }}>
+        <View style={{ flex: 1, borderWidth: 2, borderColor: P.ink, padding: 2, overflow: 'hidden' }}>
+          <View style={{ flex: 1, borderWidth: 0.5, borderColor: P.ink, overflow: 'hidden' }}>
             {/* 初三日 | 处暑 | 星期六 */}
             <View style={{ height: SLOT_HEAD, flexDirection: 'row' }}>
               <InkCell P={P} flex={1.15} pad={4}>
@@ -597,14 +599,21 @@ export function ClassicAlmanacPaper({
                 <View
                   style={{
                     height: SLOT_FOOTER,
+                    flexShrink: 0,
+                    overflow: 'hidden',
                     paddingHorizontal: 6,
-                    paddingTop: 6,
+                    paddingTop: 4,
                     justifyContent: 'flex-start',
-                    gap: 2,
+                    gap: 0,
                   }}
                 >
                   <Text
-                    style={{ color: P.dim, fontSize: en ? 10 : 12, letterSpacing: en ? 0 : 1 }}
+                    style={{
+                      color: P.dim,
+                      fontSize: en ? 10 : 12,
+                      letterSpacing: en ? 0 : 1,
+                      includeFontPadding: false,
+                    }}
                     numberOfLines={1}
                   >
                     {C.sectionBazi}
@@ -614,10 +623,12 @@ export function ClassicAlmanacPaper({
                       <Text
                         style={{
                           color: P.ink,
-                          fontSize: 20,
+                          fontSize: 18,
+                          lineHeight: 22,
                           fontWeight: '700',
-                          letterSpacing: 5,
+                          letterSpacing: 4,
                           textAlign: 'center',
+                          includeFontPadding: false,
                         }}
                       >
                         {stemLine}
@@ -625,17 +636,19 @@ export function ClassicAlmanacPaper({
                       <Text
                         style={{
                           color: P.ink,
-                          fontSize: 20,
+                          fontSize: 18,
+                          lineHeight: 22,
                           fontWeight: '700',
-                          letterSpacing: 5,
+                          letterSpacing: 4,
                           textAlign: 'center',
+                          includeFontPadding: false,
                         }}
                       >
                         {branchLine}
                       </Text>
                     </>
                   ) : (
-                    <Text style={{ color: P.ink, textAlign: 'center' }}>—</Text>
+                    <Text style={{ color: P.ink, textAlign: 'center', includeFontPadding: false }}>—</Text>
                   )}
                 </View>
               </View>

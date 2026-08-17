@@ -124,7 +124,7 @@ export default function HomeScreen() {
 
   const [tearPlay, setTearPlay] = useState(false)
   const [stubGanZhi, setStubGanZhi] = useState<string | undefined>()
-  const [shareRequestId, setShareRequestId] = useState(0)
+  const passOnRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     const candidate = Array.isArray(params.day) ? params.day[0] : params.day
@@ -395,7 +395,7 @@ export default function HomeScreen() {
             }}
             onSelectDay={onSelectDay}
             todayIso={todayIso}
-            shareRequestId={shareRequestId}
+            passOnRef={passOnRef}
           />
         ) : (
           <DayView
@@ -494,7 +494,7 @@ export default function HomeScreen() {
                 }}
                 onSelectDay={onSelectDay}
                 todayIso={todayIso}
-                shareRequestId={shareRequestId}
+                passOnRef={passOnRef}
               />
             </View>
           ) : (
@@ -512,7 +512,7 @@ export default function HomeScreen() {
                 }}
                 onSelectDay={onSelectDay}
                 todayIso={todayIso}
-                shareRequestId={shareRequestId}
+                passOnRef={passOnRef}
               />
             </Animated.ScrollView>
           )
@@ -594,7 +594,7 @@ export default function HomeScreen() {
               <Text style={{ color: headerP.dim, fontSize: 10, letterSpacing: 3 }}>{' · '}</Text>
               {headerLink(t.settingsAlmanacEntry, goToMe)}
               <Text style={{ color: headerP.dim, fontSize: 10, letterSpacing: 3 }}>{' · '}</Text>
-              {headerLink(t.almanacPassOn, () => setShareRequestId((n) => n + 1))}
+              {headerLink(t.almanacPassOn, () => passOnRef.current?.())}
             </View>
           </>
         ) : (

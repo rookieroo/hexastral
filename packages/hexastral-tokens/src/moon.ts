@@ -194,12 +194,9 @@ export const SKIN_CINNABAR_INK: MoonFaceSkin = {
 }
 
 /**
- * 苍墨 ink moon — Auspice's (Yuun) brand loader phase-moon. The almanac is a lunar
- * tradition, so the turning moon IS its loading motif; in the locked ink theme it's
- * an achromatic warm-gray (苍墨) face with the same matte paper grain as Kindred's
- * cinnabar-ink moon — the two apps share one motion language in two inks.
- * In MOON_SKINS_BY_ID (resolvable by id) + Auspice's widget/loader default; kept OUT
- * of the shared ALL_MOON_SKINS so other apps' pickers don't show it.
+ * 苍墨 ink moon — Auspice's (Yuun) brand loader. Lit face is 月白; the sweeping
+ * shadow disc carries the ink. Matte paper grain like Kindred's cinnabar-ink moon.
+ * In MOON_SKINS_BY_ID; kept OUT of ALL_MOON_SKINS so other apps' pickers omit it.
  */
 export const SKIN_INK: MoonFaceSkin = {
   id: 'ink',
@@ -207,18 +204,17 @@ export const SKIN_INK: MoonFaceSkin = {
   faceCenter: { cx: 0.36, cy: 0.3 },
   faceRadius: 0.68,
   faceStops: [
-    { offset: 0, color: '#d8d2c8' },
-    { offset: 0.55, color: '#8c857b' },
-    { offset: 1, color: '#4d4540' },
+    { offset: 0, color: '#f0ece0' },
+    { offset: 0.55, color: '#dcd5c2' },
+    { offset: 1, color: '#9a9080' },
   ],
-  surface: { kind: 'paper', opacity: 0.28 },
+  surface: { kind: 'paper', opacity: 0.22 },
 }
 
 /**
- * 苍墨·昼 — the LIGHT-mode ink moon (Auspice loads on cream paper by default). The
- * dark SKIN_INK's pale lit face blends into cream; this darkens the face to a mid
- * taupe-grey so the disc + its sweeping phase read on the 黄历纸 ground. MoonLoader
- * picks it via the theme mode. NOT in ALL_MOON_SKINS.
+ * 苍墨·昼 — light-mode ink moon on cream 黄历纸. Lit face is 月白 (not taupe-grey);
+ * the sweeping shadow disc still reads the phase. MoonLoader picks it via theme.
+ * NOT in ALL_MOON_SKINS.
  */
 export const SKIN_INK_LIGHT: MoonFaceSkin = {
   id: 'ink-light',
@@ -226,11 +222,11 @@ export const SKIN_INK_LIGHT: MoonFaceSkin = {
   faceCenter: { cx: 0.36, cy: 0.3 },
   faceRadius: 0.68,
   faceStops: [
-    { offset: 0, color: '#8e8170' },
-    { offset: 0.55, color: '#675c4e' },
-    { offset: 1, color: '#453d35' },
+    { offset: 0, color: '#f0ece0' },
+    { offset: 0.55, color: '#dcd5c2' },
+    { offset: 1, color: '#a89f8c' },
   ],
-  surface: { kind: 'paper', opacity: 0.28 },
+  surface: { kind: 'paper', opacity: 0.22 },
 }
 
 /**

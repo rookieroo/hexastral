@@ -17,7 +17,7 @@ import {
   STEM_WUXING,
 } from '@zhop/astro-core'
 import { useTheme } from '@zhop/core-ui'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState, type MutableRefObject } from 'react'
 import { StyleSheet, Text, type TextStyle, useWindowDimensions, View } from 'react-native'
 import { Pressable } from 'react-native-gesture-handler'
 import Svg, { Path as SvgPath } from 'react-native-svg'
@@ -58,7 +58,7 @@ export function AlmanacPage({
   capture = false,
   onSelectDay,
   todayIso,
-  shareRequestId = 0,
+  passOnRef,
 }: {
   payload: AuspiceDayPayload
   locale: Locale
@@ -67,8 +67,8 @@ export function AlmanacPage({
   capture?: boolean
   onSelectDay?: (dateIso: string) => void
   todayIso?: string
-  /** Increment from parent Header「传帖」to trigger image share. */
-  shareRequestId?: number
+  /** Parent header「传帖」calls this; do not drive share from a sticky counter. */
+  passOnRef?: MutableRefObject<(() => void) | null>
 }) {
   const { spacing, isDark } = useTheme()
   const { t } = useStrings()
@@ -84,16 +84,16 @@ export function AlmanacPage({
   const [meaningTerm, setMeaningTerm] = useState<string | null>(null)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const isClassic = theme === 'classic'
-  // Camera pages remount on day change (`key={dayKey}`). Seed from the current
-  // id so a leftover Header tap does not re-open the share sheet on every flip.
-  const seenShareId = useRef(shareRequestId)
 
   useEffect(() => {
-    if (shareRequestId <= 0 || capture) return
-    if (shareRequestId === seenShareId.current) return
-    seenShareId.current = shareRequestId
-    void share(`${shareTaglineFor(locale)}\n${dayShareUrl(date, locale)}`)
-  }, [shareRequestId, capture, share, date, locale])
+    if (capture || !passOnRef) return
+    passOnRef.current = () => {
+      void share(`${shareTaglineFor(locale)}\n${dayShareUrl(date, locale)}`)
+    }
+    return () => {
+      passOnRef.current = null
+    }
+  }, [capture, passOnRef, share, date, locale])
 
   // Day-turn must not leave a stale glossary sheet open.
   useEffect(() => {
