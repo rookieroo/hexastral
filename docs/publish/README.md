@@ -3,6 +3,7 @@
 > **可执行上架 Runbook**：[yuun-yuel-launch-runbook.md](./yuun-yuel-launch-runbook.md)  
 > **Bundle 改名后 Portal（五 App）**：[post-bundle-rename-portal.md](./post-bundle-rename-portal.md)  
 > **App Store Connect 逐步操作**：[asc-yuun-yuel-guide.md](./asc-yuun-yuel-guide.md)  
+> **Google Play Console 提交表单包（Yuun）**：[yuun-google-play-console.md](./yuun-google-play-console.md)  
 > **US 商标申报材料**：[trademark-filing-prep.md](./trademark-filing-prep.md)
 >
 > Every task here is **human / console work** that cannot be done from the repo:
