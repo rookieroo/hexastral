@@ -44,6 +44,7 @@ data class YuunWidgetDay(
   val pengZuStem: String?,
   val pengZuBranch: String?,
   val nayin: String?,
+  val ganzhiYear: String?,
 )
 
 data class ParsedWidgetPayload(
@@ -140,6 +141,7 @@ object WidgetPayloadParser {
       pengZuStem = d.optStringOrNull("pengZuStem"),
       pengZuBranch = d.optStringOrNull("pengZuBranch"),
       nayin = d.optStringOrNull("nayin"),
+      ganzhiYear = d.optStringOrNull("ganzhiYear"),
     )
   }
 

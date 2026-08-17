@@ -80,6 +80,8 @@ private object YuunColors {
   /** 黄历模式 — 赭金（宜/吉）/ 墨棕（忌/凶），与 App 同口径。 */
   val gold = ColorProvider(day = Color(0xFF9A6B1F), night = Color(0xFFD9B36A))
   val brown = ColorProvider(day = Color(0xFF4A3324), night = Color(0xFFCDBBA7))
+  /** 朱砂 — 判级「凶」原字；day=cinnabar.seal #9B2226, night=cinnabar.bright #C0392B。 */
+  val seal = ColorProvider(day = Color(0xFF9B2226), night = Color(0xFFC0392B))
 }
 
 private enum class WidgetFamily {

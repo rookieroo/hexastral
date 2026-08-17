@@ -13,5 +13,4 @@
   android:maxResizeWidth="570dp"
   android:maxResizeHeight="570dp"
   android:updatePeriodMillis="0"
-  android:widgetCategory="home_screen"
-  android:systemAppWidgetBackgroundRadius="16dp" />
+  android:widgetCategory="home_screen" />
