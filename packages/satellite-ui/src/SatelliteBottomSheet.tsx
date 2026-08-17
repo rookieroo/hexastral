@@ -131,8 +131,11 @@ export function SatelliteBottomSheet({
   const panResponder = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: (_, g) => g.dy > 5,
+        // Do not claim on touch-down — a horizontal pager (month grid) inside
+        // the sheet must be able to take the gesture. Only steal a clearly
+        // downward dismiss swipe.
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, g) => g.dy > 10 && g.dy > Math.abs(g.dx),
         onPanResponderMove: (_, g) => {
           if (g.dy > 0) translateY.setValue(g.dy)
         },

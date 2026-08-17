@@ -122,6 +122,22 @@ export async function reconcileYuunBirthWithAccount(): Promise<BirthAccountSyncR
   }
 }
 
+/** Stable fingerprint for conflict Alert debounce (same pair → one prompt). */
+export function birthConflictPromptKey(conflict: BirthSyncConflict): string {
+  const side = (info: AuspiceBirthInfo) =>
+    [
+      info.solarDate,
+      info.timeIndex ?? '',
+      info.gender ?? '',
+      info.city ?? '',
+      info.clockMinutes ?? '',
+      info.calendar ?? 'solar',
+      info.lunarInput ?? '',
+      info.lunarIsLeap === true ? '1' : '0',
+    ].join('|')
+  return `${side(conflict.local)}::${side(conflict.remote)}`
+}
+
 /** Resolve conflict: keep account (overwrite local) or keep local (overwrite account). */
 export async function resolveBirthConflict(
   choice: 'use_account' | 'use_local',

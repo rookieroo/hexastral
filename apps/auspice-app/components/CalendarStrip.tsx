@@ -75,6 +75,7 @@ export function CalendarStrip({ selectedDay, onSelectDay }: CalendarStripProps) 
   const { colors, spacing } = useTheme()
   const { t, locale } = useStrings()
   const { width: screenWidth } = useWindowDimensions()
+  const [pageWidth, setPageWidth] = useState(screenWidth)
 
   const now = useMemo(() => new Date(), [])
   const anchor = useMemo(() => ({ year: now.getFullYear(), month: now.getMonth() + 1 }), [now])
@@ -110,19 +111,20 @@ export function CalendarStrip({ selectedDay, onSelectDay }: CalendarStripProps) 
 
   const getItemLayout = useCallback(
     (_: ArrayLike<MonthRef> | null | undefined, index: number) => ({
-      length: screenWidth,
-      offset: screenWidth * index,
+      length: pageWidth,
+      offset: pageWidth * index,
       index,
     }),
-    [screenWidth]
+    [pageWidth]
   )
 
   const onMomentumScrollEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const idx = Math.round(e.nativeEvent.contentOffset.x / screenWidth)
+      const w = Math.max(pageWidth, 1)
+      const idx = Math.round(e.nativeEvent.contentOffset.x / w)
       setVisibleIndex(idx)
     },
-    [screenWidth]
+    [pageWidth]
   )
 
   const goToToday = useCallback(() => {
@@ -142,15 +144,19 @@ export function CalendarStrip({ selectedDay, onSelectDay }: CalendarStripProps) 
         cache={cacheRef.current}
         onCellHeader={onCellHeader}
         onPressDay={onSelectDay}
-        width={screenWidth}
+        width={pageWidth}
       />
     ),
-    [locale, todayKey, selectedDay, onCellHeader, onSelectDay, screenWidth]
+    [locale, todayKey, selectedDay, onCellHeader, onSelectDay, pageWidth]
   )
 
   return (
-    <View>
-      {/* Month label row — year · month + lunar header subtitle + Today pill */}
+    <View
+      onLayout={(e) => {
+        const w = e.nativeEvent.layout.width
+        if (w > 0 && Math.abs(w - pageWidth) > 0.5) setPageWidth(w)
+      }}
+    >
       <View
         style={{
           flexDirection: 'row',

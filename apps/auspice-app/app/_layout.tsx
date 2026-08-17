@@ -45,6 +45,7 @@ import {
 } from '@/lib/push'
 import { migrateBirthdaysToServerOnce } from '@/lib/serverPush'
 import { useAppTheme } from '@/lib/theme'
+import { AlmanacThemeProvider } from '@/lib/almanac-theme-context'
 import { VoiceModeProvider } from '@/lib/voice-mode-context'
 import { YijiModeProvider } from '@/lib/yiji-mode-context'
 
@@ -71,9 +72,11 @@ export default function RootLayout() {
           <LocaleProvider>
             <YijiModeProvider>
               <VoiceModeProvider>
-                <AuspiceErrorBoundary>
-                  <RootLayoutInner />
-                </AuspiceErrorBoundary>
+                <AlmanacThemeProvider>
+                  <AuspiceErrorBoundary>
+                    <RootLayoutInner />
+                  </AuspiceErrorBoundary>
+                </AlmanacThemeProvider>
               </VoiceModeProvider>
             </YijiModeProvider>
           </LocaleProvider>

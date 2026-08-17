@@ -100,11 +100,31 @@ const XISHEN: Record<string, string> = {
   癸: '东南',
 }
 
+/**
+ * 天乙贵人 · 阳贵方位（按日干）— 通书「贵神」格常用昼贵单支：
+ * 甲戊庚丑东北、乙己子正北、丙丁亥西北、壬癸巳东南、辛午正南。
+ */
+const GUISHEN: Record<string, string> = {
+  甲: '东北',
+  戊: '东北',
+  庚: '东北',
+  乙: '正北',
+  己: '正北',
+  丙: '西北',
+  丁: '西北',
+  壬: '东南',
+  癸: '东南',
+  辛: '正南',
+}
+
 export function caishenDirection(dayStem: string): string | null {
   return CAISHEN[dayStem] ?? null
 }
 export function xishenDirection(dayStem: string): string | null {
   return XISHEN[dayStem] ?? null
+}
+export function guishenDirection(dayStem: string): string | null {
+  return GUISHEN[dayStem] ?? null
 }
 
 /** 节 → 月支；气 → 前一个节。 */

@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Yuun · 黄历翻页多版本原型</title>
+  <style>
+    :root {
+      --bg: #0c0e0c;
+      --ink: #9fbfa8;
+      --ink-dim: #6a8f76;
+      --line: #3d5a46;
+      --card: #0c0e0c;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --header-h: 48px;
+      --tabs-h: 44px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", system-ui, sans-serif;
+      overflow: hidden;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .app {
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding-top: var(--safe-top);
+      padding-bottom: var(--safe-bottom);
+    }
+
+    .header {
+      height: var(--header-h);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      border-bottom: 1px solid rgba(159,191,168,0.12);
+      background: var(--bg);
+      z-index: 30;
+    }
+    .brand { display: flex; align-items: center; gap: 8px; }
+    .logo {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #e8e8e8, #222 55%, #000);
+      border: 1px solid #666;
+    }
+    .brand h1 { font-size: 16px; font-weight: 700; line-height: 1.1; }
+    .brand p { font-size: 9px; letter-spacing: 0.3em; color: var(--ink-dim); }
+    .nav { font-size: 10px; letter-spacing: 0.22em; color: var(--ink-dim); }
+    .nav b { color: var(--ink); font-weight: 500; }
+
+    /* Version tabs */
+    .tabs {
+      height: var(--tabs-h);
+      flex-shrink: 0;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      padding: 0 10px;
+      overflow-x: auto;
+      border-bottom: 1px solid rgba(159,191,168,0.1);
+      background: var(--bg);
+      z-index: 30;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      flex-shrink: 0;
+      border: 0.5px solid var(--line);
+      background: transparent;
+      color: var(--ink-dim);
+      font-size: 11px;
+      padding: 6px 10px;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+    }
+    .tab.active {
+      color: var(--ink);
+      border-color: var(--ink);
+      background: rgba(159,191,168,0.08);
+    }
+    .tab-desc {
+      font-size: 10px;
+      color: var(--ink-dim);
+      padding: 4px 14px 2px;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+      line-height: 1.35;
+    }
+
+    .stage {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+      perspective: 1800px;
+      perspective-origin: 50% 0%;
+    }
+    .hinge {
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(159,191,168,0.5), transparent);
+      z-index: 20; pointer-events: none;
+    }
+    .stack {
+      position: absolute; left: 16px; right: 16px; height: 1.5px;
+      background: rgba(159,191,168,0.18); pointer-events: none; z-index: 1;
+    }
+    .stack.a { bottom: 5px; }
+    .stack.b { bottom: 8px; left: 22px; right: 22px; opacity: 0.5; }
+
+    .page {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      padding: 4px 14px 8px;
+      background: var(--card);
+      transform-origin: 50% 0%;
+      backface-visibility: hidden;
+      will-change: transform, filter;
+    }
+    .page.under { z-index: 2; }
+    .page.leaf { z-index: 5; transform-style: preserve-3d; }
+
+    .page.leaf .backface {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, #2a332c, #141814);
+      transform: rotateX(180deg);
+      backface-visibility: hidden;
+      pointer-events: none;
+    }
+
+    /* FX overlays */
+    .fx {
+      position: absolute; inset: 0; pointer-events: none; z-index: 8; opacity: 0;
+    }
+    .fx.wrinkle {
+      mix-blend-mode: soft-light;
+      background:
+        repeating-linear-gradient(180deg,
+          transparent 0, transparent 16px,
+          rgba(255,255,255,0.05) 17px,
+          rgba(0,0,0,0.14) 20px,
+          transparent 26px),
+        linear-gradient(180deg,
+          rgba(255,255,255,0.1) 0%, transparent 14%,
+          rgba(0,0,0,0.18) 50%, transparent 70%);
+    }
+    .fx.spec {
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), transparent 55%);
+      height: 32%; top: 0; bottom: auto;
+    }
+    .fx.shade {
+      background: linear-gradient(180deg, transparent, rgba(0,0,0,0.5));
+      top: 55%;
+    }
+
+    /* Multi-strip curl (V3) — strips live inside #curlHost */
+    .curl-host {
+      position: absolute; inset: 0; z-index: 6;
+      transform-origin: 50% 0%;
+      pointer-events: none;
+      display: none;
+    }
+    .curl-host.on { display: block; }
+    .curl-strip {
+      position: absolute; left: 0; right: 0;
+      overflow: hidden;
+      transform-origin: 50% 0%;
+      background: var(--card);
+      backface-visibility: hidden;
+    }
+    .curl-strip .clone {
+      position: absolute; left: 0; right: 0; top: 0;
+    }
+
+    /* ── Sheet layout: Hero ~50%, table ~50% ── */
+    .sheet {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      height: 100%;
+    }
+    .hero {
+      flex: 1 1 50%;
+      display: grid;
+      grid-template-columns: 30px 1fr 30px;
+      align-items: center;
+      gap: 6px;
+      min-height: 0;
+      padding: 8px 0 10px;
+    }
+    .vcol { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .vstrip {
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      line-height: 1.4;
+      color: var(--ink);
+    }
+    .daynum {
+      font-size: clamp(72px, 22vw, 110px);
+      font-weight: 700;
+      line-height: 0.92;
+      text-align: center;
+      letter-spacing: -0.02em;
+    }
+
+    .table-wrap {
+      flex: 0 0 50%;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      max-height: 50%;
+    }
+    .table {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border: 2px solid var(--ink);
+      padding: 1.5px;
+      min-height: 0;
+    }
+    .table-inner {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border: 0.5px solid var(--ink);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .row { display: flex; border-bottom: 0.5px solid var(--ink); min-height: 0; }
+    .row:last-child { border-bottom: none; }
+    .cell {
+      flex: 1; padding: 2px 4px; border-right: 0.5px solid var(--ink);
+      display: flex; flex-direction: column; justify-content: center; min-width: 0;
+    }
+    .cell:last-child { border-right: none; }
+    .cell .lbl { font-size: 7px; color: var(--ink-dim); letter-spacing: 0.06em; }
+    .cell .val { font-size: 10px; margin-top: 0; }
+
+    .row.head .cell { font-size: 9px; padding: 2px 4px; }
+    .row.lunar .cell { font-size: 16px; font-weight: 700; text-align: center; padding: 3px; }
+
+    .hours { display: flex; border-bottom: 0.5px solid var(--ink); flex-shrink: 0; }
+    .hours > div {
+      flex: 1; text-align: center; padding: 1px 0;
+      border-right: 0.5px solid var(--ink); font-size: 7px; line-height: 1.2;
+    }
+    .hours > div:last-child { border-right: none; }
+    .hours .b { font-weight: 700; }
+
+    .mid { flex: 1; display: flex; min-height: 0; }
+    .mid .col {
+      flex: 1; padding: 2px 3px; border-right: 0.5px solid var(--ink);
+      font-size: 9px; line-height: 1.25; overflow: hidden;
+    }
+    .mid .col:last-child { border-right: none; }
+    .bazi-line { letter-spacing: 0.18em; text-align: center; font-size: 11px; }
+    .seals { display: flex; flex: 1.1; min-width: 0; }
+    .seal {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      gap: 1px; padding: 2px 0; border-right: 0.5px solid var(--ink);
+      font-size: 9px; overflow: hidden;
+    }
+    .seal:last-child { border-right: none; }
+    .seal .disk {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 1px solid var(--ink); display: grid; place-items: center;
+      font-weight: 700; font-size: 10px; flex-shrink: 0;
+    }
+    .seal .verb {
+      writing-mode: vertical-rl; text-orientation: upright;
+      letter-spacing: 0; line-height: 1.05;
+      text-decoration: underline; text-underline-offset: 1px;
+    }
+
+    .sum {
+      text-align: center; font-size: 8px; letter-spacing: 0.06em;
+      padding: 2px; border-bottom: 0.5px solid var(--ink); flex-shrink: 0;
+    }
+    .foot {
+      display: flex; align-items: center; gap: 6px;
+      padding: 3px 5px; font-size: 10px; line-height: 1.3; flex-shrink: 0;
+    }
+    .verdict {
+      width: 24px; height: 24px; border-radius: 50%;
+      border: 1.25px solid var(--ink); display: grid; place-items: center;
+      font-weight: 700; flex-shrink: 0; font-size: 12px;
+    }
+
+    .hint {
+      position: absolute; bottom: 14px; left: 0; right: 0;
+      text-align: center; font-size: 10px; letter-spacing: 0.18em;
+      color: var(--ink-dim); z-index: 25; pointer-events: none;
+      opacity: 0.65; transition: opacity 0.25s;
+    }
+    .hint.hide { opacity: 0; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="brand">
+        <div class="logo"></div>
+        <div><h1>Yuun</h1><p>黄历</p></div>
+      </div>
+      <div class="nav"><b>今日</b> · 通例 · 传帖</div>
+    </header>
+
+    <div class="tabs" id="tabs"></div>
+    <p class="tab-desc" id="tabDesc"></p>
+
+    <div class="stage" id="stage">
+      <div class="hinge"></div>
+      <div class="stack a"></div>
+      <div class="stack b"></div>
+
+      <div class="page under" id="under"></div>
+      <div class="page leaf" id="leaf">
+        <div class="backface"></div>
+        <div class="fx wrinkle" id="wrinkle"></div>
+        <div class="fx spec" id="spec"></div>
+        <div class="fx shade" id="shade"></div>
+        <div class="sheet" id="leafSheet"></div>
+      </div>
+
+      <!-- V3 multi-strip curl overlay (clones leaf content) -->
+      <div class="curl-host" id="curlHost"></div>
+
+      <p class="hint" id="hint">上滑后日 · 下滑前日 · 点上方切换版本</p>
+    </div>
+  </div>
+
+  <script>
+    const VERSIONS = [
+      {
+        id: 'A',
+        name: 'A · 硬铰链',
+        desc: '罚单/便签：顶边固定，整页硬板 rotateX，底页全程可见。无褶皱。',
+      },
+      {
+        id: 'B',
+        name: 'B · 软揭+皱',
+        desc: '顶铰链 + 褶皱/高光/阴影，翻过半后略透出底页。',
+      },
+      {
+        id: 'C',
+        name: 'C · 分段卷曲',
+        desc: '多条水平纸带差速旋转，模拟纸张卷曲（更像真撕本）。',
+      },
+      {
+        id: 'D',
+        name: 'D · 滑出揭示',
+        desc: '叶子上移淡出，底页缩放浮起（偏现代，非 3D 铰链）。',
+      },
+      {
+        id: 'E',
+        name: 'E · 对折帘',
+        desc: '上半页先折、下半跟随，像对折便签帘式翻开。',
+      },
+    ]
+
+    const HOURS = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥']
+    const LUCK = [0,1,1,0,1,0,1,1,0,1,0,1]
+
+    const DAYS = {
+      16: {
+        ganZhi: '壬戌日', officer: '收日', lunar: '七月初四',
+        head: '丙午年七月', term: '处暑', weekday: '星期日', lunarDay: '初四',
+        gods: '喜神 正南<br/>贵神 正北<br/>财神 西南',
+        stems: '丙丙壬庚', branches: '午申戌辰',
+        yi: ['沐浴','理发','扫舍'], ji: ['出行','开仓'],
+        clash: '冲兔煞东', officerCell: '收日', dayGod: '朱雀',
+        mansion: '星日马', wuxing: '钗钏金', pengzu: '壬不泱水…',
+        summary: '狗日冲兔 · 三合虎马', fit: '凶', tip: '诸事审慎，宜静不宜争。',
+      },
+      17: {
+        ganZhi: '癸亥日', officer: '平日', lunar: '七月初五',
+        head: '丙午年七月', term: '处暑', weekday: '星期一', lunarDay: '初五',
+        gods: '喜神 东南<br/>贵神 东南<br/>财神 正南',
+        stems: '丙丙癸壬', branches: '午申亥子',
+        yi: ['修造','嫁娶','安床','涂泥'], ji: ['求医','栽种'],
+        clash: '冲蛇煞西', officerCell: '平日', dayGod: '勾陈',
+        mansion: '张月鹿', wuxing: '大海水', pengzu: '癸不词讼…',
+        summary: '猪日冲蛇 · 三合兔羊', fit: '吉', tip: '此日五行相顺，诸事宜早，不宜迟疑。',
+      },
+      18: {
+        ganZhi: '甲子日', officer: '定日', lunar: '七月初六',
+        head: '丙午年七月', term: '处暑', weekday: '星期二', lunarDay: '初六',
+        gods: '喜神 东北<br/>贵神 西南<br/>财神 正北',
+        stems: '丙丙甲戊', branches: '午申子辰',
+        yi: ['祭祀','开市','纳财'], ji: ['动土','安葬'],
+        clash: '冲马煞南', officerCell: '定日', dayGod: '青龙',
+        mansion: '翼火蛇', wuxing: '海中金', pengzu: '甲不开仓…',
+        summary: '鼠日冲马 · 三合猴龙', fit: '平', tip: '宜守常循序，勿躁进强求。',
+      },
+    }
+
+    function pageHTML(dayNum) {
+      const d = DAYS[dayNum] || DAYS[17]
+      const hours = HOURS.map((h,i) =>
+        `<div><div>${h}</div><div class="b">${LUCK[i]?'吉':'凶'}</div></div>`).join('')
+      const yi = d.yi.map(v => `<span class="verb">${[...v].join('')}</span>`).join('')
+      const ji = d.ji.map(v => `<span class="verb">${[...v].join('')}</span>`).join('')
+      return `
+        <div class="sheet">
+          <div class="hero">
+            <div class="vcol">
+              <div class="vstrip">${d.ganZhi}</div>
+              <div class="vstrip">${d.officer}</div>
+            </div>
+            <div class="daynum">${dayNum}</div>
+            <div class="vcol"><div class="vstrip">${d.lunar}</div></div>
+          </div>
+          <div class="table-wrap">
+            <div class="table"><div class="table-inner">
+              <div class="row head">
+                <div class="cell">${d.head}</div>
+                <div class="cell" style="text-align:center">${d.term}</div>
+                <div class="cell" style="text-align:center;font-weight:700">${d.weekday}</div>
+              </div>
+              <div class="row lunar">
+                <div class="cell">${d.lunarDay}</div>
+                <div class="cell">${d.weekday}</div>
+              </div>
+              <div class="hours">${hours}</div>
+              <div class="mid row" style="border:0;flex:1">
+                <div class="col"><div class="lbl">吉神方位</div>${d.gods}</div>
+                <div class="col"><div class="lbl">今日八字</div>
+                  <div class="bazi-line">${d.stems}</div>
+                  <div class="bazi-line">${d.branches}</div>
+                </div>
+                <div class="seals">
+                  <div class="seal"><div class="disk">宜</div>${yi}</div>
+                  <div class="seal"><div class="disk">忌</div>${ji}</div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="cell"><div class="lbl">冲煞</div><div class="val">${d.clash}</div></div>
+                <div class="cell"><div class="lbl">建除</div><div class="val">${d.officerCell}</div></div>
+                <div class="cell"><div class="lbl">值神</div><div class="val">${d.dayGod}</div></div>
+              </div>
+              <div class="row">
+                <div class="cell"><div class="lbl">星宿</div><div class="val">${d.mansion}</div></div>
+                <div class="cell"><div class="lbl">五行</div><div class="val">${d.wuxing}</div></div>
+                <div class="cell"><div class="lbl">彭祖</div><div class="val" style="font-size:8px">${d.pengzu}</div></div>
+              </div>
+              <div class="sum">${d.summary}</div>
+              <div class="foot"><div class="verdict">${d.fit}</div><div>${d.tip}</div></div>
+            </div></div>
+          </div>
+        </div>`
+    }
+
+    // ── DOM ──
+    const tabsEl = document.getElementById('tabs')
+    const tabDesc = document.getElementById('tabDesc')
+    const stage = document.getElementById('stage')
+    const under = document.getElementById('under')
+    const leaf = document.getElementById('leaf')
+    const leafSheet = document.getElementById('leafSheet')
+    const wrinkle = document.getElementById('wrinkle')
+    const spec = document.getElementById('spec')
+    const shade = document.getElementById('shade')
+    const curlHost = document.getElementById('curlHost')
+    const hint = document.getElementById('hint')
+
+    let version = 'B'
+    let day = 17
+    let progress = 0
+    let mode = 'idle'
+    let dragging = false
+    let startY = 0
+    let startP = 0
+    let busy = false
+
+    VERSIONS.forEach((v) => {
+      const b = document.createElement('button')
+      b.className = 'tab' + (v.id === version ? ' active' : '')
+      b.textContent = v.name
+      b.onclick = () => selectVersion(v.id)
+      tabsEl.appendChild(b)
+    })
+    tabDesc.textContent = VERSIONS.find((v) => v.id === version).desc
+
+    function selectVersion(id) {
+      version = id
+      ;[...tabsEl.children].forEach((el, i) => {
+        el.classList.toggle('active', VERSIONS[i].id === id)
+      })
+      tabDesc.textContent = VERSIONS.find((v) => v.id === id).desc
+      resetFlat()
+      buildCurlIfNeeded()
+    }
+
+    function paint(leafDay, underDay) {
+      leafSheet.innerHTML = pageHTML(leafDay)
+      under.innerHTML = pageHTML(underDay)
+      if (version === 'C') buildCurlIfNeeded(true)
+    }
+
+    const STRIPS = 6
+    function buildCurlIfNeeded(force) {
+      if (version !== 'C') {
+        curlHost.classList.remove('on')
+        curlHost.innerHTML = ''
+        leaf.style.visibility = ''
+        return
+      }
+      curlHost.classList.add('on')
+      curlHost.innerHTML = ''
+      const h = stage.clientHeight
+      const stripH = h / STRIPS
+      // Clone leaf HTML into each strip with offset
+      for (let i = 0; i < STRIPS; i++) {
+        const s = document.createElement('div')
+        s.className = 'curl-strip'
+        s.style.top = `${(i / STRIPS) * 100}%`
+        s.style.height = `${100 / STRIPS + 0.4}%`
+        const clone = document.createElement('div')
+        clone.className = 'clone'
+        clone.style.height = `${h}px`
+        clone.style.top = `${-i * stripH}px`
+        clone.innerHTML = leafSheet.innerHTML
+        s.appendChild(clone)
+        curlHost.appendChild(s)
+      }
+      leaf.style.visibility = 'hidden'
+    }
+
+    function clamp(n, a, b) { return Math.max(a, Math.min(b, n)) }
+
+    function applyProgress(p) {
+      progress = p
+      const sin = Math.sin(p * Math.PI)
+
+      // Reset common
+      leaf.style.filter = ''
+      leaf.style.opacity = '1'
+      under.style.transform = ''
+      under.style.opacity = '1'
+      wrinkle.style.opacity = '0'
+      spec.style.opacity = '0'
+      shade.style.opacity = '0'
+
+      if (version === 'A') {
+        // Hard notepad hinge
+        const deg = p * 128
+        leaf.style.transform = `perspective(1800px) rotateX(${deg}deg)`
+        leafSheet.style.opacity = p > 0.82 ? String(1 - (p - 0.82) / 0.18) : '1'
+      } else if (version === 'B') {
+        const deg = p * 122
+        leaf.style.transform = `perspective(1800px) rotateX(${deg}deg) scaleY(${1 - p * 0.015})`
+        wrinkle.style.opacity = String(0.2 + sin * 0.8)
+        spec.style.opacity = String(sin * 0.65)
+        shade.style.opacity = String(p * 0.85)
+        leafSheet.style.opacity = p > 0.75 ? String(1 - (p - 0.75) / 0.25 * 0.4) : '1'
+      } else if (version === 'C') {
+        // Multi-strip curl — each strip rotates more than the one above
+        const strips = curlHost.children
+        for (let i = 0; i < strips.length; i++) {
+          const t = (i + 1) / STRIPS
+          const deg = p * 135 * (0.35 + t * 0.9)
+          strips[i].style.transform = `perspective(1600px) rotateX(${deg}deg)`
+          strips[i].style.zIndex = String(10 + STRIPS - i)
+          strips[i].style.filter = p > 0.1 ? `brightness(${1 - p * 0.15 * t})` : ''
+        }
+        wrinkle.style.opacity = '0'
+      } else if (version === 'D') {
+        // Slide up + fade, under scales in
+        const y = -p * stage.clientHeight * 0.92
+        leaf.style.transform = `translateY(${y}px) scale(${1 - p * 0.04})`
+        leaf.style.opacity = String(1 - p * 0.85)
+        under.style.transform = `scale(${0.96 + p * 0.04})`
+        under.style.opacity = String(0.5 + p * 0.5)
+        shade.style.opacity = String(sin * 0.35)
+      } else if (version === 'E') {
+        // Curtain: exaggerate mid fold via rotateX + blur band
+        const deg = p * 105
+        leaf.style.transform = `perspective(1400px) rotateX(${deg}deg)`
+        leaf.style.filter = `brightness(${1 - p * 0.2}) contrast(${1 + sin * 0.08})`
+        wrinkle.style.opacity = String(0.35 + sin * 0.65)
+        // Stronger mid-fold band
+        wrinkle.style.background = `
+          linear-gradient(180deg,
+            transparent ${30 + p * 10}%,
+            rgba(0,0,0,0.35) ${48 + p * 5}%,
+            rgba(255,255,255,0.08) ${52 + p * 5}%,
+            transparent ${70}%),
+          repeating-linear-gradient(180deg,
+            transparent 0, transparent 14px,
+            rgba(255,255,255,0.04) 15px,
+            rgba(0,0,0,0.1) 18px, transparent 24px)`
+        shade.style.opacity = String(p * 0.7)
+        leafSheet.style.opacity = p > 0.8 ? String(1 - (p - 0.8) / 0.2 * 0.5) : '1'
+      }
+    }
+
+    function resetFlat() {
+      mode = 'idle'
+      progress = 0
+      paint(day, day)
+      leaf.style.visibility = version === 'C' ? 'hidden' : ''
+      leaf.style.transition = ''
+      applyProgress(0)
+      if (version === 'C') {
+        // flat strips
+        ;[...curlHost.children].forEach((s) => {
+          s.style.transform = 'none'
+          s.style.filter = ''
+        })
+      }
+    }
+
+    function settleTo(next) {
+      busy = true
+      day = next
+      paint(day, day)
+      leaf.style.transition = version === 'D'
+        ? 'transform 260ms ease-out, opacity 220ms'
+        : 'transform 260ms cubic-bezier(0.22,1,0.36,1)'
+      applyProgress(0)
+      setTimeout(() => {
+        leaf.style.transition = ''
+        busy = false
+        mode = 'idle'
+        if (version === 'C') buildCurlIfNeeded(true)
+      }, 280)
+    }
+
+    function animateTo(target, then) {
+      busy = true
+      const from = progress
+      const t0 = performance.now()
+      const dur = version === 'C' ? 420 : 340
+      function frame(t) {
+        const k = clamp((t - t0) / dur, 0, 1)
+        const e = 1 - Math.pow(1 - k, 3)
+        applyProgress(from + (target - from) * e)
+        if (k < 1) requestAnimationFrame(frame)
+        else { busy = false; then && then() }
+      }
+      requestAnimationFrame(frame)
+    }
+
+    function beginForward() {
+      const next = day + 1
+      if (!DAYS[next]) return false
+      mode = 'forward'
+      paint(day, next)
+      if (version === 'C') leaf.style.visibility = 'hidden'
+      return true
+    }
+    function beginBackward() {
+      const prev = day - 1
+      if (!DAYS[prev]) return false
+      mode = 'backward'
+      paint(prev, day)
+      applyProgress(1)
+      if (version === 'C') leaf.style.visibility = 'hidden'
+      return true
+    }
+
+    resetFlat()
+    window.addEventListener('resize', () => {
+      if (version === 'C') buildCurlIfNeeded(true)
+    })
+
+    stage.addEventListener('pointerdown', (e) => {
+      if (busy) return
+      dragging = true
+      startY = e.clientY
+      startP = progress
+      hint.classList.add('hide')
+      stage.setPointerCapture(e.pointerId)
+    })
+    stage.addEventListener('pointermove', (e) => {
+      if (!dragging || busy) return
+      const dy = startY - e.clientY
+      const pageH = stage.clientHeight
+      if (mode === 'idle') {
+        if (dy > 14) {
+          if (!beginForward()) { dragging = false; return }
+          startP = 0
+        } else if (dy < -14) {
+          if (!beginBackward()) { dragging = false; return }
+          startP = 1
+          startY = e.clientY
+          return
+        } else return
+      }
+      const p = clamp(startP + dy / (pageH * 0.55), 0, 1)
+      applyProgress(p)
+    })
+    function endDrag() {
+      if (!dragging) return
+      dragging = false
+      if (busy || mode === 'idle') return
+      if (mode === 'forward') {
+        if (progress > 0.28) animateTo(1, () => settleTo(day + 1))
+        else animateTo(0, () => resetFlat())
+      } else {
+        if (progress < 0.72) animateTo(0, () => settleTo(day - 1))
+        else animateTo(1, () => { paint(day, day); applyProgress(0); mode = 'idle' })
+      }
+    }
+    stage.addEventListener('pointerup', endDrag)
+    stage.addEventListener('pointercancel', endDrag)
+
+    window.addEventListener('keydown', (e) => {
+      if (busy || dragging) return
+      if (e.key === 'ArrowUp' || e.key === 'j') {
+        if (!beginForward()) return
+        animateTo(1, () => settleTo(day + 1))
+      } else if (e.key === 'ArrowDown' || e.key === 'k') {
+        if (!beginBackward()) return
+        animateTo(0, () => settleTo(day - 1))
+      } else if (e.key >= '1' && e.key <= '5') {
+        selectVersion(VERSIONS[Number(e.key) - 1].id)
+      }
+    })
+  </script>
+</body>
+</html>

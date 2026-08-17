@@ -17,20 +17,23 @@ import {
   STEM_WUXING,
 } from '@zhop/astro-core'
 import { useTheme } from '@zhop/core-ui'
-import { Share2 } from 'lucide-react-native'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
-  Pressable,
   StyleSheet,
   Text,
   type TextStyle,
   useWindowDimensions,
   View,
 } from 'react-native'
+import { Pressable } from 'react-native-gesture-handler'
 import Svg, { Path as SvgPath } from 'react-native-svg'
 import { YiJiMeaningSheet } from '@/components/YiJiMeaningSheet'
+import { AlmanacCalendarSheet } from '@/components/AlmanacCalendarSheet'
+import { ClassicAlmanacPaper } from '@/components/ClassicAlmanacPaper'
 import { almanacCopy } from '@/lib/almanac-copy'
 import type { AuspiceDayPayload } from '@/lib/api'
+import { almanacPalette, verdictCircleColor, weekdayFromIso } from '@/lib/almanac-palette'
+import { useAlmanacTheme } from '@/lib/almanac-theme-context'
 import { localizeSolarTermName } from '@/lib/culture'
 import { dayGodEntry, officerEntry } from '@/lib/culture/classical-glossary'
 import { heroTermExplanation } from '@/lib/culture/hero-terms'
@@ -48,34 +51,9 @@ import { useStrings } from '@/lib/i18n-context'
 import { useImageShare } from '@/lib/imageShare'
 import { dayShareUrl, shareTaglineFor } from '@/lib/share'
 import { resolveRegisterSync } from '@/lib/yiji-display-mode'
-import { moonPhaseForIsoDate } from './DailyCard'
-import { PhaseLogo } from './PhaseLogo'
 
-export function almanacPalette(isDark: boolean) {
-  return isDark
-    ? {
-        bg: '#171310',
-        card: '#221b15',
-        ink: '#e9ddc8',
-        dim: '#9c8d78',
-        line: '#3c3329',
-        gold: '#d9b36a',
-        brown: '#cdbba7',
-        seal: '#c96b5f',
-        goldSoft: 'rgba(217,179,106,0.14)',
-      }
-    : {
-        bg: '#f6f1e6',
-        card: '#fffdf7',
-        ink: '#2b2118',
-        dim: '#8a7f70',
-        line: '#e3d9c6',
-        gold: '#9a6b1f',
-        brown: '#4a3324',
-        seal: '#a8342a',
-        goldSoft: '#f1e6cf',
-      }
-}
+export { almanacPalette } from '@/lib/almanac-palette'
+
 type Palette = ReturnType<typeof almanacPalette>
 
 export function AlmanacPage({
@@ -84,29 +62,84 @@ export function AlmanacPage({
   fromPush = false,
   onPersonalSectionLayout,
   capture = false,
+  onSelectDay,
+  todayIso,
+  shareRequestId = 0,
 }: {
   payload: AuspiceDayPayload
   locale: Locale
-  /** 推送着陆（focus=personal）→ 于你显示「今日推送」徽标。 */
   fromPush?: boolean
-  /** 于你区块 Y 偏移 — 推送着陆滚动定位用。 */
   onPersonalSectionLayout?: (y: number) => void
-  /** 离屏分享副本 — 隐藏分享按钮、禁交互。 */
   capture?: boolean
+  onSelectDay?: (dateIso: string) => void
+  todayIso?: string
+  /** Increment from parent Header「传帖」to trigger image share. */
+  shareRequestId?: number
 }) {
   const { spacing, isDark } = useTheme()
   const { t } = useStrings()
+  const { theme } = useAlmanacTheme()
   const { shotRef, capturing, share } = useImageShare()
-  const P = almanacPalette(isDark)
+  const { date, day } = payload
+  const P = almanacPalette(isDark, theme, weekdayFromIso(date), locale)
   const C = almanacCopy(locale)
   // 动词注册表：zh 黄历模式→原文；en→modern；ja→白话 gloss。
   const register = resolveRegisterSync(locale, true)
   const verb = (v: string) => formatYijiVerb(v, locale, register)
 
-  const { date, day } = payload
   const [meaningTerm, setMeaningTerm] = useState<string | null>(null)
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  const isClassic = theme === 'classic'
+  // Camera pages remount on day change (`key={dayKey}`). Seed from the current
+  // id so a leftover Header tap does not re-open the share sheet on every flip.
+  const seenShareId = useRef(shareRequestId)
+
+  useEffect(() => {
+    if (shareRequestId <= 0 || capture) return
+    if (shareRequestId === seenShareId.current) return
+    seenShareId.current = shareRequestId
+    void share(`${shareTaglineFor(locale)}\n${dayShareUrl(date, locale)}`)
+  }, [shareRequestId, capture, share, date, locale])
+
+  // Day-turn must not leave a stale glossary sheet open.
+  useEffect(() => {
+    setMeaningTerm(null)
+  }, [date])
 
   const d = new Date(`${date}T00:00:00`)
+  const openCalendar = () => {
+    if (capture || capturing) return
+    if (onSelectDay && todayIso) setCalendarOpen(true)
+  }
+
+  const dayNumber = (size: number, lineHeight: number) => {
+    const node = (
+      <Text
+        style={{
+          color: P.ink,
+          fontSize: size,
+          lineHeight,
+          fontWeight: '700',
+          letterSpacing: 2,
+          textDecorationLine: onSelectDay && !capture ? 'underline' : 'none',
+        }}
+      >
+        {d.getDate()}
+      </Text>
+    )
+    if (!onSelectDay || capture) return node
+    return (
+      <Pressable
+        onPress={openCalendar}
+        hitSlop={12}
+        accessibilityRole='button'
+        accessibilityLabel={t.openMonth}
+        style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
+      >
+        {node}
+      </Pressable>
+    )
+  }
   const yg = day.yearGanZhi
   const dayBranch = day.ganZhi[1] ?? ''
   const monthP = yg ? monthPillar(yg.stem, day.solarTerm.prev.name) : null
@@ -204,16 +237,8 @@ export function AlmanacPage({
   const goodFor = day.goodFor.map(verb)
   const avoid = day.avoid.map(verb)
 
-  /** 纸页内容（Hero + 宜忌）— 分享组合与页面复用；interactive 控制分享按钮。 */
-  const renderSheet = (interactive: boolean) => (
-    <View
-      style={{
-        borderWidth: 0.5,
-        borderColor: P.ink,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.md,
-      }}
-    >
+  const heroBody = (interactive: boolean) => (
+    <View>
       <View
         style={{
           flexDirection: 'row',
@@ -224,17 +249,6 @@ export function AlmanacPage({
         <Text style={{ color: P.ink, fontSize: 14, letterSpacing: 1 }}>{C.gregorian(d)}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Text style={{ color: P.dim, fontSize: 12, letterSpacing: 2 }}>{C.weekday(d)}</Text>
-          {interactive && !capturing ? (
-            <Pressable
-              onPress={() => share(`${shareTaglineFor(locale)}\n${dayShareUrl(date, locale)}`)}
-              hitSlop={10}
-              accessibilityRole='button'
-              accessibilityLabel={t.shareToday}
-              style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1 })}
-            >
-              <Share2 size={16} color={P.dim} strokeWidth={1.6} />
-            </Pressable>
-          ) : null}
         </View>
       </View>
 
@@ -279,17 +293,7 @@ export function AlmanacPage({
           </View>
 
           <View style={{ alignItems: 'center', flex: 1 }}>
-            <Text
-              style={{
-                color: P.ink,
-                fontSize: 92,
-                lineHeight: 104,
-                fontWeight: '700',
-                letterSpacing: 2,
-              }}
-            >
-              {d.getDate()}
-            </Text>
+            {dayNumber(92, 104)}
             <Pressable onPress={() => tap('纳音')} hitSlop={6}>
               {day.solarTermToday ? (
                 <Text style={{ color: P.gold, fontSize: 11 }}>
@@ -327,9 +331,7 @@ export function AlmanacPage({
               justifyContent: 'space-between',
             }}
           >
-            <Text style={{ color: P.ink, fontSize: 76, lineHeight: 84, fontWeight: '700' }}>
-              {d.getDate()}
-            </Text>
+            {dayNumber(76, 84)}
             <View style={{ gap: 2, alignItems: 'flex-end' }}>
               <Pressable onPress={() => tap('干支')} hitSlop={4}>
                 <Text style={{ color: P.ink, fontSize: 13, textDecorationLine: 'underline' }}>
@@ -410,157 +412,172 @@ export function AlmanacPage({
           </Pressable>
         ) : null}
       </View>
-
-      <View style={{ borderTopWidth: 0.5, borderTopColor: P.ink, marginTop: spacing.md }}>
-        {yangGong ? (
-          <View style={{ alignItems: 'center', paddingTop: spacing.md }}>
-            <Text
-              style={{
-                backgroundColor: P.goldSoft,
-                color: P.brown,
-                fontSize: 11,
-                paddingHorizontal: 10,
-                paddingVertical: 3,
-                letterSpacing: 1,
-              }}
-            >
-              {C.yangGongNote}
-            </Text>
-          </View>
-        ) : null}
-        <YijiBlock label='宜' labelColor={P.gold} items={goodFor} P={P} onSelect={tap} />
-        <View style={{ height: 0.5, backgroundColor: P.ink, marginVertical: spacing.sm }} />
-        <YijiBlock label='忌' labelColor={P.brown} items={avoid} P={P} onSelect={tap} />
-      </View>
     </View>
   )
 
-  /** 分享组合 — Header + Hero + For you + Footer（传播靠金句 + 品牌 + 链接）。 */
-  if (capturing) {
-    return (
-      <View
-        ref={shotRef}
-        collapsable={false}
-        style={{ backgroundColor: P.bg, padding: 14, gap: spacing.md }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: 4 }}>
-          <PhaseLogo
-            phase={moonPhaseForIsoDate(date)}
-            size={26}
-            scheme={isDark ? 'dark' : 'light'}
-          />
-          <View>
-            <Text style={{ color: P.ink, fontSize: 17, fontWeight: '700' }}>Yuun</Text>
-            <Text style={{ color: P.dim, fontSize: 10, letterSpacing: 3 }}>
-              {locale === 'en'
-                ? 'ALMANAC · TODAY'
-                : locale === 'ja'
-                  ? '黄暦 · 今日'
-                  : '黄历 · 今日'}
-            </Text>
-          </View>
-        </View>
-
-        <View style={{ borderWidth: 2, borderColor: P.ink, padding: 3 }}>{renderSheet(false)}</View>
-
-        {fit ? (
-          <View>
-            <RuleTitle title={C.forYouLabel} P={P} />
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              {locale === 'zh-Hans' || locale === 'zh-Hant' ? (
-                <VerdictMark
-                  glyph={fit}
-                  color={fit === '凶' ? P.seal : fit === '吉' ? P.gold : P.brown}
-                  P={P}
-                />
-              ) : (
-                <Text
-                  style={{
-                    color: fit === '吉' ? P.gold : fit === '凶' ? P.brown : P.ink,
-                    fontSize: 16,
-                    letterSpacing: 2,
-                  }}
-                >
-                  {t.personal.fitClassical[fit]}
-                </Text>
-              )}
-              <Text style={{ color: P.ink, fontSize: 14, lineHeight: 23, flex: 1 }}>
-                {sealSummary(t.personal.summaryClassical[fit])}
-              </Text>
-            </View>
-          </View>
-        ) : null}
-
-        <Text
-          style={{
-            color: P.dim,
-            fontSize: 11,
-            letterSpacing: 1,
-            textAlign: 'center',
-            paddingTop: 4,
-          }}
-        >
-          Yuun · yuun.hexastral.com
-        </Text>
-      </View>
-    )
-  }
-
-  return (
-    <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md }}>
-      {/* ══ 撕页黄历纸页 ══ */}
-      <View style={{ borderWidth: 2, borderColor: P.ink, padding: 3 }}>{renderSheet(true)}</View>
-
-      {/* ══ 于你 ══ */}
-      {fit ? (
-        <View
-          onLayout={(e) => {
-            if (onPersonalSectionLayout) onPersonalSectionLayout(e.nativeEvent.layout.y)
-          }}
-        >
-          <RuleTitle title={C.forYouLabel} P={P} />
-          {fromPush ? (
-            <View
-              style={{
-                alignSelf: 'flex-start',
-                borderWidth: 0.5,
-                borderColor: P.ink,
-                borderRadius: 6,
-                paddingHorizontal: 8,
-                paddingVertical: 2,
-                marginBottom: spacing.sm,
-              }}
-            >
-              <Text style={{ color: P.dim, fontSize: 10, letterSpacing: 1 }}>
-                {t.personal.pushOriginBadge}
-              </Text>
-            </View>
-          ) : null}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            {locale === 'zh-Hans' || locale === 'zh-Hant' ? (
-              <VerdictMark
-                glyph={fit}
-                color={fit === '凶' ? P.seal : fit === '吉' ? P.gold : P.brown}
-                P={P}
-              />
-            ) : (
-              <Text
-                style={{
-                  color: fit === '吉' ? P.gold : fit === '凶' ? P.brown : P.ink,
-                  fontSize: 16,
-                  letterSpacing: 2,
-                }}
-              >
-                {t.personal.fitClassical[fit]}
-              </Text>
-            )}
-            <Text style={{ color: P.ink, fontSize: 14, lineHeight: 23, flex: 1 }}>
-              {sealSummary(t.personal.summaryClassical[fit])}
-            </Text>
-          </View>
+  const yijiBody = (
+    <View style={{ borderTopWidth: 0.5, borderTopColor: P.ink, marginTop: spacing.md }}>
+      {yangGong ? (
+        <View style={{ alignItems: 'center', paddingTop: spacing.md }}>
+          <Text
+            style={{
+              backgroundColor: P.goldSoft,
+              color: P.brown,
+              fontSize: 11,
+              paddingHorizontal: 10,
+              paddingVertical: 3,
+              letterSpacing: 1,
+            }}
+          >
+            {C.yangGongNote}
+          </Text>
         </View>
       ) : null}
+      <YijiBlock label='宜' labelColor={P.gold} items={goodFor} P={P} onSelect={tap} />
+      <View style={{ height: 0.5, backgroundColor: P.ink, marginVertical: spacing.sm }} />
+      <YijiBlock label='忌' labelColor={P.brown} items={avoid} P={P} onSelect={tap} />
+    </View>
+  )
 
+  /** 纸页内容 — 分享直接截当前页，不另画离屏卡。 */
+  const renderSheet = (interactive: boolean) =>
+    isClassic ? (
+      <ClassicAlmanacPaper
+        date={date}
+        day={day}
+        locale={locale}
+        P={P}
+        interactive={interactive}
+        capturing={capturing}
+        onTapTerm={tap}
+        onOpenCalendar={onSelectDay && todayIso ? openCalendar : undefined}
+        forYouSlot={
+          <View
+            onLayout={(e) => {
+              if (onPersonalSectionLayout) onPersonalSectionLayout(e.nativeEvent.layout.y)
+            }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              height: '100%',
+            }}
+          >
+            {fit ? (
+              <>
+                <Text
+                  style={{
+                    color: P.dim,
+                    fontSize: 10,
+                    letterSpacing: locale === 'en' ? 0.5 : 1,
+                    fontWeight: '700',
+                  }}
+                >
+                  {C.forYouLabel}
+                </Text>
+                {locale === 'zh-Hans' || locale === 'zh-Hant' ? (
+                  <VerdictMark
+                    glyph={fit}
+                    color={verdictCircleColor(fit, isDark)}
+                    P={P}
+                    size={28}
+                  />
+                ) : (
+                  <Text
+                    style={{
+                      color: fit === '吉' ? P.gold : fit === '凶' ? P.brown : P.ink,
+                      fontSize: 13,
+                      letterSpacing: 1,
+                      fontWeight: '700',
+                    }}
+                  >
+                    {t.personal.fitClassical[fit]}
+                  </Text>
+                )}
+                <Text
+                  style={{ color: P.ink, fontSize: 12, lineHeight: 16, flex: 1 }}
+                  numberOfLines={1}
+                >
+                  {sealSummary(t.personal.summaryClassical[fit])}
+                </Text>
+              </>
+            ) : null}
+          </View>
+        }
+      />
+    ) : (
+      <View
+        style={{
+          borderWidth: 0.5,
+          borderColor: P.ink,
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.md,
+        }}
+      >
+        {heroBody(interactive)}
+        {yijiBody}
+      </View>
+    )
+
+  const forYouBlock = fit ? (
+    <View
+      onLayout={(e) => {
+        if (onPersonalSectionLayout) onPersonalSectionLayout(e.nativeEvent.layout.y)
+      }}
+    >
+      <RuleTitle title={C.forYouLabel} P={P} />
+      {fromPush ? (
+        <View
+          style={{
+            alignSelf: 'flex-start',
+            borderWidth: 0.5,
+            borderColor: P.ink,
+            borderRadius: 6,
+            paddingHorizontal: 8,
+            paddingVertical: 2,
+            marginBottom: spacing.sm,
+          }}
+        >
+          <Text style={{ color: P.dim, fontSize: 10, letterSpacing: 1 }}>
+            {t.personal.pushOriginBadge}
+          </Text>
+        </View>
+      ) : null}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        {locale === 'zh-Hans' || locale === 'zh-Hant' ? (
+          <VerdictMark
+            glyph={fit}
+            color={
+              isClassic
+                ? verdictCircleColor(fit, isDark)
+                : fit === '凶'
+                  ? P.seal
+                  : fit === '吉'
+                    ? P.gold
+                    : P.brown
+            }
+            P={P}
+          />
+        ) : (
+          <Text
+            style={{
+              color: fit === '吉' ? P.gold : fit === '凶' ? P.brown : P.ink,
+              fontSize: 16,
+              letterSpacing: 2,
+            }}
+          >
+            {t.personal.fitClassical[fit]}
+          </Text>
+        )}
+        <Text style={{ color: P.ink, fontSize: 14, lineHeight: 23, flex: 1 }}>
+          {sealSummary(t.personal.summaryClassical[fit])}
+        </Text>
+      </View>
+    </View>
+  ) : null
+
+  const almanacBelowHero = (
+    <>
       {/* ══ 生辰八字五行 ══ */}
       <View>
         <RuleTitle title={C.sectionPillars} P={P} />
@@ -708,7 +725,11 @@ export function AlmanacPage({
           {relationLine}
         </Text>
       ) : null}
+    </>
+  )
 
+  const glossaryAndCalendar = (
+    <>
       <YiJiMeaningSheet
         term={meaningTerm}
         detail={meaningTerm ? explainDetail(meaningTerm) : null}
@@ -717,11 +738,54 @@ export function AlmanacPage({
         footnote={C.meaningFootnote}
         onClose={() => setMeaningTerm(null)}
       />
+      {onSelectDay && todayIso ? (
+        <AlmanacCalendarSheet
+          visible={calendarOpen}
+          onClose={() => setCalendarOpen(false)}
+          selectedDay={date}
+          todayIso={todayIso}
+          onSelectDay={onSelectDay}
+          minDayIso={todayIso}
+        />
+      ) : null}
+    </>
+  )
+
+  return isClassic ? (
+    <View
+      key='classic-paper'
+      ref={shotRef}
+      collapsable={false}
+      style={{
+        flex: 1,
+        minHeight: 0,
+        backgroundColor: P.bg,
+      }}
+    >
+      <View style={{ flex: 1, minHeight: 0 }}>{renderSheet(true)}</View>
+      {glossaryAndCalendar}
+    </View>
+  ) : (
+    <View
+      key='contrast-stack'
+      ref={shotRef}
+      collapsable={false}
+      style={{
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.sm,
+        paddingBottom: spacing.md,
+        gap: spacing.md,
+        backgroundColor: P.bg,
+      }}
+    >
+      <View style={{ borderWidth: 2, borderColor: P.ink, padding: 3 }}>{renderSheet(true)}</View>
+      {forYouBlock}
+      {almanacBelowHero}
+      {glossaryAndCalendar}
     </View>
   )
 }
 
-/** 印章旁正文 — zh 句首「吉，/平，/凶，」由印章承担，正文去掉前缀。 */
 function sealSummary(summary: string): string {
   const m = /^(吉|平|凶)，/.exec(summary)
   return m ? summary.slice(m[0].length) : summary

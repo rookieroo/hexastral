@@ -8,7 +8,9 @@
 
 import { useTheme } from '@zhop/core-ui'
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native'
-import { almanacPalette } from '@/components/AlmanacPage'
+import { almanacPalette } from '@/lib/almanac-palette'
+import { useAlmanacTheme } from '@/lib/almanac-theme-context'
+import { useStrings } from '@/lib/i18n-context'
 
 export function YiJiMeaningSheet({
   term,
@@ -30,7 +32,9 @@ export function YiJiMeaningSheet({
   onClose: () => void
 }) {
   const { isDark, spacing } = useTheme()
-  const P = almanacPalette(isDark)
+  const { theme } = useAlmanacTheme()
+  const { locale } = useStrings()
+  const P = almanacPalette(isDark, theme, new Date().getDay(), locale)
 
   return (
     <Modal visible={term != null} transparent animationType='fade' onRequestClose={onClose}>

@@ -57,6 +57,7 @@ import { deleteYuunAccount } from '@/lib/account-delete'
 import { clearAuspiceGetCache } from '@/lib/api'
 import { type AuspiceBirthInfo, getAuspiceBirthInfo, setAuspiceBirthInfo } from '@/lib/birth'
 import {
+  birthConflictPromptKey,
   pushLocalBirthToAccount,
   reconcileYuunBirthWithAccount,
   resolveBirthConflict,
@@ -86,6 +87,7 @@ import { pushTypeById } from '@/lib/pushRegistry'
 import { devFireDailyPush } from '@/lib/serverPush'
 import { isServerPushActive } from '@/lib/serverPushFlag'
 import { TWELVE_SHICHEN } from '@/lib/shichen-content'
+import { useAlmanacTheme } from '@/lib/almanac-theme-context'
 import { useVoiceMode } from '@/lib/voice-mode-context'
 
 const LOCALES: { key: Locale; label: string }[] = [
@@ -166,6 +168,7 @@ export default function MeScreen() {
   const { colors, spacing } = useTheme()
   const { t, locale, setLocale, followSystem, isOverridden } = useStrings()
   const { classical, setMode: setVoiceMode } = useVoiceMode()
+  const { theme: almanacTheme, setTheme: setAlmanacTheme } = useAlmanacTheme()
   const router = useRouter()
   // Discover (flagship funnel) is collapsed by default so Me stays quiet —
   // matches the ming-pan 生态 pattern (ADR-0018: no ad slots on funnel surfaces).
@@ -364,6 +367,41 @@ export default function MeScreen() {
     })
   }
 
+  const conflictPromptedKeyRef = useRef<string | null>(null)
+
+  const finishConflictChoice = async (
+    choice: 'use_account' | 'use_local',
+    conflict: Parameters<typeof resolveBirthConflict>[1]
+  ) => {
+    try {
+      const info = await resolveBirthConflict(choice, conflict)
+      applyBirthToForm(info)
+      clearAuspiceGetCache()
+      requestYuunWidgetSync(locale, true)
+      if (choice === 'use_local') {
+        void isPushEnabled().then((on) => {
+          if (on) void syncServerPush(locale).catch(() => {})
+        })
+      }
+      const again = await reconcileYuunBirthWithAccount()
+      if (again.kind === 'applied') {
+        applyBirthToForm(again.info)
+        setSyncMeta(again.sync)
+        setMultiDeviceOn(again.sync.multiDeviceSyncEnabled)
+        setSyncGated(false)
+        conflictPromptedKeyRef.current = null
+        return
+      }
+      if (again.kind === 'conflict') {
+        Alert.alert(t.birthSaveFailed)
+        return
+      }
+      conflictPromptedKeyRef.current = null
+    } catch {
+      Alert.alert(t.birthSaveFailed)
+    }
+  }
+
   const runBirthReconcile = async () => {
     const result = await reconcileYuunBirthWithAccount()
     if (result.kind === 'applied') {
@@ -373,35 +411,28 @@ export default function MeScreen() {
       setSyncGated(false)
       clearAuspiceGetCache()
       requestYuunWidgetSync(locale, true)
+      conflictPromptedKeyRef.current = null
     } else if (result.kind === 'conflict') {
       setSyncMeta(result.sync)
       setMultiDeviceOn(result.sync.multiDeviceSyncEnabled)
+      const key = birthConflictPromptKey(result.conflict)
+      if (conflictPromptedKeyRef.current === key) return
+      conflictPromptedKeyRef.current = key
       Alert.alert(t.birthConflictTitle, t.birthConflictBody, [
         {
           text: t.birthConflictUseAccount,
           onPress: () => {
-            void resolveBirthConflict('use_account', result.conflict).then((info) => {
-              applyBirthToForm(info)
-              clearAuspiceGetCache()
-              requestYuunWidgetSync(locale, true)
-            })
+            void finishConflictChoice('use_account', result.conflict)
           },
         },
         {
           text: t.birthConflictUseLocal,
           style: 'destructive',
           onPress: () => {
-            void resolveBirthConflict('use_local', result.conflict).then((info) => {
-              applyBirthToForm(info)
-              clearAuspiceGetCache()
-              requestYuunWidgetSync(locale, true)
-              void isPushEnabled().then((on) => {
-                if (on) void syncServerPush(locale).catch(() => {})
-              })
-            })
+            void finishConflictChoice('use_local', result.conflict)
           },
         },
-        { text: t.retry, style: 'cancel' },
+        { text: t.birthConflictLater, style: 'cancel' },
       ])
     } else if (result.kind === 'gated') {
       setSyncGated(true)
@@ -1098,6 +1129,60 @@ export default function MeScreen() {
                 </View>
                 <Toggle value={classical} onValueChange={toggleVoiceMode} accent={colors.accent} />
               </View>
+              {classical ? (
+                <View
+                  style={{
+                    marginTop: spacing.sm,
+                    paddingTop: spacing.sm,
+                    borderTopWidth: 0.5,
+                    borderTopColor: colors.separator,
+                    gap: spacing.sm,
+                  }}
+                >
+                  <Text style={{ color: colors.text, fontSize: 15 }}>{t.almanacThemeTitle}</Text>
+                  <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                    {(
+                      [
+                        { id: 'classic' as const, label: t.almanacThemeClassic },
+                        { id: 'contrast' as const, label: t.almanacThemeContrast },
+                      ] as const
+                    ).map((opt) => {
+                      const selected = almanacTheme === opt.id
+                      return (
+                        <Pressable
+                          key={opt.id}
+                          onPress={() => {
+                            void setAlmanacTheme(opt.id)
+                          }}
+                          accessibilityRole='button'
+                          accessibilityState={{ selected }}
+                          accessibilityLabel={opt.label}
+                          style={({ pressed }) => ({
+                            flex: 1,
+                            paddingVertical: 10,
+                            alignItems: 'center',
+                            borderWidth: 0.5,
+                            borderRadius: 0,
+                            borderColor: selected ? colors.accent : colors.separator,
+                            backgroundColor: selected ? colors.accentGhost : 'transparent',
+                            opacity: pressed ? 0.7 : 1,
+                          })}
+                        >
+                          <Text
+                            style={{
+                              color: selected ? colors.accent : colors.text,
+                              fontSize: 14,
+                              fontWeight: selected ? '600' : '400',
+                            }}
+                          >
+                            {opt.label}
+                          </Text>
+                        </Pressable>
+                      )
+                    })}
+                  </View>
+                </View>
+              ) : null}
             </View>
           </View>
         }

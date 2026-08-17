@@ -1,7 +1,6 @@
 /**
- * Shared day renderer — three Today zones: Almanac · Personal · Explore.
- *
- * Monetization: 宜忌 is table-stakes; Pro wall sits on 对你而言 per-reason detail.
+ * Shared day renderer — Almanac · Personal · Explore.
+ * Day paging / Settings live on the home shell (hinge + 凡例).
  */
 
 import { useTheme } from '@zhop/core-ui'
@@ -83,13 +82,9 @@ export function DayView({
   fromPush = false,
 }: {
   payload: AuspiceDayPayload
-  /** Daily hook from push payload — rendered atop PersonalCard, not a separate hero. */
   pushHook?: { title: string; lens: string } | null
-  /** Reports Y offset of the personal zone for scroll-to on notification tap. */
   onPersonalSectionLayout?: (y: number) => void
-  /** Optional festival / solar-term chip rendered in the almanac zone. */
   festivalChip?: ReactNode
-  /** 推送着陆（focus=personal）→ 对你而言卡片显示「今日推送」徽标。 */
   fromPush?: boolean
 }) {
   const { colors, spacing, isDark } = useTheme()
@@ -146,7 +141,6 @@ export function DayView({
 
   return (
     <View style={{ gap: spacing.xl }}>
-      {/* ── Zone 1: Almanac ── */}
       <View style={{ gap: spacing.md }}>
         {festivalChip}
 
@@ -154,61 +148,57 @@ export function DayView({
           <RokuyoStrip rokuyo={day.rokuyo} strings={t.rokuyo} />
         ) : null}
 
-        <View>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: spacing.md,
+          }}
+        >
           <View
             style={{
+              flex: 1,
               flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: spacing.md,
-              marginBottom: spacing.sm,
+              flexWrap: 'wrap',
+              alignItems: 'baseline',
+              gap: spacing.sm,
             }}
           >
-            <View
-              style={{
-                flex: 1,
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                alignItems: 'baseline',
-                gap: spacing.sm,
-              }}
-            >
-              <View>
-                <Text
-                  style={{ color: colors.text, fontSize: 22, fontWeight: '500', letterSpacing: 1 }}
-                >
-                  {dayGanzhiLabel}
+            <View>
+              <Text style={{ color: colors.text, fontSize: 22, fontWeight: '500', letterSpacing: 1 }}>
+                {dayGanzhiLabel}
+              </Text>
+              {dayGanzhiPinyin ? (
+                <Text style={{ color: colors.dim, fontSize: 12, letterSpacing: 0.5 }}>
+                  {dayGanzhiPinyin}
                 </Text>
-                {dayGanzhiPinyin ? (
-                  <Text style={{ color: colors.dim, fontSize: 12, letterSpacing: 0.5 }}>
-                    {dayGanzhiPinyin}
-                  </Text>
-                ) : null}
-              </View>
-              {identitySub ? (
-                <Text style={{ color: colors.dim, fontSize: 13 }}>{identitySub}</Text>
               ) : null}
             </View>
-            <Pressable
-              onPress={() => shareImage(`${shareTaglineFor(locale)}\n${dayShareUrl(date, locale)}`)}
-              hitSlop={12}
-              accessibilityRole='button'
-              accessibilityLabel={t.shareToday}
-              style={({ pressed }) => ({
-                minWidth: 44,
-                minHeight: 44,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.55 : 1,
-              })}
-            >
-              <View pointerEvents='none'>
-                <Share2 size={18} color={colors.secondary} strokeWidth={1.6} />
-              </View>
-            </Pressable>
+            {identitySub ? (
+              <Text style={{ color: colors.dim, fontSize: 13 }}>{identitySub}</Text>
+            ) : null}
           </View>
-          <YiJiBlock goodFor={day.goodFor} avoid={day.avoid} onSelect={setExplainField} />
+          <Pressable
+            onPress={() => shareImage(`${shareTaglineFor(locale)}\n${dayShareUrl(date, locale)}`)}
+            hitSlop={10}
+            accessibilityRole='button'
+            accessibilityLabel={t.shareToday}
+            style={({ pressed }) => ({
+              paddingVertical: 4,
+              paddingLeft: 8,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: pressed ? 0.55 : 1,
+            })}
+          >
+            <View pointerEvents='none'>
+              <Share2 size={15} color={colors.dim} strokeWidth={1.6} />
+            </View>
+          </Pressable>
         </View>
+
+        <YiJiBlock goodFor={day.goodFor} avoid={day.avoid} onSelect={setExplainField} />
 
         <View style={{ gap: spacing.sm }}>
           <SectionLabel>{t.solarTerm}</SectionLabel>
@@ -239,7 +229,6 @@ export function DayView({
         </View>
       ) : null}
 
-      {/* ── Zone 2: Personal (push anchor) ── */}
       <View
         style={{ gap: spacing.sm }}
         onLayout={(e) => {
@@ -294,8 +283,6 @@ export function DayView({
             <Text style={{ color: colors.dim, fontSize: 13, lineHeight: 19 }}>
               {t.personalEmptyBody}
             </Text>
-            {/* CTA only — wrapping the whole card in Pressable made left-swipe fire
-                both the home Settings pan and a touch-up push to /me. */}
             <Pressable
               onPress={() => router.push('/me')}
               accessibilityRole='button'
@@ -319,7 +306,6 @@ export function DayView({
         )}
       </View>
 
-      {/* ── Zone 3: Explore (expanded by default) ── */}
       {snippet ? (
         <View>
           <Pressable
@@ -338,7 +324,6 @@ export function DayView({
             })}
           >
             <SectionLabel>{t.exploreSection}</SectionLabel>
-            {/* pointerEvents none — SVG chevrons can swallow the Pressable tap. */}
             <View
               pointerEvents='none'
               style={{ transform: [{ rotate: exploreOpen ? '180deg' : '0deg' }] }}
@@ -351,9 +336,6 @@ export function DayView({
           ) : null}
         </View>
       ) : null}
-
-      {/* 历书行话（建除/值神/星宿/彭祖/纳音）已迁至文化 hub 的「黄历行话」分区
-          （2026-08：正统通书内容放 culture，不在首页直接展开）。 */}
 
       <ExplainSheet
         date={date}
@@ -392,7 +374,6 @@ function ShareYiJi({
 }) {
   const { colors, spacing, isDark } = useTheme()
   const { mode } = useYijiDisplayMode()
-  // Match on-screen YiJiBlock: only the 宜/忌 headers are tinted; chips stay neutral.
   const chipBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(43,33,24,0.04)'
 
   const Column = ({ label, items, accent }: { label: string; items: string[]; accent: string }) => (

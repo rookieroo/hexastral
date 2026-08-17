@@ -37,6 +37,15 @@ export interface Strings {
   festivalsTab: string
   meTab: string
   today: string
+  /** a11y / header — jump selected day back to civil today. */
+  goToday: string
+  /**
+   * Header text entry to Settings / Me — almanac-flavored (通例).
+   * Not the generic "Settings" word.
+   */
+  settingsAlmanacEntry: string
+  /** Header text entry to share today's leaf (传帖). */
+  almanacPassOn: string
   suitable: string
   avoid: string
   clash: string
@@ -87,6 +96,10 @@ export interface Strings {
   voiceModeTitle: string
   voiceModeHint: string
   voiceModeName: string
+  /** Paper theme under 黄历模式 — classic 通书 vs contrast ink. */
+  almanacThemeTitle: string
+  almanacThemeClassic: string
+  almanacThemeContrast: string
   /** 搜索窗口标注 — {from} / {to} 替换为日期。 */
   eventWindowLabel: string
   privacy: string
@@ -154,6 +167,8 @@ export interface Strings {
   birthConflictBody: string
   birthConflictUseAccount: string
   birthConflictUseLocal: string
+  /** Dismiss conflict Alert without resolving (do not re-prompt same pair). */
+  birthConflictLater: string
   birthSaveFailed: string
   /** Free-tier second chart-altering birth edit blocked. */
   birthSaveQuotaExhausted: string
@@ -243,8 +258,10 @@ export interface Strings {
   unlockFullSection: string
   /** Animated swipe-left hint at the bottom of Today — opens Calendar. */
   swipeCalendarHint: string
-  /** Animated swipe-right hint at the bottom of Today — opens Settings. */
+  /** Animated swipe hint — opens Settings (outside Hero). */
   swipeMeHint: string
+  /** Short cue on Hero — swipe horizontally to change day. */
+  swipeDayHint: string
   /** Today DayView zone label — classical almanac (宜忌). */
   almanacSection: string
   /** Today DayView zone label — collapsed culture explore. */
@@ -667,6 +684,9 @@ const zhHans: Strings = {
   festivalsTab: '节',
   meTab: '我',
   today: '今日',
+  goToday: '回到今日',
+  settingsAlmanacEntry: '通例',
+  almanacPassOn: '传帖',
   suitable: '宜',
   avoid: '忌',
   clash: '冲',
@@ -718,6 +738,9 @@ const zhHans: Strings = {
   voiceModeHint:
     '打开黄历模式：首页切换为撕页黄历（岁次纪年、建除星宿、嫁娶动土），宜忌、判词、推送同步改用原文行话，大尺寸小组件变为黄历组件；关闭则为白话现代版（结婚、开业、入住）。仅中文可用，简体为大陆通书形态，繁体为历书正体。',
   voiceModeName: '黄历模式',
+  almanacThemeTitle: '黄历纸色',
+  almanacThemeClassic: '通书',
+  almanacThemeContrast: '墨棕',
   eventWindowLabel: '搜索窗口 · {from} – {to}',
   privacy: '隐私政策',
   terms: '使用条款',
@@ -766,9 +789,11 @@ const zhHans: Strings = {
   birthSyncGatedMultiDevice: '多设备同步已关闭。开启后，此设备才能读取账号生辰。',
   birthSyncEnableMultiDevice: '开启多设备同步',
   birthConflictTitle: '生辰不一致',
-  birthConflictBody: '本机与账号中的生辰不同。请选择保留哪一份。',
+  birthConflictBody:
+    '本机与账号中的生辰不同。请选择保留哪一份。换用 Apple / Google 登录会各自对应一份账号生辰。',
   birthConflictUseAccount: '使用账号资料',
   birthConflictUseLocal: '用本机资料替换账号',
+  birthConflictLater: '稍后再说',
   birthSaveFailed: '保存失败，请检查网络后重试。',
   birthSaveQuotaExhausted: '免费额度已用完：生辰只能修正一次。升级 Pro 可无限修改。',
   birthSaveSessionExpired: '登录状态已失效，请重新登录后再保存生辰。',
@@ -825,7 +850,8 @@ const zhHans: Strings = {
   contentComingSoon: '内容编辑中',
   unlockFullSection: '解锁完整章节',
   swipeCalendarHint: '月历',
-  swipeMeHint: '设置',
+  swipeMeHint: '左滑打开设置',
+  swipeDayHint: '左滑后日，右滑前日',
   almanacSection: '黄历',
   exploreSection: '探索',
   exploreExpand: '展开',
@@ -1019,7 +1045,7 @@ const zhHans: Strings = {
       凶: '今日宜守不宜攻（文化参考）——低调收敛、避免冒进。',
     },
     summaryClassical: {
-      吉: '吉，此日五行相顺，诸事宜早，不宜迟疑。',
+      吉: '吉，此日五行相顺，宜进，用事择时。',
       平: '平，此日诸事平稳，守常即可。',
       凶: '凶，此日宜守不宜攻，收敛静待，不宜冒进。',
     },
@@ -1221,6 +1247,11 @@ const zhHant: Strings = {
   voiceModeHint:
     '打開黃曆模式：首頁切換為撕頁黃曆（歲次紀年、建除星宿、嫁娶動土），宜忌、判詞、推送同步改用原文行話，大尺寸小組件變為黃曆組件；關閉則為白話現代版（結婚、開業、入住）。僅中文可用，簡體為大陸通書形態，繁體為曆書正體。',
   voiceModeName: '黃曆模式',
+  almanacPassOn: '傳帖',
+  settingsAlmanacEntry: '通例',
+  almanacThemeTitle: '黃曆紙色',
+  almanacThemeClassic: '通書',
+  almanacThemeContrast: '墨棕',
   eventWindowLabel: '搜尋窗口 · {from} – {to}',
   privacy: '隱私政策',
   terms: '使用條款',
@@ -1269,9 +1300,11 @@ const zhHant: Strings = {
   birthSyncGatedMultiDevice: '多裝置同步已關閉。開啟後，此裝置才能讀取帳號生辰。',
   birthSyncEnableMultiDevice: '開啟多裝置同步',
   birthConflictTitle: '生辰不一致',
-  birthConflictBody: '本機與帳號中的生辰不同。請選擇保留哪一份。',
+  birthConflictBody:
+    '本機與帳號中的生辰不同。請選擇保留哪一份。改用 Apple / Google 登入會各自對應一份帳號生辰。',
   birthConflictUseAccount: '使用帳號資料',
   birthConflictUseLocal: '用本機資料替換帳號',
+  birthConflictLater: '稍後再說',
   birthSaveFailed: '儲存失敗，請檢查網路後重試。',
   birthSaveQuotaExhausted: '免費額度已用完：生辰只能修正一次。升級 Pro 可無限修改。',
   birthSaveSessionExpired: '登入狀態已失效，請重新登入後再儲存生辰。',
@@ -1328,7 +1361,8 @@ const zhHant: Strings = {
   contentComingSoon: '內容編輯中',
   unlockFullSection: '解鎖完整章節',
   swipeCalendarHint: '月曆',
-  swipeMeHint: '設定',
+  swipeMeHint: '左滑打開設定',
+  swipeDayHint: '左滑後日，右滑前日',
   almanacSection: '黃曆',
   exploreSection: '探索',
   exploreExpand: '展開',
@@ -1508,7 +1542,7 @@ const zhHant: Strings = {
       凶: '今日宜守不宜攻（文化參考）——低調收斂、避免冒進。',
     },
     summaryClassical: {
-      吉: '吉，此日五行相順，諸事宜早，不宜遲疑。',
+      吉: '吉，此日五行相順，宜進，用事擇時。',
       平: '平，此日諸事平穩，守常即可。',
       凶: '凶，此日宜守不宜攻，收斂靜待，不宜冒進。',
     },
@@ -1671,6 +1705,9 @@ const ja: Strings = {
   festivalsTab: '節句',
   meTab: '私',
   today: '本日',
+  goToday: '今日に戻る',
+  settingsAlmanacEntry: '通例',
+  almanacPassOn: '伝帖',
   suitable: '宜',
   avoid: '忌',
   clash: '冲',
@@ -1734,6 +1771,9 @@ const ja: Strings = {
   voiceModeHint:
     '黄暦モード：ホームが黄暦ページに切り替わり、宜忌・判詞・プッシュも原文の行話になります。現在は簡体/繁体中国語のみ対応。',
   voiceModeName: '黄暦モード',
+  almanacThemeTitle: '黄暦の紙色',
+  almanacThemeClassic: '通書',
+  almanacThemeContrast: '墨茶',
   eventWindowLabel: '検索範囲 · {from} – {to}',
   privacy: 'プライバシー',
   terms: '利用規約',
@@ -1785,9 +1825,11 @@ const ja: Strings = {
     '複数デバイス同期はオフです。オンにすると、この端末でアカウントの生年月日を読めます。',
   birthSyncEnableMultiDevice: '複数デバイス同期をオン',
   birthConflictTitle: '生年月日が一致しません',
-  birthConflictBody: 'この端末とアカウントの生年月日が異なります。どちらを残しますか。',
+  birthConflictBody:
+    'この端末とアカウントの生年月日が異なります。どちらを残しますか。Apple / Google で別アカウントになる場合、生年月日も別管理です。',
   birthConflictUseAccount: 'アカウントの内容を使う',
   birthConflictUseLocal: 'この端末の内容でアカウントを上書き',
+  birthConflictLater: 'あとで',
   birthSaveFailed: '保存に失敗しました。通信を確認して再試行してください。',
   birthSaveQuotaExhausted:
     '無料の修正枠を使い切りました。生年月日は1回だけ直せます。Pro で無制限に。',
@@ -1846,7 +1888,8 @@ const ja: Strings = {
   contentComingSoon: 'コンテンツ準備中',
   unlockFullSection: '全文を見る',
   swipeCalendarHint: 'カレンダー',
-  swipeMeHint: '設定',
+  swipeMeHint: '左にスワイプで設定',
+  swipeDayHint: '左スワイプで翌日、右で前日',
   almanacSection: '黄暦',
   exploreSection: '探索',
   exploreExpand: '開く',
@@ -2195,6 +2238,9 @@ const en: Strings = {
   festivalsTab: 'Festivals',
   meTab: 'Me',
   today: 'Today',
+  goToday: 'Back to today',
+  settingsAlmanacEntry: 'Notes',
+  almanacPassOn: 'Pass on',
   suitable: 'Good',
   avoid: 'Avoid',
   clash: 'Clash',
@@ -2246,6 +2292,9 @@ const en: Strings = {
   voiceModeHint:
     'Classic modern: the home becomes a traditional almanac page — 歲次 year counts, 建除 officers, lunar mansions and classical wording across 宜忌, verdicts and push. Simplified / Traditional Chinese only for now.',
   voiceModeName: 'Classic modern',
+  almanacThemeTitle: 'Almanac paper',
+  almanacThemeClassic: 'Newsprint',
+  almanacThemeContrast: 'Ink contrast',
   eventWindowLabel: 'Search window · {from} – {to}',
   privacy: 'Privacy',
   terms: 'Terms',
@@ -2299,9 +2348,10 @@ const en: Strings = {
   birthSyncEnableMultiDevice: 'Enable multi-device sync',
   birthConflictTitle: 'Birth info differs',
   birthConflictBody:
-    'This device and your account have different birth info. Choose which to keep.',
+    'This device and your account have different birth info. Choose which to keep. Signing in with Apple vs Google uses separate accounts, each with its own birth profile.',
   birthConflictUseAccount: 'Use account data',
   birthConflictUseLocal: 'Replace account with this device',
+  birthConflictLater: 'Not now',
   birthSaveFailed: 'Save failed. Check your connection and try again.',
   birthSaveQuotaExhausted:
     'Free correction used. Birth info can be edited once — upgrade to Pro for unlimited edits.',
@@ -2359,7 +2409,8 @@ const en: Strings = {
   contentComingSoon: 'Content coming soon',
   unlockFullSection: 'Unlock full section',
   swipeCalendarHint: 'Calendar',
-  swipeMeHint: 'Settings',
+  swipeMeHint: 'Swipe left for Settings',
+  swipeDayHint: 'Swipe left for next day, right for previous',
   almanacSection: 'Almanac',
   exploreSection: 'Explore',
   exploreExpand: 'Show',

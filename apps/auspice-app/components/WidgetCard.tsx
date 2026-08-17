@@ -11,6 +11,8 @@ import { useMemo } from 'react'
 import { Text, View } from 'react-native'
 import { almanacCopy } from '@/lib/almanac-copy'
 import type { AuspiceDay, AuspicePersonalization } from '@/lib/api'
+import { almanacPalette, verdictCircleColor, weekdayFromIso } from '@/lib/almanac-palette'
+import { useAlmanacTheme } from '@/lib/almanac-theme-context'
 import { localizeSolarTermCompact } from '@/lib/culture/names'
 import { nayinOf } from '@/lib/huangli-day'
 import { getStrings, type Locale } from '@/lib/i18n'
@@ -19,7 +21,7 @@ import { useVoiceMode } from '@/lib/voice-mode-context'
 import { WIDGET_SPEC } from '@/lib/widget-spec'
 import { resolveRegisterSync } from '@/lib/yiji-display-mode'
 import { useYijiDisplayMode } from '@/lib/yiji-mode-context'
-import { almanacPalette, VerdictMark } from './AlmanacPage'
+import { VerdictMark } from './AlmanacPage'
 import {
   buildDailyCardModel,
   compactChrome,
@@ -693,7 +695,8 @@ function AlmanacLargePreview({
   variant?: 'ios' | 'android'
 }) {
   const { mode } = useTheme()
-  const P = almanacPalette(mode === 'dark')
+  const { theme } = useAlmanacTheme()
+  const P = almanacPalette(mode === 'dark', theme, weekdayFromIso(model.date), locale)
   const C = almanacCopy(locale)
   const L = compactChrome(locale)
   const A = WIDGET_SPEC.family.large.almanac
@@ -859,7 +862,15 @@ function AlmanacLargePreview({
               </Text>
               <VerdictMark
                 glyph={model.fit}
-                color={model.fit === '凶' ? P.seal : model.fit === '吉' ? P.gold : P.brown}
+                color={
+                  theme === 'classic'
+                    ? verdictCircleColor(model.fit, mode === 'dark')
+                    : model.fit === '凶'
+                      ? P.seal
+                      : model.fit === '吉'
+                        ? P.gold
+                        : P.brown
+                }
                 P={P}
                 size={28}
               />

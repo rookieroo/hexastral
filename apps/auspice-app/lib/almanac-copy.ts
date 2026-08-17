@@ -30,6 +30,26 @@ const MONTHS_EN = [
   'December',
 ] as const
 
+const GREG_MONTH_ZH = [
+  '一',
+  '二',
+  '三',
+  '四',
+  '五',
+  '六',
+  '七',
+  '八',
+  '九',
+  '十',
+  '十一',
+  '十二',
+] as const
+
+function civilMonthDaXiao(d: Date): '大' | '小' {
+  const days = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+  return days >= 31 ? '大' : '小'
+}
+
 const ANIMAL_EN: Record<string, string> = {
   子: 'Rat',
   丑: 'Ox',
@@ -108,6 +128,11 @@ export interface AlmanacCopy {
   rowMansion: string
   godWealth: string
   godJoy: string
+  godNoble: string
+  sectionBazi: string
+  rowSanhe: string
+  rowLuckColor: string
+  rowLuckDir: string
   yangGongNote: string
   goodWord: string
   badWord: string
@@ -119,6 +144,8 @@ export interface AlmanacCopy {
   gregorianShort(d: Date): string
   /** 组件用星期 chip（周四 · 9 / THU 9），对齐原生 weekdayChip。 */
   weekdayChip(d: Date): string
+  /** Hero 公历月：八月大 / 8月大 / AUGUST（大月=31 日）。 */
+  heroGregorianMonth(d: Date): string
   /** 竖排条用农历（无空格无括号，避免换行）。 */
   lunarStrip(lunarDate: { month: number; day: number; monthName: string; dayName: string }): string
   /** 竖排条用岁次（无括号）。 */
@@ -155,6 +182,11 @@ export function almanacCopy(locale: string): AlmanacCopy {
       rowMansion: 'Mansion',
       godWealth: 'Wealth',
       godJoy: 'Joy',
+      godNoble: 'Noble',
+      sectionBazi: "Today's Bazi",
+      rowSanhe: 'Triple harmony',
+      rowLuckColor: 'Color',
+      rowLuckDir: 'Direction',
       yangGongNote: 'Yang Gong taboo day — avoid major affairs',
       goodWord: 'Auspicious',
       badWord: 'Caution',
@@ -166,6 +198,7 @@ export function almanacCopy(locale: string): AlmanacCopy {
         `${(MONTHS_EN[d.getMonth()] ?? '').slice(0, 3).toUpperCase()} ${d.getDate()}`,
       weekdayChip: (d) =>
         `${WEEKDAYS.en[d.getDay()]?.slice(0, 3).toUpperCase() ?? ''} ${d.getDate()}`,
+      heroGregorianMonth: (d) => (MONTHS_EN[d.getMonth()] ?? '').toUpperCase(),
       lunarStrip: (ld) => `Lunar ${ld.month}/${ld.day}`,
       yearStrip: (stem, branch, animal) => `${stem}${branch} · ${animal}`,
       lunarLine: (ld) => `Lunar ${ld.month}/${ld.day}`,
@@ -203,6 +236,11 @@ export function almanacCopy(locale: string): AlmanacCopy {
       rowMansion: '星宿',
       godWealth: '財神',
       godJoy: '喜神',
+      godNoble: '貴神',
+      sectionBazi: '今日の八字',
+      rowSanhe: '三合',
+      rowLuckColor: '吉色',
+      rowLuckDir: '吉方',
       yangGongNote: '楊公忌日 大事勿用',
       goodWord: '吉',
       badWord: '凶',
@@ -215,6 +253,7 @@ export function almanacCopy(locale: string): AlmanacCopy {
         const wd = ['日', '月', '火', '水', '木', '金', '土']
         return `${wd[d.getDay()] ?? ''} · ${d.getDate()}`
       },
+      heroGregorianMonth: (d) => `${d.getMonth() + 1}月${civilMonthDaXiao(d)}`,
       lunarStrip: (ld) => `旧暦${ld.month}月${ld.day}日`,
       yearStrip: (stem, branch) => `歳次${stem}${branch}年`,
       lunarLine: (ld) => `旧暦 ${ld.month}月${ld.day}日`,
@@ -248,6 +287,11 @@ export function almanacCopy(locale: string): AlmanacCopy {
       rowMansion: '星宿',
       godWealth: '財神',
       godJoy: '喜神',
+      godNoble: '貴神',
+      sectionBazi: '今日八字',
+      rowSanhe: '三合',
+      rowLuckColor: '吉色',
+      rowLuckDir: '吉方',
       yangGongNote: '楊公忌日 大事勿用',
       goodWord: '吉',
       badWord: '凶',
@@ -260,6 +304,7 @@ export function almanacCopy(locale: string): AlmanacCopy {
         const wd = ['日', '一', '二', '三', '四', '五', '六']
         return `週${wd[d.getDay()] ?? ''} · ${d.getDate()}`
       },
+      heroGregorianMonth: (d) => `${GREG_MONTH_ZH[d.getMonth()]}月${civilMonthDaXiao(d)}`,
       lunarStrip: (ld) => `${ld.monthName}${ld.dayName}`,
       yearStrip: (stem, branch) => `歲次${stem}${branch}年`,
       lunarLine: (ld) => `${ld.monthName}${ld.dayName}`,
@@ -292,6 +337,11 @@ export function almanacCopy(locale: string): AlmanacCopy {
     rowMansion: '星宿',
     godWealth: '财神',
     godJoy: '喜神',
+    godNoble: '贵神',
+    sectionBazi: '今日八字',
+    rowSanhe: '三合',
+    rowLuckColor: '吉色',
+    rowLuckDir: '吉方',
     yangGongNote: '杨公忌日 大事勿用',
     goodWord: '吉',
     badWord: '凶',
@@ -304,6 +354,7 @@ export function almanacCopy(locale: string): AlmanacCopy {
       const wd = ['日', '一', '二', '三', '四', '五', '六']
       return `周${wd[d.getDay()] ?? ''} · ${d.getDate()}`
     },
+    heroGregorianMonth: (d) => `${GREG_MONTH_ZH[d.getMonth()]}月${civilMonthDaXiao(d)}`,
     lunarStrip: (ld) => `${ld.monthName}${ld.dayName}`,
     yearStrip: (stem, branch) => `岁次${stem}${branch}年`,
     lunarLine: (ld) => `${ld.monthName}${ld.dayName}`,
