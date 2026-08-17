@@ -1,0 +1,2 @@
+# Local Gradle build output — never commit or upload.
+android/build/
