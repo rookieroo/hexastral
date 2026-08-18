@@ -95,7 +95,8 @@ function InkCell({
 }
 
 const SLOT_FORYOU = 44
-const SLOT_HEAD = 42
+/** 表头行：农历大字 | 节气 | 星期。48 给长英文节气名（如 "End of Heat (Chushu)"）留单行空间。 */
+const SLOT_HEAD = 48
 const SLOT_HOURS = 40
 /** 今日八字 / 五行 / 彭祖 共用底栏。Android 默认 includeFontPadding，76 会把地支顶出格. */
 const SLOT_FOOTER = Platform.OS === 'android' ? 92 : 76
@@ -456,11 +457,14 @@ export function ClassicAlmanacPaper({
                 <Text
                   style={{
                     color: P.ink,
-                    fontSize: 16,
+                    fontSize: en ? 15 : 16,
                     fontWeight: '700',
                     textAlign: 'center',
-                    letterSpacing: 1,
+                    letterSpacing: en ? 0 : 1,
                   }}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}
                 >
                   {termName}
                 </Text>
