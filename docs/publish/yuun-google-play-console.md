@@ -124,20 +124,25 @@ Listing 其他字段：
 ## 3. 截图资产（Android 规格）
 
 Play 校验：JPEG/24-bit PNG、每边 320–3840px、**必须 16:9 或 9:16**。
-现有 iOS 素材是 iPhone 6.9" 竖版 1320×2868（≈9:19.5），**Play 会拒收**，需转 9:16。
 
-可复用清单（`docs/publish/screenshots/yuun/6.9/<locale>/`）：
+**首选 — 真机 Android 截图（2026-08-18 已产出，推荐）**：
+`docs/publish/screenshots/yuun/play-android/en/` 下 8 张，1080×1920 9:16 JPEG：
 
-| 源文件 | GP 用？ | 说明 |
-|---|---|---|
-| `M1-modern-home.png` / `M2-modern-month.png` | ✅ | 主图：Today 首页 + 月历 |
-| `S1-home` `S2-display` `S3-glossary` `S4-me` | ✅ | 免费面（黄历/设置/文化库） |
-| `deck/01-almanac-home` `03-month` `04-culture-deep` `05-find-a-date` `06-settings` | ✅ | 同上，deck 组 |
-| `deck/02-widget.png` | ❌ | 组件声明未达证据门槛，GP 版不放 |
+| 文件 | 内容 |
+|---|---|
+| `01-today-home.jpg` | 黄历首页（经典模式，默认面）— hero |
+| `02-month-calendar.jpg` | 月历展开（公历+农历数字） |
+| `03-modern-home.jpg` | 现代首页（双模式对比） |
+| `04-culture-guide.jpg` / `04b-solar-terms.jpg` | 文化库 / 二十四节气 |
+| `06-settings.jpg` / `06b-settings-scrolled.jpg` | 设置（生辰表单 / 提醒+组件外观+法律） |
+| `08-life-timeline.jpg` | 人生时间轴（大运阶梯，免费面） |
 
-转换：等比缩到宽 1080（高 2346）后居中裁到 1080×1920，或人工按
-[screenshot-direction.md](./screenshot-direction.md) 重新导出。
-**不要**出现购买 UI（IAP 关）、Pro 价格、组件/手表画面。
+来源：本地 API 35 模拟器 + 与生产同环境（IAP off）的 release 包实拍。
+仅 en-US；zh/ja 本地化截图可选、后置。**不要**放购买 UI/Pro 价格/组件声明画面。
+
+**备选 — iOS 素材转 9:16**：`docs/publish/screenshots/yuun/play/<locale>/`（4 语 × 6 张，
+来自 6.9" deck 的裁切版；组件/锁屏图已剔除）。Play 仅要求默认语言截图，
+多语截图可后补。
 
 ---
 
