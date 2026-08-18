@@ -1,0 +1,28 @@
+=== Store listing — 非文案字段 ===
+
+Category
+Reference
+Secondary: Lifestyle
+
+Contact email
+props@hexastral.com
+
+Privacy policy
+https://yuun.hexastral.com/privacy/yuun
+
+Website
+https://yuun.hexastral.com
+(apex 307 → /zh；政策/条款 URL 已验 HTTP 200)
+
+App icon
+apps/auspice-app/assets/icon.png
+1024×1024 PNG
+
+Feature graphic
+docs/publish/play-paste-ready/feature-graphic.png
+1024×500 PNG（无组件/手表/IAP）
+
+Phone screenshots
+仓库无 9:16 源图。iOS 6.9" 竖版 1320×2868 不能直接上传。
+需从真机/模拟器导出后裁到 1080×1920（9:16），2–8 张。
+可用：Today 首页、月历、文化库、设置。不要：组件墙、锁屏、Watch、付费页。

@@ -1,0 +1,37 @@
+=== Setup → App content → Data safety ===
+
+Does your app collect or share any of the required user data types?
+Yes
+
+Collects / not shared / not sold / not for advertising:
+
+1. App activity
+   Collected · Not shared · Analytics
+   推送打开指标；盐化设备键，不可关联账号
+
+2. Device or other IDs
+   Collected · Not shared · App functionality
+   匿名 deviceId / Expo push token
+
+3. Personal info → Date of birth
+   Collected · Not shared · App functionality
+   可选生辰；多设备同步开启时才写入账号
+
+4. Personal info → Email address
+   Collected · Not shared · Account management
+   仅 Google 登录时
+
+Is all of the user data collected by your app encrypted in transit?
+Yes (HTTPS)
+
+Can users request that their data is deleted?
+Yes — Settings → Delete account（应用内即删，无需工单）
+
+Data collected for tracking?
+No
+
+Data shared with third parties?
+No
+
+Is your app primarily designed for children?
+No. Target audience 13+.

@@ -1,0 +1,33 @@
+=== Setup → App content 其余声明 ===
+
+Ads
+No ads
+
+App access
+All functionality is available without sign-in.
+审核员无需账号。Google 登录仅用于可选多设备同步。
+
+News apps
+Not a news app
+
+COVID-19
+Not a COVID-19 app
+
+Data safety
+见 data-safety.txt
+
+Target audience and content
+13+（有可选账号与可选生辰，不选儿童 / Families）
+
+Government / political
+No
+
+Financial features
+None. Free app, no in-app purchases in this release.
+
+Health
+Does not provide health / medical services.
+
+Sensitive permissions
+下一次 production AAB 已从清单剥离 RECORD_AUDIO 与 SYSTEM_ALERT_WINDOW。
+若仍看到旧包：表单按事实答「不录音、无悬浮窗」。

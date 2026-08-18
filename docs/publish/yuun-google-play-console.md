@@ -4,10 +4,15 @@
 > Data safety、内容分级、上传 .aab、发布轨道。与 iOS 侧
 > [asc-yuun-yuel-guide.md](./asc-yuun-yuel-guide.md) 对应，本文只覆盖 Google Play。
 >
-> **现状（2026-08-17）**：iOS 已提交审核；GP 按 [handoff-2026-08-14.md](../handoff-2026-08-14.md)
-> 目标 **2026-09-30 上架**。仓库侧（no-IAP 免费版）已就绪：production 构建
-> `EXPO_PUBLIC_IAP_ENABLED=false`、googlePlay 四语文案含免责声明、法律页生产 200。
-> 剩余工作 = Play Console 表单 + 上传 `.aab`。
+> **现状（2026-08-18）**：ASC 已送审。Play 商店页仍 404（`com.hexastral.yuun` 未上架）。
+> EAS production `.aab` **1.0.0 (7)** 已打出（2026-08-17，约 2026-09-16 过期），**尚未上传 Console**。
+> 正在打 **1.0.0 (8)**（剥离录音/悬浮窗权限）：https://expo.dev/accounts/useone-tech/projects/auspice/builds/d0a3e2a9-4f41-481f-870c-ef2baffe2fb1
+> 上传 Play 时优先用 8 号包；7 号仍可用但清单里还有未使用权限。
+> `eas.json` 已加 Android submit 草稿轨道（`internal` + `draft`），缺 Play service account JSON，无法 `eas submit -p android`。
+> 仓库可粘贴包在 [play-paste-ready/](./play-paste-ready/)。法律页四语 + terms 已验 200。
+> Feature graphic：`play-paste-ready/feature-graphic.png`（1024×500）。
+> 下一步仍是 **人工**：Play Console 建应用 → App content 全绿 → 上传 aab。
+> 权限：下一次 Android production 构建会剥离 `RECORD_AUDIO` / `SYSTEM_ALERT_WINDOW`（旧 7 号包仍带这两行，表单按「运行时不请求」答即可）。
 
 ---
 
@@ -32,6 +37,41 @@
 
 **免费应用无需银行/税务表**：Free Apps Agreement 不要求收款账户；W-8BEN 在 IAP
 开闸时再交。组织验证（D-U-N-S / 法人文件）在账号创建时完成。
+**不交年报/税表 ≠ 不能上免费 App。不开 merchant + 不填税务身份表（W-8BEN/W-9）= 不能正经开 IAP / 收款。** 详见 §0.1。
+
+---
+
+## 0.1 Play Console 外链（登录后直达）
+
+| 用途 | URL |
+|---|---|
+| Play Console 首页 | https://play.google.com/console |
+| 中文界面 | https://play.google.com/console?hl=zh-CN |
+| 全部应用 / 创建应用 | https://play.google.com/console/u/0/developers （登录后 → All apps → Create app） |
+| 帮助：创建应用 | https://support.google.com/googleplay/android-developer/answer/9859152 |
+| Payments profile（merchant / 收款） | Console 内 **Settings → Payments profile**（或 **Monetization setup → Payments profile**）。帮助：https://support.google.com/googleplay/android-developer/answer/7161426 |
+| Google Payments Center（税务表实际填写处） | https://payments.google.com （或 https://pay.google.com/business/console ） |
+| 帮助：填税务信息 | https://support.google.com/googleplay/android-developer/answer/7163598 |
+| 帮助：美国税务申报与预扣 | https://support.google.com/paymentscenter/answer/10349995 |
+| IRS W-8BEN 说明（**不要**自行邮寄给 IRS 来开 IAP） | https://www.irs.gov/forms-pubs/about-form-w-8-ben |
+
+没有单独的「W-8BEN 申请网址」。表是 Google 代收、电子提交给 IRS 的：在 Payments profile 里点 **Add tax info / Update tax info**，问卷走完后选 Certificate of Foreign Status，当场填并 Submit。有效约 3 个日历年，到期重填。Apple 要另填一份，Play 这份盖不到 ASC。
+
+**本仓库口径（见 [handoff-2026-08-14.md](../handoff-2026-08-14.md)）**：US SMLLC + 中国 NRA 持有人（disregarded entity）→ **W-8BEN + ITIN**，主张中美协定版税 10%；**不签 W-9**。注意 Google 文案写「US-based merchants must submit W-9」——问卷若把 LLC 判成 US person 会推 W-9。按 disregarded entity / 受益所有人是中国税务居民走，应落到 W-8BEN（个人）而不是 W-8BEN-E（外国实体）。EIN 仍要填进 payments profile 的公司信息，与 IRS 登记名一致。走错表会预扣 30% 或卡款，CPA 过一眼再 Submit。
+
+### 不填税务表能不能开 IAP？
+
+分两件东西，别混：
+
+| | 免费上架（本次 9/30） | 开 IAP / Play Billing |
+|---|---|---|
+| Play Console 建应用、传 aab、审核 | **不需要** 银行、merchant、W-8BEN | — |
+| 建订阅商品、收用户付款、打款到 Airwallex | — | **需要** merchant payments profile + 银行账号 + 税务身份表 |
+
+- **不填 W-8BEN/W-9**：免费 App 照上。IAP 这边 Google 要求 monetize 先建 merchant；税务信息是「及时打款」的前置。缺表通常是：商品建不完整、或能卖但打款被扣留、或美国区按 **30% backup withholding** 预扣。所以：**不提交税务身份表，就不能算 IAP 开闸完成。**
+- **不交年度税务报表**（1040-NR / 1120 / 州年报等）：**不阻塞** Console 里开 IAP。那是报税季的事，跟商店开关是两条线。1099-K / 1042-S 是 Google 年终给你的，不是你先交才能卖。
+
+IAP 仍按 §8 后置：Airwallex 就绪 → merchant 绑定 → 填 W-8BEN → 再建 `auspice_pro_*`。
 
 ---
 
@@ -71,7 +111,7 @@ Listing 其他字段：
 |---|---|
 | Short description / Full description | 按上面复制 |
 | App icon | `apps/auspice-app/assets/icon.png`（1024×1024，直接可用） |
-| Feature graphic | **1024×500** 横版；需人工制作（用 almanac 视觉素材，不加组件/手表声明） |
+| Feature graphic | **1024×500** → `docs/publish/play-paste-ready/feature-graphic.png`（`python3 scripts/make-yuun-play-feature-graphic.py` 可重生成） |
 | Phone screenshots | 2–8 张，9:16（如 1080×1920）或 16:9；见 §3 |
 | Category | Reference（副类 Lifestyle） |
 | Tags | 最多 5 个（如 `almanac`, `calendar`，选列表里存在的） |
@@ -140,7 +180,7 @@ Yuun 实际数据流：匿名 `deviceId` + Expo push token（本地/推送注册
 | Target audience | **13+**（有账号体系 + 收集可选个人数据，不选儿童） |
 | News / 政府信息 | 不适用 |
 | Financial features | **无**（免费版无任何支付） |
-| 敏感权限声明（Sensitive permissions） | Expo prebuild 模板默认声明 `RECORD_AUDIO`/`SYSTEM_ALERT_WINDOW` 权限但 App **运行时从不请求**。表单按事实答：不录音、无悬浮窗用途。后续版本可用 config plugin 从 manifest 剥掉这两行（见 `apps/auspice-app/plugins/` 惯例） |
+| 敏感权限声明（Sensitive permissions） | 下一次 production AAB 用 `expo-build-properties.blockedPermissions` 剥离 `RECORD_AUDIO` / `SYSTEM_ALERT_WINDOW`。若上传的是 1.0.0 (7)：表单按事实答不录音、无悬浮窗。 |
 
 ---
 
@@ -148,8 +188,10 @@ Yuun 实际数据流：匿名 `deviceId` + Expo push token（本地/推送注册
 
 1. **构建产物**：`apps/auspice-app` → `eas build --profile production --platform android`
    产出 `.aab`（本次会话已触发构建；keystore 已由 EAS 托管创建，versionCode 自动递增）。
-2. **上传**：Play Console → Release → Production → Create release → 拖入 `.aab`。
-   （也可配 service account JSON 后用 `eas submit --platform android`，手动上传更省事。）
+2. **上传**：Play Console → Testing → Internal testing（或 Production）→ Create release → 拖入 `.aab`。
+   `eas.json` `submit.production.android` 已设 `track: internal`、`releaseStatus: draft`。
+   配好 Play Console service account JSON 后可：`cd apps/auspice-app && bunx eas submit --platform android --latest --non-interactive`。
+   没有 JSON 时手动拖文件更省事。
 3. **轨道**：组织账号可直上 Production。稳妥做法：先 Internal testing 自装真机
    跑 [pre-submit-smoke.md](../apps/yuun/pre-submit-smoke.md)（Today/日历/生辰/推送/
    Google 登录/删号 + Glance 组件安装路径），再 promote 到 Production。
@@ -162,7 +204,7 @@ Yuun 实际数据流：匿名 `deviceId` + Expo push token（本地/推送注册
 - Airwallex 收款账户 → Play merchant 绑定
 - Play Billing：`auspice_pro_monthly` / `auspice_pro_annual` + RC `goog_*` key +
   `EXPO_PUBLIC_IAP_ENABLED=true` **随新版本**提交首个订阅（[release-config-gate.md](../apps/yuun/release-config-gate.md)）
-- W-8BEN（ITIN，中美协定版税 10%）在 IAP 开闸前提交
+- W-8BEN（ITIN，中美协定版税 10%）在 IAP 开闸前提交：路径见 §0.1（Play Console → Payments profile → Add tax info，**没有**独立申请 URL）
 
 ---
 

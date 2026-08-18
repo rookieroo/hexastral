@@ -1,0 +1,18 @@
+=== Play Console → All apps → Create app ===
+
+App name
+Yuun
+
+Default language
+English (United States) — en-US
+
+App or game
+App
+
+Free or paid
+Free
+
+Declarations
+- Does not contain ads
+- Does not use COVID-19 contact tracing / exposure
+- Does not claim to provide medical or health services
