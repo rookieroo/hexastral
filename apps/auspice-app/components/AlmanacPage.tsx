@@ -17,7 +17,7 @@ import {
   STEM_WUXING,
 } from '@zhop/astro-core'
 import { useTheme } from '@zhop/core-ui'
-import { useEffect, useState, type MutableRefObject } from 'react'
+import { type MutableRefObject, useEffect, useState } from 'react'
 import { StyleSheet, Text, type TextStyle, useWindowDimensions, View } from 'react-native'
 import { Pressable } from 'react-native-gesture-handler'
 import Svg, { Path as SvgPath } from 'react-native-svg'

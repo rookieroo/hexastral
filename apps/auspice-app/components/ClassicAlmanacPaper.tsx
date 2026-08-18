@@ -429,7 +429,9 @@ export function ClassicAlmanacPaper({
 
       {/* 下表：固定表头/时辰，余下三列等宽 */}
       <View style={{ flex: 1.35, minHeight: 0, paddingBottom: 4, paddingTop: 4 }}>
-        <View style={{ flex: 1, borderWidth: 2, borderColor: P.ink, padding: 2, overflow: 'hidden' }}>
+        <View
+          style={{ flex: 1, borderWidth: 2, borderColor: P.ink, padding: 2, overflow: 'hidden' }}
+        >
           <View style={{ flex: 1, borderWidth: 0.5, borderColor: P.ink, overflow: 'hidden' }}>
             {/* 初三日 | 处暑 | 星期六 */}
             <View style={{ height: SLOT_HEAD, flexDirection: 'row' }}>
@@ -648,7 +650,9 @@ export function ClassicAlmanacPaper({
                       </Text>
                     </>
                   ) : (
-                    <Text style={{ color: P.ink, textAlign: 'center', includeFontPadding: false }}>—</Text>
+                    <Text style={{ color: P.ink, textAlign: 'center', includeFontPadding: false }}>
+                      —
+                    </Text>
                   )}
                 </View>
               </View>
