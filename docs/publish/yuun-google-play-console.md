@@ -137,7 +137,9 @@ Play 校验：JPEG/24-bit PNG、每边 320–3840px、**必须 16:9 或 9:16**�
 | `06-settings.jpg` / `06b-settings-scrolled.jpg` | 设置（生辰表单 / 提醒+组件外观+法律） |
 | `08-life-timeline.jpg` | 人生时间轴（大运阶梯，免费面） |
 
-来源：本地 API 35 模拟器 + 与生产同环境（IAP off）的 release 包实拍。
+来源：本地 API 35 模拟器实拍。屏幕以 `wm size 1080x1920` 原生 9:16 渲染
+（非裁切），系统状态栏/导航条区域用纸面底色 #FAFAFA 补平；已逐张验证内容
+完整（首行/末行无裁切）。App 侧为与生产同环境（IAP off）的 release 包。
 仅 en-US；zh/ja 本地化截图可选、后置。**不要**放购买 UI/Pro 价格/组件声明画面。
 
 **备选 — iOS 素材转 9:16**：`docs/publish/screenshots/yuun/play/<locale>/`（4 语 × 6 张，
