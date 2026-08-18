@@ -14,34 +14,34 @@
     "en-US": {
       "title": "Lantai",
       "subtitle": "Flare for Notion",
-      "keywords": "notion,capture,shortcut,ledger,diet,journal,ai",
-      "promotionalText": "Zero-edit Shortcuts into your Notion databases. Capture notes, inbox, links, and habits — AI ledger comes with Pro.",
-      "description": "Lantai (Flare for Notion) turns a verified Shortcuts workflow into an iOS app: connect Notion, pick a template, run one fixed-name shortcut. Your Notion database stays the source of truth — we store configs and quotas, not your rows.\n\nWHAT IT IS\n\n• Journal, inbox, link capture, and habit templates\n• One shortcut named Lantai — no three-place renaming\n• Optional AI ledger (subscription) in a later release\n\nWHAT IT IS NOT\n\n• Not a Notion charts SaaS\n• Not a replacement for your Notion workspace\n• Not available on the China App Store\n\nPublished by UseONE, LLC. Privacy and support: lantai.hexastral.com"
+      "keywords": "notion,shortcut,database,journal,inbox,habit",
+      "promotionalText": "Point a zero-edit Shortcut at any Notion database you already use. Pick fields, run one shortcut named Lantai.",
+      "description": "Lantai (Flare for Notion) turns a verified Shortcuts workflow into an iOS app: connect Notion, pick a database you already have, choose which properties to capture, run one fixed-name shortcut. Your Notion database stays the source of truth — we store configs and quotas, not your rows.\n\nWHAT IT IS\n\n• Your databases, your properties\n• One shortcut named Lantai — no three-place renaming\n• Optional starters (journal, inbox, links, habits) if you want a name preset\n\nWHAT IT IS NOT\n\n• Not an AI capture app\n• Not a Notion charts SaaS\n• Not a replacement for your Notion workspace\n• Not available on the China App Store\n\nPublished by UseONE, LLC. Privacy and support: lantai.hexastral.com"
     },
     "zh-Hans": {
       "title": "Lantai",
       "subtitle": "Flare for Notion",
-      "keywords": "notion,快捷指令,采集,手记,待办,习惯,记账",
-      "promotionalText": "零编辑快捷指令写入你自己的 Notion。手记、待办、链接、打卡；AI 记账走订阅。",
-      "description": "Lantai 把已验证的 Notion 快捷指令做成独立 iOS 应用：连接 Notion、选模板、运行固定名快捷指令 Lantai。Notion 数据库是唯一事实来源。\n\n不上中国区 App Store。获客走港区/美区 Apple ID 与 TestFlight。\n\nUseONE, LLC 出品。隐私与支持：lantai.hexastral.com"
+      "keywords": "notion,快捷指令,数据库,手记,待办,习惯",
+      "promotionalText": "对着你已经在用的 Notion 数据库，生成零编辑快捷指令。",
+      "description": "Lantai 把已验证的 Notion 快捷指令做成独立 iOS 应用：连接 Notion、选你自己的数据库、勾选要写入的属性、运行固定名快捷指令 Lantai。Notion 数据库是唯一事实来源。\n\n不上中国区 App Store。获客走港区/美区 Apple ID 与 TestFlight。\n\nUseONE, LLC 出品。隐私与支持：lantai.hexastral.com"
     },
     "zh-Hant": {
       "title": "Lantai",
       "subtitle": "Flare for Notion",
-      "keywords": "notion,快捷指令,採集,手記,待辦,習慣,記帳",
-      "promotionalText": "零編輯快捷指令寫入你自己的 Notion。手記、待辦、連結、打卡；AI 記帳走訂閱。",
-      "description": "Lantai 把已驗證的 Notion 快捷指令做成獨立 iOS 應用：連接 Notion、選模板、執行固定名快捷指令 Lantai。Notion 資料庫是唯一事實來源。\n\n不上中國區 App Store。\n\nUseONE, LLC 出品。隱私與支援：lantai.hexastral.com"
+      "keywords": "notion,快捷指令,資料庫,手記,待辦,習慣",
+      "promotionalText": "對著你已經在用的 Notion 資料庫，產生零編輯快捷指令。",
+      "description": "Lantai 把已驗證的 Notion 快捷指令做成獨立 iOS 應用：連接 Notion、選你自己的資料庫、勾選要寫入的屬性、執行固定名快捷指令 Lantai。Notion 資料庫是唯一事實來源。\n\n不上中國區 App Store。\n\nUseONE, LLC 出品。隱私與支援：lantai.hexastral.com"
     },
     "ja": {
       "title": "Lantai",
       "subtitle": "Flare for Notion",
-      "keywords": "notion,ショートカット,キャプチャ,ジャーナル,家計,習慣,ai",
-      "promotionalText": "名前を直さずに Notion へ。ジャーナル、Inbox、リンク、習慣。AI 家計は Pro。",
-      "description": "Lantai は Notion 向けショートカットを iOS アプリにしたものです。Notion を接続し、テンプレートを選び、固定名ショートカット Lantai を実行します。データベースの中身は Notion がソース・オブ・トゥルースです。\n\n中国 App Store では配信しません。\n\n発行：UseONE, LLC。プライバシー：lantai.hexastral.com"
+      "keywords": "notion,ショートカット,データベース,ジャーナル,inbox,習慣",
+      "promotionalText": "使っている Notion データベースに、名前を直さないショートカットを向ける。",
+      "description": "Lantai は Notion 向けショートカットを iOS アプリにしたものです。Notion を接続し、既存のデータベースを選び、書き込むプロパティを選んで、固定名ショートカット Lantai を実行します。データベースの中身は Notion がソース・オブ・トゥルースです。\n\n中国 App Store では配信しません。\n\n発行：UseONE, LLC。プライバシー：lantai.hexastral.com"
     }
   },
   "_charCounts": {
     "_note": "Recompute before submit: `node scripts/aso-charcount.mjs apps/lantai-app/aso-metadata.json`",
-    "_status": "Draft 2026-08-18 — M1a stub."
+    "_status": "Draft 2026-08-18 — custom database is the core path."
   }
 }

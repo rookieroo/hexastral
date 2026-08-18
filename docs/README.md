@@ -88,7 +88,7 @@ Design assets: [design/](./design/) · Market research: [research/](./research/)
 
 | Doc | Purpose |
 |---|---|
-| [apps/lantai/plan.md](./apps/lantai/plan.md) | Notion capture iOS app; hexastral-api `/api/lantai`; Yuun scaffold + zinc |
+| [apps/lantai/plan.md](./apps/lantai/plan.md) | Custom Notion Shortcuts against the user’s own DB; templates optional. hexastral-api `/api/lantai`. AI ingest is a separate future app; Syel owns Sync to Notion. |
 
 ### Syel (`apps/xingqi-app`) — post-wave
 

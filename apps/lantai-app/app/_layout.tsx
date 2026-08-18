@@ -37,7 +37,6 @@ export default function RootLayout() {
             <Stack.Screen name='config/[id]' />
             <Stack.Screen name='connect' />
             <Stack.Screen name='install' />
-            <Stack.Screen name='confirm/[jobId]' />
           </Stack>
         </CoreUIProvider>
       </SafeAreaProvider>

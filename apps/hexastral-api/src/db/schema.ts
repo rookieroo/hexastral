@@ -2630,7 +2630,7 @@ export const lantaiConfigs = sqliteTable(
   ]
 )
 
-/** Per-template UTC-month counters for lantai_pro fair-use (v1b+). */
+/** Reserved counters (Syel Notion export / future AI ingest). Lantai v1 does not increment. */
 export const lantaiUsage = sqliteTable(
   'lantai_usage',
   {

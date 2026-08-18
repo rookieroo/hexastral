@@ -256,8 +256,9 @@ export const PRODUCTS: readonly ProductSpec[] = [
   },
 
   // ── Lantai (Flare for Notion) — catalog only until ASC + RC exist ──────
-  // Slot access = lantai_pro || lantai_unlock (server union, not "sub includes unlock").
-  // Do not write "subscription includes the $9.99 buyout" in App Store metadata.
+  // Lantai listing sells unlock + workspaces only. lantai_pro_* stays in the
+  // catalog as a reserved SKU for a future AI ingest app; do not create those
+  // products in Lantai's ASC listing. Slot access = lantai_pro || lantai_unlock.
   {
     productId: 'lantai_unlock',
     kind: 'single_purchase',

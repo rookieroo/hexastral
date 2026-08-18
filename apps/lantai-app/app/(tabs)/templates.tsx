@@ -4,7 +4,7 @@ import { ChevronRight } from 'lucide-react-native'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { LANTAI_TEMPLATES } from '@/lib/config-gen'
+import { LANTAI_STARTER_TEMPLATES } from '@/lib/config-gen'
 import { useSatelliteI18n } from '@/lib/i18n'
 
 export default function LantaiTemplatesScreen() {
@@ -26,8 +26,9 @@ export default function LantaiTemplatesScreen() {
       <Text style={{ color: colors.text, fontSize: 28, fontWeight: '600' }}>
         {t('templatesTitle')}
       </Text>
+      <Text style={{ color: colors.secondary, fontSize: 15 }}>{t('templatesHint')}</Text>
 
-      {LANTAI_TEMPLATES.map((tpl) => (
+      {LANTAI_STARTER_TEMPLATES.map((tpl) => (
         <Pressable
           key={tpl.id}
           onPress={() => router.push(`/config/new?template=${tpl.id}`)}
@@ -45,11 +46,6 @@ export default function LantaiTemplatesScreen() {
         >
           <View style={{ flex: 1, gap: 4 }}>
             <Text style={{ color: colors.text, fontSize: 16 }}>{templateLabel(tpl.id)}</Text>
-            {tpl.mode === 'ai' ? (
-              <Text style={{ color: colors.secondary, fontSize: 13 }}>
-                {t('templateLedgerHint')}
-              </Text>
-            ) : null}
           </View>
           <ChevronRight color={colors.dim} size={18} />
         </Pressable>

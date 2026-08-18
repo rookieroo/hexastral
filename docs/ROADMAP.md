@@ -21,9 +21,9 @@ Internal **directory / API** codenames (`auspice`, `kindred`, …) and RevenueCa
 (donor code already ported into Yuel; API/web routes for numerology/dream may
 remain for future reuse). Legacy `hexastral-app` is also not a launch target.
 
-**Syel (post-wave):** independent satellite (`apps/xingqi-app`, display **Syel**) — three photos (L/R palm + face) + birth Form + dual IAP (consumable ≥ $9.99 + `faceoracle_pro` Timeline with photo-slot quota + event table for push). Spec: [ADR-0028](./decisions/0028-face-oracle-dual-track.md) · [apps/xingqi/product.md](./apps/xingqi/product.md).
+**Syel (post-wave):** independent satellite (`apps/xingqi-app`, display **Syel**) — three photos (L/R palm + face) + birth Form + dual IAP (consumable ≥ $9.99 + `faceoracle_pro` Timeline with photo-slot quota + event table for push). Optional post-reading **Sync to Notion** reuses Lantai’s workspace connection; capture does not move to Shortcuts. Spec: [ADR-0028](./decisions/0028-face-oracle-dual-track.md) · [apps/xingqi/product.md](./apps/xingqi/product.md).
 
-**Lantai (parallel track, not this four-app wave):** Notion capture iOS app (`apps/lantai-app`, display **Lantai** / Flare for Notion). Public API lives on hexastral-api `/api/lantai/*` (not a public `services/*` worker). GTM via Xiaohongshu + TestFlight; Syel’s timeline story ships as a Notion snapshot template (v2), not a standalone Syel launch. Plan: [apps/lantai/plan.md](./apps/lantai/plan.md).
+**Lantai (parallel track, not this four-app wave):** custom Notion Shortcuts app (`apps/lantai-app`, display **Lantai** / Flare for Notion). Core path: connect workspace → pick **the user’s own database** → toggle properties → zero-edit install. Official starters are optional. Public API on hexastral-api `/api/lantai/*`. GTM via Xiaohongshu + TestFlight. **Not** AI ingest; **not** 精气神 capture. Syel may later add a post-reading **Sync to Notion** that reuses Lantai’s workspace connection. Plan: [apps/lantai/plan.md](./apps/lantai/plan.md).
 
 ---
 
@@ -35,7 +35,7 @@ One Worker hosts launch-wave apps, plus Lantai when wired:
 - `/api/feng/*` — Feng chapters
 - `/api/divination/*` — CoinCast casting (when wired)
 - `/api/portfolio/auth/{apple,google}` — unified identity
-- `/api/lantai/*` — Lantai Notion OAuth, configs, AI jobs (HMAC); public `GET /s/:id` for Shortcuts (secret-link)
+- `/api/lantai/*` — Lantai Notion OAuth + configs (HMAC); public `GET /s/:id` for Shortcuts (secret-link)
 
 Deploy: `cd apps/hexastral-api && bun deploy`. No CI — validate locally with `bun run preflight`.
 
@@ -58,7 +58,7 @@ Per [ADR-0019](./decisions/0019-v1-wave-narrowed-cycle-feng-yuan.md) (updated 20
 3. **Kanyu / Yaul** — **deferred**: craft bar (风水深度) and GTM/physical-cast gap not ready
 4. **Syel last** — face/palm biometric sensitivity + App Review risk; after Yuun+Yuel stabilize
 
-**Lantai** may be built in parallel after Yuun/Yuel are in review (Xiaohongshu SKU + Notion capture). It is **not** in the four-app ASC queue. Do not block Yuun/Yuel on it.
+**Lantai** may be built in parallel after Yuun/Yuel are in review (Xiaohongshu SKU + custom Shortcuts). It is **not** in the four-app ASC queue. Do not block Yuun/Yuel on it.
 
 Builds can run in parallel; ASC **submission** priority is Yuun → Yuel. Do not force
 Kanyu / Yaul / Syel into the next store wave.

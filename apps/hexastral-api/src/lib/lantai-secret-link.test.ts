@@ -15,7 +15,7 @@ describe('lantai secret-link payload', () => {
     const payload = buildSecretLinkPayload({
       id: 'cfg',
       mode: 'ai',
-      command: { ...command, templateId: 'ledger' },
+      command,
       notionToken: 'secret_should_not_leak',
     })
     expect(payload.notionToken).toBeUndefined()

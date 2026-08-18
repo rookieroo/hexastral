@@ -9,11 +9,12 @@ Wave 2 parallel track. Scaffold is Yuun infrastructure (Expo 54, HMAC, `satellit
 ## v1a (this scaffold)
 
 - Apple / Google portfolio sign-in, then Notion OAuth (`/api/lantai/oauth/*`)
-- 4 manual templates + 1 AI ledger stub
+- **Core:** pick a database already in the user’s workspace, introspect properties, toggle fields
+- Optional starters (journal / inbox / links / habits) only pre-fill a name
 - Config POST → `shortcuts://run-shortcut?name=Lantai&input=text&text=<configId>`
 - Public `GET https://api.hexastral.com/s/:id` (secret-link)
 
-Not in this app: NativeWind 黄历 cards, widget-kit, Watch, `svc-notion`, writing `/Shortcuts/` from the app.
+Not in this app: AI ingest (separate future project), 精气神 capture (Syel **Sync to Notion**), NativeWind 黄历 cards, widget-kit, Watch, `svc-notion`, writing `/Shortcuts/` from the app.
 
 ## Local
 

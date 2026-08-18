@@ -4,8 +4,6 @@ export const PORTFOLIO_TARGET_APP = 'lantai'
 export const REVENUECAT_PRODUCT_IDS = {
   unlock: 'lantai_unlock',
   workspaces: 'lantai_workspaces',
-  monthly: 'lantai_pro_monthly',
-  annual: 'lantai_pro_annual',
 } as const
 
 export const LANTAI_SHORTCUT_NAME = 'Lantai'

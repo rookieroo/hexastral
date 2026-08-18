@@ -14,7 +14,7 @@ describe('lantai access union', () => {
     expect(resolveLantaiAccess([]).unlimitedSlots).toBe(false)
   })
 
-  it('does not let unlock grant AI or extra workspaces', () => {
+  it('does not let unlock grant reserved AI or extra workspaces', () => {
     const unlock = resolveLantaiAccess(['lantai_unlock'])
     expect(unlock.ai).toBe(false)
     expect(unlock.unlimitedWorkspaces).toBe(false)

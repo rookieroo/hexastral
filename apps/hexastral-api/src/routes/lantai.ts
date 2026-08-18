@@ -21,7 +21,9 @@ import {
 } from '../lib/lantai-access'
 import {
   type LantaiCommand,
+  fieldsFromNotionProperties,
   lantaiCreateSchema,
+  lantaiDatabaseIdParam,
   lantaiUpdateSchema,
   modeForTemplate,
 } from '../lib/lantai-command'
@@ -254,6 +256,66 @@ lantaiRoutes.get('/connections/:id/databases', async (c) => {
   return jsonOk(c, { databases })
 })
 
+lantaiRoutes.get('/connections/:id/databases/:databaseId', async (c) => {
+  const userId = requireUserId(c)
+  const connectionId = c.req.param('id')
+  const databaseIdParsed = lantaiDatabaseIdParam.safeParse(c.req.param('databaseId'))
+  if (!databaseIdParsed.success) {
+    return jsonErr(c, 400, ApiErrorCode.invalid_input, 'Invalid database id')
+  }
+  const db = c.get('db')
+  const conn = await db
+    .select()
+    .from(lantaiConnections)
+    .where(and(eq(lantaiConnections.id, connectionId), eq(lantaiConnections.userId, userId)))
+    .get()
+  if (!conn) return jsonErr(c, 404, ApiErrorCode.not_found, 'Connection not found')
+
+  const token = await decryptAesGcm(conn.tokenCiphertext, conn.tokenNonce, requireTokenKey(c))
+  const hex = databaseIdParsed.data.replace(/-/g, '')
+  const notionId =
+    hex.length === 32
+      ? `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+      : databaseIdParsed.data
+  const retrieveRes = await fetch(`https://api.notion.com/v1/databases/${notionId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Notion-Version': NOTION_VERSION,
+    },
+  })
+  if (retrieveRes.status === 404) {
+    return jsonErr(c, 404, ApiErrorCode.not_found, 'Database not found or not shared')
+  }
+  if (!retrieveRes.ok) {
+    console.warn('[lantai] notion retrieve database failed', { status: retrieveRes.status })
+    return jsonErr(c, 502, ApiErrorCode.upstream_unavailable, 'Notion database retrieve failed')
+  }
+  const body: unknown = await retrieveRes.json()
+  const parsed = z
+    .object({
+      id: z.string(),
+      title: z.array(z.object({ plain_text: z.string().optional() })).optional(),
+      properties: z.record(
+        z.string(),
+        z.object({
+          id: z.string(),
+          type: z.string(),
+          name: z.string().optional(),
+        })
+      ),
+    })
+    .safeParse(body)
+  if (!parsed.success) {
+    return jsonErr(c, 502, ApiErrorCode.upstream_unavailable, 'Notion database shape unexpected')
+  }
+  const title = parsed.data.title?.map((t) => t.plain_text ?? '').join('') || 'Untitled'
+  return jsonOk(c, {
+    id: parsed.data.id.replace(/-/g, ''),
+    title,
+    fields: fieldsFromNotionProperties(parsed.data.properties),
+  })
+})
+
 // ── Configs ────────────────────────────────────────────────────────────────
 
 function parseCommand(json: string): LantaiCommand {
@@ -309,6 +371,9 @@ lantaiRoutes.post('/configs', zValidator('json', lantaiCreateSchema), async (c) 
   if (body.command.databaseId.length === 0) {
     return jsonErr(c, 400, ApiErrorCode.invalid_input, 'databaseId is required')
   }
+  if (!body.command.fields.some((f) => f.enabled)) {
+    return jsonErr(c, 400, ApiErrorCode.invalid_input, 'At least one field must be enabled')
+  }
 
   const id = crypto.randomUUID()
   const now = new Date().toISOString()
@@ -326,7 +391,7 @@ lantaiRoutes.post('/configs', zValidator('json', lantaiCreateSchema), async (c) 
   return jsonOk(c, { id, mode }, 201)
 })
 
-lantaiRoutes.patch('/configs/:id', zValidator('json', lantaiUpdateSchema), async (c) => {
+lantaiRoutes.put('/configs/:id', zValidator('json', lantaiUpdateSchema), async (c) => {
   const userId = requireUserId(c)
   const id = c.req.param('id')
   const body = c.req.valid('json')
@@ -352,6 +417,9 @@ lantaiRoutes.patch('/configs/:id', zValidator('json', lantaiUpdateSchema), async
   }
 
   const mode = modeForTemplate(body.command.templateId)
+  if (!body.command.fields.some((f) => f.enabled)) {
+    return jsonErr(c, 400, ApiErrorCode.invalid_input, 'At least one field must be enabled')
+  }
   const now = new Date().toISOString()
   await db
     .update(lantaiConfigs)
@@ -390,20 +458,8 @@ lantaiRoutes.delete('/configs/:id', async (c) => {
   return jsonOk(c, { revoked: true })
 })
 
-/** v1b stub — AI jobs require lantai_pro. */
+/** Not a Lantai product path — AI ingest is a separate future app. */
 lantaiRoutes.post('/ai/jobs', async (c) => {
-  const userId = requireUserId(c)
-  const access = resolveLantaiAccess(await lantaiKeysForUser(c, userId))
-  if (!access.ai) {
-    return jsonErr(
-      c,
-      402,
-      ApiErrorCode.subscription_required,
-      'Lantai Pro required for AI templates',
-      {
-        productId: 'lantai_pro_monthly',
-      }
-    )
-  }
-  return jsonErr(c, 501, ApiErrorCode.generation_failed, 'AI ingest ships in M1b')
+  requireUserId(c)
+  return jsonErr(c, 501, ApiErrorCode.generation_failed, 'AI ingest is not part of Lantai')
 })

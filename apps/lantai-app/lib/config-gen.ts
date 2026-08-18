@@ -1,8 +1,8 @@
 /**
- * Official v1 templates (4 manual + 1 AI). Extra JSON packs stay out of IA.
+ * Custom database is the product. Official starters are optional presets.
  */
 
-export const LANTAI_TEMPLATE_IDS = ['journal', 'inbox', 'bookmark', 'habit', 'ledger'] as const
+export const LANTAI_TEMPLATE_IDS = ['custom', 'journal', 'inbox', 'bookmark', 'habit'] as const
 export type LantaiTemplateId = (typeof LANTAI_TEMPLATE_IDS)[number]
 
 export type LantaiMode = 'manual' | 'ai'
@@ -25,84 +25,55 @@ export interface LantaiCommand {
 }
 
 export interface LantaiTemplateMeta {
-  id: LantaiTemplateId
+  id: Exclude<LantaiTemplateId, 'custom'>
   mode: LantaiMode
   defaultName: string
-  defaultFields: LantaiFieldSpec[]
 }
 
-export const LANTAI_TEMPLATES: readonly LantaiTemplateMeta[] = [
-  {
-    id: 'journal',
-    mode: 'manual',
-    defaultName: 'Journal',
-    defaultFields: [
-      { id: 'title', name: 'Title', type: 'title', enabled: true },
-      { id: 'body', name: 'Body', type: 'rich_text', enabled: true },
-      { id: 'tags', name: 'Tags', type: 'multi_select', enabled: true },
-    ],
-  },
-  {
-    id: 'inbox',
-    mode: 'manual',
-    defaultName: 'Inbox',
-    defaultFields: [
-      { id: 'title', name: 'Task', type: 'title', enabled: true },
-      { id: 'due', name: 'Due', type: 'date', enabled: true },
-    ],
-  },
-  {
-    id: 'bookmark',
-    mode: 'manual',
-    defaultName: 'Links',
-    defaultFields: [
-      { id: 'title', name: 'Title', type: 'title', enabled: true },
-      { id: 'url', name: 'URL', type: 'url', enabled: true },
-      { id: 'note', name: 'Note', type: 'rich_text', enabled: true },
-    ],
-  },
-  {
-    id: 'habit',
-    mode: 'manual',
-    defaultName: 'Habits',
-    defaultFields: [
-      { id: 'title', name: 'Habit', type: 'title', enabled: true },
-      { id: 'date', name: 'Date', type: 'date', enabled: true },
-    ],
-  },
-  {
-    id: 'ledger',
-    mode: 'ai',
-    defaultName: 'Ledger',
-    defaultFields: [
-      { id: 'title', name: 'Merchant', type: 'title', enabled: true },
-      { id: 'amount', name: 'Amount', type: 'number', enabled: true },
-      { id: 'date', name: 'Date', type: 'date', enabled: true },
-    ],
-  },
+export const LANTAI_STARTER_TEMPLATES: readonly LantaiTemplateMeta[] = [
+  { id: 'journal', mode: 'manual', defaultName: 'Journal' },
+  { id: 'inbox', mode: 'manual', defaultName: 'Inbox' },
+  { id: 'bookmark', mode: 'manual', defaultName: 'Links' },
+  { id: 'habit', mode: 'manual', defaultName: 'Habits' },
 ]
 
-export function templateById(id: LantaiTemplateId): LantaiTemplateMeta {
-  const found = LANTAI_TEMPLATES.find((t) => t.id === id)
-  if (!found) {
-    const fallback = LANTAI_TEMPLATES[0]
-    if (!fallback) throw new Error('LANTAI_TEMPLATES empty')
-    return fallback
-  }
-  return found
+export function isTemplateId(value: string | undefined): value is LantaiTemplateId {
+  return Boolean(value && (LANTAI_TEMPLATE_IDS as readonly string[]).includes(value))
 }
 
-export function buildDefaultCommand(
-  templateId: LantaiTemplateId,
-  databaseId: string,
-  name?: string
-): LantaiCommand {
-  const meta = templateById(templateId)
+export function starterName(id: LantaiTemplateId): string | null {
+  if (id === 'custom') return null
+  return LANTAI_STARTER_TEMPLATES.find((t) => t.id === id)?.defaultName ?? null
+}
+
+export function mergeNotionFields(
+  live: LantaiFieldSpec[],
+  saved: LantaiFieldSpec[] | undefined
+): LantaiFieldSpec[] {
+  if (!saved?.length) return live
+  const byId = new Map(saved.map((f) => [f.id, f]))
+  const byName = new Map(saved.map((f) => [f.name, f]))
+  return live.map((field) => {
+    const prev = byId.get(field.id) ?? byName.get(field.name)
+    if (!prev) return field
+    return {
+      ...field,
+      enabled: field.type === 'title' ? true : prev.enabled,
+    }
+  })
+}
+
+export function buildCommand(input: {
+  templateId: LantaiTemplateId
+  databaseId: string
+  name: string
+  fields: LantaiFieldSpec[]
+}): LantaiCommand {
   return {
     schemaVersion: 1,
-    name: name ?? meta.defaultName,
-    templateId,
-    databaseId,
-    fields: meta.defaultFields.map((f) => ({ ...f })),
+    name: input.name,
+    templateId: input.templateId,
+    databaseId: input.databaseId,
+    fields: input.fields,
   }
 }

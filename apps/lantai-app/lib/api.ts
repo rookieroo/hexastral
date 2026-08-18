@@ -54,6 +54,18 @@ export async function createConfig(input: {
   return readJson<{ id: string; mode: 'manual' | 'ai' }>(res)
 }
 
+export async function updateConfig(
+  id: string,
+  command: LantaiCommand
+): Promise<{ id: string; mode: 'manual' | 'ai' } | null> {
+  const res = await signedApiFetch({
+    method: 'PUT',
+    path: `/api/lantai/configs/${encodeURIComponent(id)}`,
+    body: { command },
+  })
+  return readJson<{ id: string; mode: 'manual' | 'ai' }>(res)
+}
+
 export async function revokeConfig(id: string): Promise<boolean> {
   const res = await signedApiFetch({ method: 'DELETE', path: `/api/lantai/configs/${id}` })
   return res?.ok === true
@@ -64,6 +76,12 @@ export interface NotionDatabaseOption {
   title: string
 }
 
+export interface NotionDatabaseSchema {
+  id: string
+  title: string
+  fields: LantaiCommand['fields']
+}
+
 export async function listDatabases(connectionId: string): Promise<NotionDatabaseOption[]> {
   const res = await signedApiFetch({
     method: 'GET',
@@ -71,4 +89,15 @@ export async function listDatabases(connectionId: string): Promise<NotionDatabas
   })
   const data = await readJson<{ databases: NotionDatabaseOption[] }>(res)
   return data?.databases ?? []
+}
+
+export async function getDatabaseSchema(
+  connectionId: string,
+  databaseId: string
+): Promise<NotionDatabaseSchema | null> {
+  const res = await signedApiFetch({
+    method: 'GET',
+    path: `/api/lantai/connections/${encodeURIComponent(connectionId)}/databases/${encodeURIComponent(databaseId)}`,
+  })
+  return readJson<NotionDatabaseSchema>(res)
 }

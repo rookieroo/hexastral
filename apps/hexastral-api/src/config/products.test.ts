@@ -44,7 +44,7 @@ describe('episodic consumable catalog (ADR-0013 P2.2)', () => {
     expect(ledgerCreditTypeForConsumable('coincast_cast')).toBeNull()
   })
 
-  it('registers Lantai SKUs (unlock / workspaces / pro) without packing AI into the buyout', () => {
+  it('registers Lantai buyouts; reserved pro SKUs do not include unlock', () => {
     const unlock = getProduct('lantai_unlock')
     expect(unlock).toBeDefined()
     if (!unlock || unlock.kind !== 'single_purchase') throw new Error('lantai_unlock')

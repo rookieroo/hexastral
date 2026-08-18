@@ -44,6 +44,20 @@ Ban only **census 铁口** (已婚/未婚、有N个孩子、家人性格档案).
 
 **Do not** call Yuun `/api/auspice/*` from Syel. Shared cycle compute only behind faceoracle-owned routes + `faceoracle_pro` server gate.
 
+## Notion export (optional)
+
+Capture stays in Syel (consent → three photos → birth → reading). **Do not** collect 精气神 through Lantai or Shortcuts.
+
+After a reading, one **Sync to Notion** control:
+
+- Same portfolio identity as Lantai. Reuse `lantai_connections` (the user connects Notion once in Lantai).
+- Writes a structured snapshot row + schematic overlay + `syel://` deep link.
+- Default: **no source photos** into Notion or HexAstral disk (ADR-0028).
+- No Lantai connection → prompt to open Lantai and connect a workspace once.
+- Not a Lantai SKU. Not an AI template. Ledger / diet / custom prompts are a **separate future app**, not Syel and not Lantai.
+
+See [apps/lantai/plan.md](../lantai/plan.md) §3.
+
 ## Report architecture
 
 - **Method:** 面相 + 掌相 + 八字 **互证** (folk 算命 stack). Form shows what is visible; chart supplies timing windows; neither path alone carries the brief.

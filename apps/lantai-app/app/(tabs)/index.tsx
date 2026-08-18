@@ -1,7 +1,7 @@
 import { useTheme } from '@zhop/core-ui'
 import { getPortfolioUserId } from '@zhop/satellite-runtime'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { ChevronRight } from 'lucide-react-native'
+import { ChevronRight, Plus } from 'lucide-react-native'
 import { useCallback, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -45,6 +45,23 @@ export default function LantaiSlotsScreen() {
       <Text style={{ color: colors.secondary, fontSize: 15 }}>{t('subtitle')}</Text>
       <Text style={{ color: colors.dim, fontSize: 13 }}>{t('slotsFreeCap')}</Text>
 
+      <Pressable
+        onPress={() => router.push(signedIn ? '/config/new' : '/connect')}
+        style={{
+          borderWidth: 0.5,
+          borderRadius: 0,
+          borderColor: colors.separator,
+          backgroundColor: colors.card,
+          padding: spacing.md,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Text style={{ color: colors.text, fontSize: 16 }}>{t('slotsAdd')}</Text>
+        <Plus color={colors.text} size={18} />
+      </Pressable>
+
       {!signedIn ? (
         <Text style={{ color: colors.secondary, marginTop: spacing.md }}>{t('signedOut')}</Text>
       ) : null}
@@ -71,7 +88,9 @@ export default function LantaiSlotsScreen() {
           <View style={{ flex: 1, gap: 4 }}>
             <Text style={{ color: colors.text, fontSize: 16 }}>{row.command.name}</Text>
             <Text style={{ color: colors.secondary, fontSize: 13 }}>
-              {templateLabel(row.command.templateId)}
+              {row.command.templateId === 'custom'
+                ? t('templateCustom')
+                : templateLabel(row.command.templateId)}
             </Text>
           </View>
           <ChevronRight color={colors.dim} size={18} />

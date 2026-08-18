@@ -9,7 +9,7 @@ export interface LantaiAccess {
   unlimitedSlots: boolean
   /** Second+ Notion workspace: workspaces buyout only. */
   unlimitedWorkspaces: boolean
-  /** AI templates (ledger): subscription only. Unlock does not include AI. */
+  /** Reserved for a future AI ingest app sharing lantai_pro. Unused by Lantai v1. */
   ai: boolean
 }
 
