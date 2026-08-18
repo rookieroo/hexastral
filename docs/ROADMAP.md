@@ -23,16 +23,19 @@ remain for future reuse). Legacy `hexastral-app` is also not a launch target.
 
 **Syel (post-wave):** independent satellite (`apps/xingqi-app`, display **Syel**) — three photos (L/R palm + face) + birth Form + dual IAP (consumable ≥ $9.99 + `faceoracle_pro` Timeline with photo-slot quota + event table for push). Spec: [ADR-0028](./decisions/0028-face-oracle-dual-track.md) · [apps/xingqi/product.md](./apps/xingqi/product.md).
 
+**Lantai (parallel track, not this four-app wave):** Notion capture iOS app (`apps/lantai-app`, display **Lantai** / Flare for Notion). Public API lives on hexastral-api `/api/lantai/*` (not a public `services/*` worker). GTM via Xiaohongshu + TestFlight; Syel’s timeline story ships as a Notion snapshot template (v2), not a standalone Syel launch. Plan: [apps/lantai/plan.md](./apps/lantai/plan.md).
+
 ---
 
 ## Shared backend (`hexastral-api`)
 
-One Worker hosts all four apps:
+One Worker hosts launch-wave apps, plus Lantai when wired:
 - `/api/auspice/*` — Yuun almanac + personal calendar
 - `/api/bonds/*` — Yuel bond graph (HMAC, sign-in required)
 - `/api/feng/*` — Feng chapters
 - `/api/divination/*` — CoinCast casting (when wired)
 - `/api/portfolio/auth/{apple,google}` — unified identity
+- `/api/lantai/*` — Lantai Notion OAuth, configs, AI jobs (HMAC); public `GET /s/:id` for Shortcuts (secret-link)
 
 Deploy: `cd apps/hexastral-api && bun deploy`. No CI — validate locally with `bun run preflight`.
 
@@ -54,6 +57,8 @@ Per [ADR-0019](./decisions/0019-v1-wave-narrowed-cycle-feng-yuan.md) (updated 20
 2. **Yuel** — portfolio upsell; Yuun 亲友 carry-over is the moat (**W2 live / brand host open**)
 3. **Kanyu / Yaul** — **deferred**: craft bar (风水深度) and GTM/physical-cast gap not ready
 4. **Syel last** — face/palm biometric sensitivity + App Review risk; after Yuun+Yuel stabilize
+
+**Lantai** may be built in parallel after Yuun/Yuel are in review (Xiaohongshu SKU + Notion capture). It is **not** in the four-app ASC queue. Do not block Yuun/Yuel on it.
 
 Builds can run in parallel; ASC **submission** priority is Yuun → Yuel. Do not force
 Kanyu / Yaul / Syel into the next store wave.
@@ -90,6 +95,7 @@ Detail: [publish/brand-aso-gtm-plan.md](./publish/brand-aso-gtm-plan.md) § Web 
 | Yuel solo-first + report | [apps/yuel/status.md](./apps/yuel/status.md) · [ADR-0021](./decisions/0021-kindred-v2-solo-first-mingpan-frame.md) |
 | Feng polish + acceptance | [apps/feng/fix-plan.md](./apps/feng/fix-plan.md) · [acceptance-standard.md](./apps/feng/acceptance-standard.md) |
 | CoinCast MVP | [apps/coincast/README.md](./apps/coincast/README.md) |
+| Lantai (parallel) | [apps/lantai/plan.md](./apps/lantai/plan.md) |
 | Shared store steps | [publish/launch-checklist.md](./publish/launch-checklist.md) |
 
 ---

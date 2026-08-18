@@ -84,6 +84,12 @@ Design assets: [design/](./design/) · Market research: [research/](./research/)
 |---|---|
 | [apps/coincast/README.md](./apps/coincast/README.md) | MVP scope, positioning, TODO |
 
+### Lantai (`apps/lantai-app`) — parallel track
+
+| Doc | Purpose |
+|---|---|
+| [apps/lantai/plan.md](./apps/lantai/plan.md) | Notion capture iOS app; hexastral-api `/api/lantai`; Yuun scaffold + zinc |
+
 ### Syel (`apps/xingqi-app`) — post-wave
 
 | Doc | Purpose |
