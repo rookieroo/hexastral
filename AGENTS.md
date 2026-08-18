@@ -21,7 +21,7 @@ Repo overview: [README.md](README.md).
 apps/  (backend)   hexastral-api
        (web)       hexastral-web · useone-tech (LLC corp site)
        (mobile)    auspice-app (Yuun) · kindred-app (Yuel) · feng-app · coin-cast-app
-                   · xingqi-app (Syel, post-V1)
+                   · xingqi-app (Syel, post-V1) · lantai-app (Lantai, parallel)
 services/          svc-{astro,notify,geocode,mailer,admin-notify,signal,tail,feng,ad-convert}
 packages/          astro-core · hexastral-client · satellite-runtime · scenario-* + others
 docs/              README.md · ROADMAP.md · apps/ · publish/ · setup · decisions/
@@ -35,7 +35,7 @@ Launch scope: **[docs/ROADMAP.md](docs/ROADMAP.md)** · Doc index: **[docs/READM
 |---|---|---|
 | Natal / chart | kindred-app | Required |
 | Optional natal | feng-app | Optional (some chapters degrade without it) |
-| Utility / oracle | auspice-app, coin-cast-app | Not required |
+| Utility / oracle | auspice-app, coin-cast-app, lantai-app | Not required |
 | Face / palm oracle | xingqi-app (Syel) | Required (ADR-0028 — with L/R palm + face photos) |
 
 ## AI rules — where to look

@@ -45,7 +45,7 @@ import { createContext, type ReactNode, useContext, useMemo } from 'react'
  *   - 'feng'      — 墨青 + copper
  *
  * Satellites (re-exported from hexastral-tokens):
- *   - 'compass' / 'coincast' / 'faceoracle' / 'dreamoracle' / 'numerology'
+ *   - 'compass' / 'coincast' / 'faceoracle' / 'dreamoracle' / 'numerology' / 'lantai'
  */
 export type CoreUIBrand = 'hexastral' | 'yuan' | 'feng' | SatelliteKey
 

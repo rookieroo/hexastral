@@ -579,6 +579,8 @@ export const singlePurchases = sqliteTable(
         'compatibility',
         'feng_analysis',
         'feng_analysis_premium',
+        'lantai_unlock',
+        'lantai_workspaces',
       ],
     }).notNull(),
     /** RevenueCat S2S event.id — 用于幂等去重（UNIQUE） */
@@ -2565,4 +2567,83 @@ export const lifeTimelineCache = sqliteTable(
     unique('ltc_context_key_uq').on(t.contextKey),
     index('ltc_expires_at_idx').on(t.expiresAt),
   ]
+)
+
+// ==================== Lantai (Flare for Notion) ====================
+//
+// Notion DB is the record SSOT. D1 stores connections, shortcut configs, and
+// AI usage counters only — never the captured rows.
+
+export const lantaiConnections = sqliteTable(
+  'lantai_connections',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    workspaceId: text('workspace_id').notNull(),
+    workspaceName: text('workspace_name'),
+    /** AES-256-GCM ciphertext (base64). Key lives in Workers secrets only. */
+    tokenCiphertext: text('token_ciphertext').notNull(),
+    /** 12-byte nonce (base64). */
+    tokenNonce: text('token_nonce').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    updatedAt: text('updated_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    unique('lantai_conn_user_ws_uq').on(t.userId, t.workspaceId),
+    index('lantai_conn_user_idx').on(t.userId),
+  ]
+)
+
+export const lantaiConfigs = sqliteTable(
+  'lantai_configs',
+  {
+    /** UUID v4 — secret-link id for GET /s/:id */
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    connectionId: text('connection_id')
+      .notNull()
+      .references(() => lantaiConnections.id, { onDelete: 'cascade' }),
+    /** Locked for free-tier updates; create/update must match body.database_id. */
+    databaseId: text('database_id').notNull(),
+    mode: text('mode', { enum: ['manual', 'ai'] }).notNull(),
+    commandJson: text('command_json').notNull(),
+    /** Set on revoke. Delete does not restore free-slot quota. */
+    revokedAt: text('revoked_at'),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    updatedAt: text('updated_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    index('lantai_cfg_user_idx').on(t.userId),
+    index('lantai_cfg_user_revoked_idx').on(t.userId, t.revokedAt),
+  ]
+)
+
+/** Per-template UTC-month counters for lantai_pro fair-use (v1b+). */
+export const lantaiUsage = sqliteTable(
+  'lantai_usage',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    templateId: text('template_id').notNull(),
+    /** UTC calendar month `YYYY-MM`. */
+    period: text('period').notNull(),
+    count: integer('count').notNull().default(0),
+    updatedAt: text('updated_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.templateId, t.period] })]
 )

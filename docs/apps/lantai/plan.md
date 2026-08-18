@@ -1,6 +1,6 @@
 # Lantai（Flare for Notion）— 产品与落地计划
 
-> 状态：草案 **v0.5** · 2026-08-18
+> 状态：草案 **v0.5** · 2026-08-18 · **M1a 脚手架已进仓库**（`apps/lantai-app` + `/api/lantai` + `GET /s/:id`）。未跑 `db:migrate:prod`；M0 真机实验 / v1b AI / ASC+RC 商品仍待办。
 > 代码落位：`apps/lantai-app` + `hexastral-api` `/api/lantai/*`（公开面）
 > `services/svc-notion`：**M2 可选项**，v1 不建公开 Worker
 > 姊妹文档：待建 `product.md`（沿用 `docs/apps/xingqi/product.md` 惯例）

@@ -267,6 +267,15 @@ webhookRoutes.post('/revenuecat', async (c) => {
       productId,
       status: 'purchased',
     })
+    if (product.grantsEntitlements) {
+      for (const key of product.grantsEntitlements) {
+        await grantEntitlement(db, appUserId, key, {
+          plan: null,
+          productId,
+          expiresAt: null,
+        })
+      }
+    }
     await c.env.GUARD_KV.put(dedupKey, '1', { expirationTtl: RC_EVENT_DEDUP_TTL_SECONDS })
     alertAdmin(c.env.SVC_ADMIN_NOTIFY, {
       title: 'IAP: single reading purchased',

@@ -77,6 +77,19 @@ export interface CloudflareBindings {
    */
   GOOGLE_OAUTH_AUDIENCES?: string
   /**
+   * Lantai Notion public integration — new client, never reuse useone.online.
+   * Put via `bunx wrangler secret put` (not wrangler.jsonc vars).
+   */
+  NOTION_CLIENT_ID?: string
+  NOTION_CLIENT_SECRET?: string
+  /**
+   * AES-256-GCM key material for Notion access tokens. Any length; SHA-256
+   * derived to 32 bytes. Fail closed when unset.
+   */
+  LANTAI_TOKEN_KEY?: string
+  /** Override OAuth redirect; default https://api.hexastral.com/api/lantai/oauth/callback */
+  LANTAI_OAUTH_REDIRECT_URI?: string
+  /**
    * KV cache bust version for archetype presets.
    * Bump from 'v1' → 'v2' after editing D1 content to invalidate all stale KV entries.
    * Defaults to 'v1' if unset.

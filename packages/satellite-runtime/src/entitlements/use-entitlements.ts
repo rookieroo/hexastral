@@ -21,6 +21,9 @@ export type EntitlementKey =
   | 'universe_pro'
   | 'coincast_pro'
   | 'faceoracle_pro'
+  | 'lantai_unlock'
+  | 'lantai_workspaces'
+  | 'lantai_pro'
 
 export interface EntitlementSnapshot {
   active: boolean
@@ -43,6 +46,9 @@ const ENTITLEMENT_KEYS: readonly EntitlementKey[] = [
   'universe_pro',
   'coincast_pro',
   'faceoracle_pro',
+  'lantai_unlock',
+  'lantai_workspaces',
+  'lantai_pro',
 ] as const
 
 const INITIAL_STATE: EntitlementsState = {
@@ -52,6 +58,9 @@ const INITIAL_STATE: EntitlementsState = {
   universe_pro: INITIAL_SNAPSHOT,
   coincast_pro: INITIAL_SNAPSHOT,
   faceoracle_pro: INITIAL_SNAPSHOT,
+  lantai_unlock: INITIAL_SNAPSHOT,
+  lantai_workspaces: INITIAL_SNAPSHOT,
+  lantai_pro: INITIAL_SNAPSHOT,
 }
 
 function snapshotFromCustomerInfo(info: CustomerInfo): EntitlementsState {

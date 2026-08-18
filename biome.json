@@ -115,6 +115,7 @@
         "apps/kindred-app/**",
         "apps/coin-cast-app/**",
         "apps/xingqi-app/**",
+        "apps/lantai-app/**",
         "services/**"
       ],
       "linter": {

@@ -12,7 +12,7 @@
  */
 
 import type { ModeTokens } from '@zhop/hexastral-tokens/palette'
-import { ink } from '@zhop/hexastral-tokens/palette'
+import { ink, zinc } from '@zhop/hexastral-tokens/palette'
 
 // ── Compass / Fēng — shares the flagship Fēng palette ──────────────────────
 
@@ -169,6 +169,7 @@ export type SatelliteKey =
   | 'dreamoracle'
   | 'numerology'
   | 'cycle'
+  | 'lantai'
 
 export interface SatelliteAccent {
   accent: string
@@ -241,6 +242,14 @@ export function getSatelliteAccent(key: SatelliteKey, accentVariant?: string): S
         surfaceTint: v.accentGhost,
       }
     }
+    case 'lantai':
+      // Zinc-only — Notion light-first. One cool-grey accent; no cinnabar / ink-gold / jade.
+      return {
+        accent: zinc[900],
+        accentBright: zinc[800],
+        accentMute: 'rgba(24,24,27,0.45)',
+        accentGhost: 'rgba(24,24,27,0.08)',
+      }
   }
 }
 

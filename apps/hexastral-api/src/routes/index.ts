@@ -36,6 +36,8 @@ export { healthRoutes } from './health'
 export { internalAlmanacRoutes } from './internal-almanac'
 // Kindred relationship push scheduler — internal (X-Internal-Key), svc-notify cron
 export { kindredPushRoutes } from './kindred-push'
+export { lantaiRoutes } from './lantai'
+export { lantaiSecretRoutes } from './lantai-secret'
 // Life Log
 export { lifeEventRoutes } from './life-events'
 // Media proxy — user avatars, palm photos, floor plan images (hexastral-media R2)

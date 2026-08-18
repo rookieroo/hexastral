@@ -176,6 +176,11 @@
     // Dev paywall bypass — must stay "0" in production App Store builds
     "ALLOW_DEV_PRO": "0"
   },
+  // Lantai (Flare for Notion) secrets — `bunx wrangler secret put` from this dir:
+  //   NOTION_CLIENT_ID / NOTION_CLIENT_SECRET  (new public integration; do not reuse useone.online)
+  //   LANTAI_TOKEN_KEY                         (AES-256-GCM key material for Notion tokens)
+  // Optional: LANTAI_OAUTH_REDIRECT_URI (defaults to https://api.hexastral.com/api/lantai/oauth/callback)
+
   // Tail Worker — centralized log aggregation
   "tail_consumers": [
     {

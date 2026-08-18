@@ -52,6 +52,8 @@ import {
   hexagramRoutes,
   internalAlmanacRoutes,
   kindredPushRoutes,
+  lantaiRoutes,
+  lantaiSecretRoutes,
   lifeEventRoutes,
   mediaRoutes,
   natalRoutes,
@@ -545,6 +547,21 @@ app.use('/api/kindred/push/*', async (c, next) => {
 })
 app.route('/api/kindred/push', kindredPushRoutes)
 
+app.use('/api/lantai/*', async (c, next) => {
+  // Notion OAuth callback is a browser redirect — no HMAC.
+  if (c.req.method === 'GET' && c.req.path === '/api/lantai/oauth/callback') return next()
+  return hmacVerify(c, next)
+})
+app.route('/api/lantai', lantaiRoutes)
+
+app.use('/s/:id', async (c, next) => {
+  const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
+  const { success } = await c.env.RATE_LIMITER.limit({ key: `lantai-s-ip:${ip}` })
+  if (!success) return c.json({ error: 'Too many requests' }, 429)
+  await next()
+})
+app.route('/s', lantaiSecretRoutes)
+
 // Contacts — 通讯录隐私匹配
 app.route('/api/contacts', contactRoutes)
 
@@ -728,6 +745,8 @@ const _rpcApp = new Hono<AppEnv>()
   .route('/api/feng/maps', fengMapRoutes)
   .route('/api/feng/reports', fengReportRoutes)
   .route('/api/feng/declination', fengDeclinationRoutes)
+  .route('/api/lantai', lantaiRoutes)
+  .route('/s', lantaiSecretRoutes)
   .route('/api/dev', devRoutes)
 
 export type AppType = typeof _rpcApp

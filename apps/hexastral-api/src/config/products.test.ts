@@ -44,6 +44,27 @@ describe('episodic consumable catalog (ADR-0013 P2.2)', () => {
     expect(ledgerCreditTypeForConsumable('coincast_cast')).toBeNull()
   })
 
+  it('registers Lantai SKUs (unlock / workspaces / pro) without packing AI into the buyout', () => {
+    const unlock = getProduct('lantai_unlock')
+    expect(unlock).toBeDefined()
+    if (!unlock || unlock.kind !== 'single_purchase') throw new Error('lantai_unlock')
+    expect(unlock.grantsEntitlements).toEqual(['lantai_unlock'])
+
+    const workspaces = getProduct('lantai_workspaces')
+    expect(workspaces).toBeDefined()
+    if (!workspaces || workspaces.kind !== 'single_purchase') throw new Error('lantai_workspaces')
+    expect(workspaces.grantsEntitlements).toContain('lantai_unlock')
+    expect(workspaces.grantsEntitlements).toContain('lantai_workspaces')
+
+    for (const productId of ['lantai_pro_monthly', 'lantai_pro_annual'] as const) {
+      const p = getProduct(productId)
+      expect(p).toBeDefined()
+      if (!p || !isSubscriptionProduct(p)) throw new Error(productId)
+      expect(p.grantsEntitlements).toEqual(['lantai_pro'])
+      expect(p.grantsEntitlements).not.toContain('lantai_unlock')
+    }
+  })
+
   it('defines a positive universe allowance for every credit type', () => {
     for (const [creditType, amount] of Object.entries(UNIVERSE_MONTHLY_ALLOWANCE)) {
       expect(amount, creditType).toBeGreaterThan(0)

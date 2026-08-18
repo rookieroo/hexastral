@@ -12,6 +12,9 @@ export type EntitlementKey =
   | 'universe_pro'
   | 'coincast_pro'
   | 'faceoracle_pro'
+  | 'lantai_unlock'
+  | 'lantai_workspaces'
+  | 'lantai_pro'
 // NOTE: fate is a funnel app — no standalone fate_pro subscription. The
 // `fate_pro` entitlement is universe_pro-only (Universe-Pro users get the Pro
 // experience inside fate, e.g. all chapters unlocked + daily LLM insights).
@@ -54,7 +57,19 @@ export interface ConsumableProduct {
 export interface SinglePurchaseProduct {
   productId: string
   kind: 'single_purchase'
-  singleSku: 'cast' | 'fate_reading' | 'compatibility' | 'feng_analysis' | 'feng_analysis_premium'
+  singleSku:
+    | 'cast'
+    | 'fate_reading'
+    | 'compatibility'
+    | 'feng_analysis'
+    | 'feng_analysis_premium'
+    | 'lantai_unlock'
+    | 'lantai_workspaces'
+  /**
+   * Lifetime / non-consumable entitlements (Lantai unlock SKUs). Episodic
+   * one-shots (feng / fate / cast) omit this and only write `single_purchases`.
+   */
+  grantsEntitlements?: readonly EntitlementKey[]
 }
 
 export type ProductSpec = SubscriptionProduct | ConsumableProduct | SinglePurchaseProduct
@@ -66,6 +81,9 @@ export const ALL_ENTITLEMENT_KEYS: readonly EntitlementKey[] = [
   'universe_pro',
   'coincast_pro',
   'faceoracle_pro',
+  'lantai_unlock',
+  'lantai_workspaces',
+  'lantai_pro',
 ] as const
 
 export const PRODUCTS: readonly ProductSpec[] = [
@@ -235,6 +253,34 @@ export const PRODUCTS: readonly ProductSpec[] = [
     productId: 'hexastral_feng_premium',
     kind: 'single_purchase',
     singleSku: 'feng_analysis_premium',
+  },
+
+  // ── Lantai (Flare for Notion) — catalog only until ASC + RC exist ──────
+  // Slot access = lantai_pro || lantai_unlock (server union, not "sub includes unlock").
+  // Do not write "subscription includes the $9.99 buyout" in App Store metadata.
+  {
+    productId: 'lantai_unlock',
+    kind: 'single_purchase',
+    singleSku: 'lantai_unlock',
+    grantsEntitlements: ['lantai_unlock'],
+  },
+  {
+    productId: 'lantai_workspaces',
+    kind: 'single_purchase',
+    singleSku: 'lantai_workspaces',
+    grantsEntitlements: ['lantai_unlock', 'lantai_workspaces'],
+  },
+  {
+    productId: 'lantai_pro_monthly',
+    kind: 'subscription',
+    plan: 'monthly',
+    grantsEntitlements: ['lantai_pro'],
+  },
+  {
+    productId: 'lantai_pro_annual',
+    kind: 'subscription',
+    plan: 'annual',
+    grantsEntitlements: ['lantai_pro'],
   },
 ] as const
 

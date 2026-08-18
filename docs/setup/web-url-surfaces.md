@@ -16,7 +16,7 @@ SSOT for brand acquisition URLs, first-party attribution cookies, browser pixels
 | Legal | `/privacy/*`, `/terms` | `legal` | No | No |
 | Yuel viral invite | `/resonate/{token}` | `resonate` | Default no | No |
 
-Brand hosts: `yuel` / `yuun` / `kanyu` / `yaul` / `syel` `.hexastral.com`. Engineering ids (`kindred`, `auspice`, `feng`, …) stay in API / RC / DDL `targetApp`.
+Brand hosts: `yuel` / `yuun` / `kanyu` / `yaul` / `syel` `.hexastral.com`. **Lantai** landing is `lantai.hexastral.com` (planned; Worker custom-domain not attached until a public surface exists). Engineering ids (`kindred`, `auspice`, `feng`, `lantai`, …) stay in API / RC / DDL `targetApp`.
 
 ---
 
