@@ -3,7 +3,7 @@ import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import * as ImagePicker from 'expo-image-picker'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Linking, Pressable, Text, useWindowDimensions, View } from 'react-native'
+import { Alert, Linking, Pressable, Text, View } from 'react-native'
 import Animated, {
   Easing,
   runOnJS,
@@ -132,7 +132,6 @@ export function CaptureStudioScreen() {
     ritual?: string
     magic?: string
   }>()
-  const { height } = useWindowDimensions()
   const slotMode = params.mode === 'slot'
   const magicMode = params.magic === '1' && !slotMode
   const entitlements = useEntitlements()
@@ -143,10 +142,11 @@ export function CaptureStudioScreen() {
   const [uris, setUris] = useState<Partial<Record<CapturePart, string>>>({})
   const [bust, setBust] = useState(0)
   const [busy, setBusy] = useState(false)
-  const [stackTargetScreenCenterY, setStackTargetScreenCenterY] = useState<number | null>(null)
+  const [targetLocalTop, setTargetLocalTop] = useState<number | null>(null)
   const [magicTravelY, setMagicTravelY] = useState<number | null>(null)
   const [magicDone, setMagicDone] = useState(!magicMode)
   const magicProgress = useSharedValue(magicMode ? 0 : 1)
+  const magicTravelSv = useSharedValue(0)
   const magicTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const stackAnchorRef = useRef<View>(null)
   const rootRef = useRef<View>(null)
@@ -189,7 +189,6 @@ export function CaptureStudioScreen() {
     return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : magicMode ? 1 : 0
   })()
 
-  const magicStartScreenCenterY = handoff?.startCenterY ?? height * 0.5
   const magicDeltaY = magicTravelY ?? 0
   const lockStackPose = magicMode && !magicDone
 
@@ -202,10 +201,12 @@ export function CaptureStudioScreen() {
   }, [handoff?.startCenterY, magicDone, magicMode, overlayTop])
 
   useEffect(() => {
-    if (!magicMode || magicDone || stackTargetScreenCenterY == null) return
+    if (!magicMode || magicDone || overlayTop == null || targetLocalTop == null) return
     if (magicTravelY != null) return
-    setMagicTravelY(stackTargetScreenCenterY - magicStartScreenCenterY)
-  }, [magicDone, magicMode, magicStartScreenCenterY, magicTravelY, stackTargetScreenCenterY])
+    const travel = targetLocalTop - overlayTop
+    setMagicTravelY(travel)
+    magicTravelSv.value = travel
+  }, [magicDone, magicMode, magicTravelSv, magicTravelY, overlayTop, targetLocalTop])
 
   useEffect(() => {
     if (!magicMode || magicDone || magicTravelY == null) return
@@ -229,7 +230,7 @@ export function CaptureStudioScreen() {
 
   const magicOverlayStyle = useAnimatedStyle(() => ({
     opacity: magicDone ? 0 : 1,
-    transform: [{ translateY: magicDeltaY * magicProgress.value }],
+    transform: [{ translateY: magicTravelSv.value * magicProgress.value }],
   }))
 
   const continueFunnel = useCallback(async () => {
@@ -406,7 +407,7 @@ export function CaptureStudioScreen() {
         gap: spacing.md,
       }}
     >
-      <View style={{ zIndex: 2 }}>
+      <View style={{ zIndex: 2, marginBottom: spacing.sm }}>
         <Text
           style={{
             color: colors.secondary,
@@ -446,15 +447,15 @@ export function CaptureStudioScreen() {
         ref={stackAnchorRef}
         collapsable={false}
         onLayout={() => {
-          if (stackTargetScreenCenterY != null) return
-          stackAnchorRef.current?.measureInWindow((_x, y, _w, h) => {
-            setStackTargetScreenCenterY(y + h / 2)
+          if (targetLocalTop != null) return
+          rootRef.current?.measureInWindow((_x, rootY) => {
+            stackAnchorRef.current?.measureInWindow((_x, targetY) => {
+              setTargetLocalTop(targetY - rootY)
+            })
           })
         }}
         style={{
           marginTop: spacing.lg,
-          paddingTop: 24,
-          opacity: magicMode && !magicDone ? 0 : 1,
           zIndex: 1,
         }}
         pointerEvents={magicMode && !magicDone ? 'none' : 'auto'}

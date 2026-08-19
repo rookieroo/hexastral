@@ -1,6 +1,5 @@
 /**
- * Empty well — same paper/ink chrome as a filled slot.
- * Corner ticks mark the frame; they sit under a photo when one exists.
+ * Empty well — corner brackets + inner frame guide the capture locus.
  */
 
 import { useTheme } from '@zhop/core-ui'
@@ -32,14 +31,14 @@ function Corner({
         left,
         right,
         bottom,
-        width: 10,
-        height: 10,
+        width: 14,
+        height: 14,
         borderColor: color,
-        borderTopWidth: flipY ? 0 : 1,
-        borderBottomWidth: flipY ? 1 : 0,
-        borderLeftWidth: flipX ? 0 : 1,
-        borderRightWidth: flipX ? 1 : 0,
-        opacity: 0.22,
+        borderTopWidth: flipY ? 0 : 1.5,
+        borderBottomWidth: flipY ? 1.5 : 0,
+        borderLeftWidth: flipX ? 0 : 1.5,
+        borderRightWidth: flipX ? 1.5 : 0,
+        opacity: 0.52,
       }}
     />
   )
@@ -47,12 +46,26 @@ function Corner({
 
 export function PolaroidGhost() {
   const { colors } = useTheme()
+  const guide = colors.secondary
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <Corner color={colors.text} top={7} left={7} />
-      <Corner color={colors.text} top={7} right={7} flipX />
-      <Corner color={colors.text} bottom={7} left={7} flipY />
-      <Corner color={colors.text} bottom={7} right={7} flipX flipY />
+    <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+      <View
+        pointerEvents='none'
+        style={{
+          position: 'absolute',
+          top: 10,
+          right: 10,
+          bottom: 10,
+          left: 10,
+          borderWidth: 0.5,
+          borderColor: colors.separator,
+          opacity: 0.85,
+        }}
+      />
+      <Corner color={guide} top={6} left={6} />
+      <Corner color={guide} top={6} right={6} flipX />
+      <Corner color={guide} bottom={6} left={6} flipY />
+      <Corner color={guide} bottom={6} right={6} flipX flipY />
     </View>
   )
 }

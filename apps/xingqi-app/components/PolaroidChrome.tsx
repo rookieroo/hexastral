@@ -1,6 +1,5 @@
 /**
- * Polaroid plate — die-cut paper, photo well, sketched window ink.
- * Filled and empty share this chrome; only the well contents change.
+ * Polaroid plate — die-cut paper, photo well. Filled and empty share this chrome.
  */
 
 import { useTheme } from '@zhop/core-ui'
@@ -41,18 +40,27 @@ export function PolaroidChrome({
   inkDrawn?: SharedValue<number>
 }) {
   const { colors } = useTheme()
+  const wellFill = colors.surfaceTint ?? colors.accentGhost
   const frame: ViewStyle = {
     flex: 1,
     overflow: 'hidden',
-    backgroundColor: colors.card,
-    borderWidth: 0.5,
-    borderColor: colors.separator,
+    backgroundColor: colors.cardElevated ?? colors.card,
+    borderWidth: active ? 1 : 0.5,
+    borderColor: active ? colors.accent : colors.secondary,
     paddingTop: 8,
     paddingHorizontal: 8,
     paddingBottom: 22,
   }
   const inner = (
-    <View style={{ flex: 1, overflow: 'hidden', backgroundColor: colors.bg }}>
+    <View
+      style={{
+        flex: 1,
+        overflow: 'hidden',
+        backgroundColor: wellFill,
+        borderWidth: 0.5,
+        borderColor: colors.separator,
+      }}
+    >
       {children}
       {inkDrawn ? <PolaroidInkFrame active={active} drawn={inkDrawn} /> : null}
     </View>
