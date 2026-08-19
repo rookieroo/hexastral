@@ -395,6 +395,28 @@ export default function SettingsScreen() {
                 onPress={() => {
                   void resetOnboarding().then(() => router.replace('/'))
                 }}
+                divider
+              />
+              <SettingsRow
+                label='Clear consent (dev)'
+                onPress={() => {
+                  void (async () => {
+                    try {
+                      await setCachedBiometricConsent(false)
+                      await clearReadingDraft({ wipePhotos: true })
+                      if (userId) {
+                        try {
+                          await revokeBiometricConsent()
+                        } catch {
+                          // Local reset is enough for dev loops; server revoke may fail offline.
+                        }
+                      }
+                      Alert.alert('DEV', 'Consent cleared')
+                    } catch {
+                      Alert.alert('DEV', 'Failed to clear consent')
+                    }
+                  })()
+                }}
               />
             </SettingsCard>
           </SettingsSection>

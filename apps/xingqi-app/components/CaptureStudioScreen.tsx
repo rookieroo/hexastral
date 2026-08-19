@@ -28,6 +28,7 @@ import {
 } from '@/lib/reading-draft'
 import { showReadingStartedHandoff, startReadingJob } from '@/lib/reading-job'
 import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
+import { POLAROID_STACK_H } from '@/lib/stack-layout'
 
 const PARTS: CapturePart[] = ['palm_l', 'palm_r', 'face']
 const MAGIC_HOLD_MS = 90
@@ -141,7 +142,6 @@ export function CaptureStudioScreen() {
   const [bust, setBust] = useState(0)
   const [busy, setBusy] = useState(false)
   const [stackTargetCenterY, setStackTargetCenterY] = useState<number | null>(null)
-  const [stackTargetHeight, setStackTargetHeight] = useState<number>(0)
   const [magicTravelY, setMagicTravelY] = useState<number | null>(null)
   const [magicDone, setMagicDone] = useState(!magicMode)
   const magicProgress = useSharedValue(magicMode ? 0 : 1)
@@ -186,10 +186,10 @@ export function CaptureStudioScreen() {
   const magicDeltaY = magicTravelY ?? 0
 
   useEffect(() => {
-    if (!magicMode || magicDone || stackTargetCenterY == null || stackTargetHeight <= 0) return
+    if (!magicMode || magicDone || stackTargetCenterY == null) return
     if (magicTravelY != null) return
     setMagicTravelY(stackTargetCenterY - magicStartCenterY)
-  }, [magicDone, magicMode, magicStartCenterY, magicTravelY, stackTargetCenterY, stackTargetHeight])
+  }, [magicDone, magicMode, magicStartCenterY, magicTravelY, stackTargetCenterY])
 
   useEffect(() => {
     if (!magicMode || magicDone || magicTravelY == null) return
@@ -425,9 +425,11 @@ export function CaptureStudioScreen() {
           if (stackTargetCenterY != null) return
           const { y, height: stackH } = e.nativeEvent.layout
           setStackTargetCenterY(y + stackH / 2)
-          setStackTargetHeight(stackH)
         }}
-        style={{ opacity: magicMode && !magicDone ? 0 : 1 }}
+        style={{
+          marginTop: spacing.xs,
+          opacity: magicMode && !magicDone ? 0 : 1,
+        }}
         pointerEvents={magicMode && !magicDone ? 'none' : 'auto'}
       >
         <OffsetPhotoStack
@@ -437,6 +439,7 @@ export function CaptureStudioScreen() {
           onPressPart={(part) => setActivePart(part)}
           spread={poseSpread}
           ritual={poseRitual}
+          compact
         />
       </View>
 
@@ -504,7 +507,7 @@ export function CaptureStudioScreen() {
               position: 'absolute',
               left: spacing.xl,
               right: spacing.xl,
-              top: magicStartCenterY - Math.max(1, stackTargetHeight) / 2,
+              top: magicStartCenterY - POLAROID_STACK_H / 2,
             },
             magicOverlayStyle,
           ]}
@@ -516,6 +519,7 @@ export function CaptureStudioScreen() {
             spread={poseSpread}
             ritual={poseRitual}
             onPressPart={() => undefined}
+            compact
           />
         </Animated.View>
       ) : null}
