@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 
 const DARK_TOKENS_BG = '#09090B'
+const LIGHT_TOKENS_BG = '#FAFAFA'
 const appJsonPath = process.argv[2]
 
 if (!appJsonPath) {
@@ -16,15 +17,18 @@ if (!data.expo) {
   process.exit(1)
 }
 
+const style = data.expo.userInterfaceStyle
+const shellBg = style === 'dark' ? DARK_TOKENS_BG : LIGHT_TOKENS_BG
+
 data.expo.splash = {
   ...(data.expo.splash ?? {}),
-  backgroundColor: DARK_TOKENS_BG,
+  backgroundColor: shellBg,
 }
 data.expo.android = {
   ...(data.expo.android ?? {}),
   adaptiveIcon: {
     ...(data.expo.android?.adaptiveIcon ?? {}),
-    backgroundColor: DARK_TOKENS_BG,
+    backgroundColor: shellBg,
   },
 }
 

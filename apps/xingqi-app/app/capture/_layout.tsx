@@ -1,11 +1,11 @@
-import { darkTokens } from '@zhop/hexastral-tokens/palette'
+import { useTheme } from '@zhop/core-ui'
 import { Stack } from 'expo-router'
 
 /**
- * Three photo steps as a real stack — iOS edge / full-screen back is the only
- * horizontal gesture (no custom pan). Step 1 back → previous root screen (home).
+ * Single stacked-slot capture screen. right/face remain as redirects for old links.
  */
 export default function CaptureLayout() {
+  const { colors } = useTheme()
   return (
     <Stack
       screenOptions={{
@@ -13,7 +13,7 @@ export default function CaptureLayout() {
         animation: 'slide_from_right',
         gestureEnabled: true,
         fullScreenGestureEnabled: true,
-        contentStyle: { flex: 1, backgroundColor: darkTokens.bg },
+        contentStyle: { flex: 1, backgroundColor: colors.bg },
       }}
     >
       <Stack.Screen name='index' />

@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Syel home — mock</title>
+  <style>
+    :root {
+      --bg: #f4f1ea; --fg: #1c1b19; --muted: #6b6862;
+      --line: rgba(28, 27, 25, 0.12); --accent: #2c2a27; --accent-fg: #f4f1ea;
+      --card: #faf8f3; --shadow: rgba(28, 27, 25, 0.14);
+      --phone-w: 390px;
+    }
+    [data-theme="paper"] {
+      --bg: #f4f1ea; --fg: #1c1b19; --muted: #6b6862;
+      --line: rgba(28, 27, 25, 0.12); --accent: #2c2a27; --accent-fg: #f4f1ea;
+      --card: #faf8f3; --shadow: rgba(28, 27, 25, 0.14);
+    }
+    [data-theme="warm"] {
+      --bg: #f6efe6; --fg: #2a221c; --muted: #7a6a5c;
+      --line: rgba(42, 34, 28, 0.12); --accent: #9b4a3c; --accent-fg: #fdf8f3;
+      --card: #fbf6ef; --shadow: rgba(90, 50, 30, 0.14);
+    }
+    [data-theme="ink"] {
+      --bg: #121211; --fg: #eceae4; --muted: #9a978f;
+      --line: rgba(236, 234, 228, 0.12); --accent: #d8d4cb; --accent-fg: #121211;
+      --card: #1a1918; --shadow: rgba(0, 0, 0, 0.45);
+    }
+    [data-theme="jade"] {
+      --bg: #0c0c0b; --fg: #eceae4; --muted: #8a8a82;
+      --line: rgba(236, 234, 228, 0.1); --accent: #3f7b5c; --accent-fg: #f4f1ea;
+      --card: #141413; --shadow: rgba(0, 0, 0, 0.45);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; min-height: 100%; background: #2a2a28; color: #eceae4;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Songti SC", serif;
+    }
+    .page { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; padding: 28px 20px 48px; }
+    .controls { width: min(400px, 100%); display: flex; flex-direction: column; gap: 12px; }
+    .controls h1 { font-size: 18px; margin: 0; }
+    .controls p { margin: 0; font-size: 13px; color: #b5b2aa; line-height: 1.55; }
+    .lbl { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #8a877f; font-family: ui-sans-serif, system-ui, sans-serif; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; }
+    button {
+      font: inherit; cursor: pointer; border: 0.5px solid rgba(236, 234, 228, 0.25);
+      background: transparent; color: inherit; padding: 8px 12px;
+    }
+    button.active { background: #eceae4; color: #121211; border-color: #eceae4; }
+    .phone {
+      width: var(--phone-w); height: 780px; background: var(--bg); color: var(--fg);
+      border: 0.5px solid rgba(255,255,255,0.08); overflow: hidden; position: relative;
+    }
+    .chrome {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 6; pointer-events: none;
+      background: linear-gradient(180deg, var(--bg) 0%, var(--bg) 58%, transparent 100%);
+    }
+    .status {
+      height: 28px; opacity: 0.35; font-size: 11px; display: flex; align-items: flex-end;
+      justify-content: space-between; padding: 0 18px 4px; font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    header.bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 20px 10px;
+    }
+    header.bar .icon-btn {
+      width: 36px; height: 36px; display: grid; place-items: center;
+      border: none; padding: 0; color: var(--fg); background: transparent;
+      pointer-events: auto;
+    }
+    .empty {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 12px 22px 28px; gap: 22px; cursor: pointer; z-index: 2;
+    }
+    .empty[hidden] { display: none !important; }
+    .empty p { margin: 0; color: var(--muted); font-size: 14px; }
+    .stack {
+      position: relative; width: 300px; height: 188px;
+    }
+    .wheel {
+      position: absolute; inset: 0; overflow: hidden; touch-action: none; cursor: ns-resize;
+    }
+    .row-item {
+      position: absolute; left: 0; right: 0; top: 50%;
+      height: 268px; margin-top: -134px;
+      display: flex; flex-direction: column; align-items: center;
+      transform-origin: 50% 48%;
+      pointer-events: none;
+    }
+    .fan { position: relative; width: 300px; height: 168px; pointer-events: auto; flex-shrink: 0; }
+    .fan[data-draft="1"] { cursor: pointer; }
+    .polaroid {
+      position: absolute; width: 108px; height: 136px; background: var(--card);
+      border: 0.5px solid var(--line); box-shadow: 0 8px 22px var(--shadow);
+      padding: 6px 6px 16px; pointer-events: auto;
+    }
+    .polaroid.ghost .photo {
+      background: repeating-linear-gradient(
+        -18deg,
+        color-mix(in srgb, var(--fg) 6%, var(--card)),
+        color-mix(in srgb, var(--fg) 6%, var(--card)) 8px,
+        color-mix(in srgb, var(--fg) 3%, var(--card)),
+        color-mix(in srgb, var(--fg) 3%, var(--card)) 16px
+      );
+    }
+    .polaroid .photo { width: 100%; height: 100%; }
+    .face-g { background: linear-gradient(180deg, #e4d8c8 0%, #b9a089 55%, #7d6a58 100%); }
+    .pl-g { background: linear-gradient(140deg, #d9cfc4, #a09080); }
+    .pr-g { background: linear-gradient(200deg, #d4c8bb, #968574); }
+    .meta {
+      min-height: 48px; margin: 0 0 10px; max-width: 280px; text-align: center;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    .meta .title {
+      font-size: 15px; color: var(--fg); letter-spacing: 0.02em; line-height: 1.25;
+    }
+    .meta .sub {
+      margin-top: 4px; font-size: 12px; color: var(--muted); letter-spacing: 0.01em;
+      line-height: 1.4;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .sheet {
+      display: none; position: absolute; inset: 0; z-index: 30;
+      background: var(--bg); color: var(--fg);
+      flex-direction: column;
+    }
+    .sheet.on { display: flex; }
+    .sheet h2 { margin: 0; font-size: 22px; font-weight: 600; }
+    .sheet .body {
+      flex: 1; overflow: auto; padding: 22px 24px 16px; line-height: 1.7; font-size: 15px;
+    }
+    .sheet .body p { margin: 0 0 16px; color: var(--muted); }
+    .sheet .hint { font-size: 13px; color: var(--muted); opacity: 0.85; }
+    .sheet .foot {
+      padding: 12px 24px 22px; border-top: 0.5px solid var(--line);
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .cta {
+      width: 100%; padding: 14px; background: var(--accent); color: var(--accent-fg);
+      border: none; font-size: 15px; letter-spacing: 0.04em;
+    }
+    .cta:disabled { opacity: 0.32; cursor: not-allowed; }
+    .ghost-btn {
+      width: 100%; padding: 12px; border-color: var(--line); color: var(--fg);
+    }
+    .studio-slots { flex: 1; display: grid; place-items: center; padding-bottom: 12px; }
+    .studio-note { text-align: center; color: var(--muted); font-size: 13px; margin: 0 24px 8px; }
+    .case .body { display: flex; flex-direction: column; gap: 0; padding-top: 18px; }
+    .case-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 0; border-bottom: 0.5px solid var(--line); color: var(--fg);
+      background: none; width: 100%; text-align: left; font-size: 16px;
+    }
+    .case-row span { color: var(--muted); font-size: 13px; }
+    .viewer {
+      display: none; position: absolute; inset: 0;
+      background: color-mix(in srgb, var(--bg) 82%, black); z-index: 20; overflow: hidden;
+    }
+    .viewer.on { display: block; }
+    .viewer .shot {
+      position: absolute; left: 50%; top: 46%; width: 240px; height: 300px;
+      margin: -150px 0 0 -120px; background: var(--card); border: 0.5px solid var(--line);
+      padding: 10px 10px 26px; transform-origin: center;
+    }
+    .viewer .shot .photo { width: 100%; height: 100%; }
+    .viewer .close {
+      position: absolute; left: 22px; right: 22px; bottom: 24px;
+      border-color: var(--line); color: var(--fg);
+    }
+  </style>
+</head>
+<body data-theme="paper">
+  <div class="page">
+    <div class="controls">
+      <h1>Syel home</h1>
+      <p>未录入：堆叠空相框，点一下进入 Opt。已录入：滚轮铺满整屏，最上空相框可点开新一期。每期标题是<strong>locale 日期 + excerpt</strong>。</p>
+      <span class="lbl">Theme</span>
+      <div class="row" id="themes">
+        <button type="button" data-theme="paper" class="active">Paper + ink</button>
+        <button type="button" data-theme="warm">Warm</button>
+        <button type="button" data-theme="ink">Dark ink</button>
+        <button type="button" data-theme="jade">Jade</button>
+      </div>
+      <span class="lbl">State</span>
+      <div class="row" id="states">
+        <button type="button" data-state="empty" class="active">未录入</button>
+        <button type="button" data-state="filled">已录入</button>
+      </div>
+      <span class="lbl">Locale</span>
+      <div class="row" id="locales">
+        <button type="button" data-locale="zh-Hans" class="active">简体</button>
+        <button type="button" data-locale="zh-Hant">繁體</button>
+        <button type="button" data-locale="en">English</button>
+        <button type="button" data-locale="ja">日本語</button>
+      </div>
+      <span class="lbl">How many readings</span>
+      <div class="row" id="counts">
+        <button type="button" data-count="1">1 · 只摊开</button>
+        <button type="button" data-count="3" class="active">3</button>
+        <button type="button" data-count="5">5</button>
+      </div>
+    </div>
+
+    <div class="phone" id="phone">
+      <div class="empty" id="empty">
+        <div class="stack" id="empty-stack"></div>
+        <p>点此录入 · 仅存本机</p>
+      </div>
+      <div class="wheel" id="wheel" hidden></div>
+      <div class="chrome">
+        <div class="status"><span>9:41</span><span></span></div>
+        <header class="bar">
+          <svg width="28" height="28" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M18 36 C24 29 28 27 32 27 C37 27 41 30 46 33" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.34"/>
+            <circle cx="18" cy="36" r="4.4" fill="currentColor" opacity="0.28"/>
+            <circle cx="32" cy="27" r="3.4" fill="currentColor" opacity="0.62"/>
+            <circle cx="46" cy="33" r="2.7" fill="currentColor" opacity="0.95"/>
+          </svg>
+          <button type="button" class="icon-btn" id="case-open" aria-label="印匣">
+            <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+              <rect x="3.8" y="3.8" width="14.4" height="14.4" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <rect x="7" y="7" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            </svg>
+          </button>
+        </header>
+      </div>
+
+      <div class="sheet" id="consent">
+        <div class="body" id="consent-body">
+          <h2>开始前请先阅读</h2>
+          <p>我们将在设备上选择左掌、右掌与面部高清照片，提取结构化特征，并结合你的生辰计算八字大运流年，生成密封的五章形气简报。原图仅在特征分析时上传，服务器处理完成后不会保存原图。</p>
+          <p>这是文化研习简报（位点依据 · 三轴窗口 · 气机对照），不是聊天式看图说话，也不构成命运断语、医疗诊断或专业建议。请勿把它当作处方或疾病判断。</p>
+          <p>你可随时在印匣中撤回同意。撤回后，本机照片草稿与同意记录会被清除，需重新阅读并明确点选同意，才能继续拍照。</p>
+          <p>左掌取纹路与丘位，右掌取对照，面部取形气。三张都要清晰、光线均匀、不要被手指挡住关键位点。</p>
+          <p>解读按期生成。本期简报密封后，位点仍可从本机照片对照打开。聊天只作为简报的追问，不另开一套看图说话。</p>
+          <p class="hint">请滑至文末。看完后，点下方同意才能继续。</p>
+        </div>
+        <div class="foot">
+          <button type="button" class="cta" id="consent-agree" disabled>请先读完</button>
+          <button type="button" class="ghost-btn" id="consent-cancel">取消</button>
+        </div>
+      </div>
+
+      <div class="sheet" id="studio">
+        <div class="studio-slots">
+          <div class="stack" id="studio-stack"></div>
+        </div>
+        <p class="studio-note">左掌 · 右掌 · 面 · 点相框录入（mock 点完成即可）</p>
+        <div class="foot">
+          <button type="button" class="cta" id="studio-done">完成录入</button>
+          <button type="button" class="ghost-btn" id="studio-back">返回</button>
+        </div>
+      </div>
+
+      <div class="sheet case" id="case">
+        <div class="body">
+          <h2>印匣</h2>
+          <button type="button" class="case-row" id="case-period">新一期 <span>拍照</span></button>
+          <button type="button" class="case-row">撤回同意 <span>清除本机草稿</span></button>
+          <button type="button" class="case-row">法律与账户 <span></span></button>
+        </div>
+        <div class="foot">
+          <button type="button" class="ghost-btn" id="case-close">关闭</button>
+        </div>
+      </div>
+
+      <div class="viewer" id="viewer">
+        <div class="shot" id="shot"><div class="photo" id="shot-photo"></div></div>
+        <button type="button" class="close" id="viewer-close">关闭</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const ALL = [
+      {
+        id: 'a', captured: '2026-08-12', tones: ['pl-g', 'pr-g', 'face-g'],
+        excerpts: {
+          'zh-Hans': '金水相涵，午未之交宜守。',
+          'zh-Hant': '金水相涵，午未之交宜守。',
+          en: 'Metal and water hold; stay still at the noon turn.',
+          ja: '金水相涵。午未の境は守って動くな。',
+        },
+      },
+      {
+        id: 'b', captured: '2026-06-03', tones: ['pl-g', 'pr-g', 'face-g'],
+        excerpts: {
+          'zh-Hans': '木气偏旺，形开而神未收。',
+          'zh-Hant': '木氣偏旺，形開而神未收。',
+          en: 'Wood qi runs high; form opens before spirit settles.',
+          ja: '木気が偏り、形は開いても神はまだ収まらない。',
+        },
+      },
+      {
+        id: 'c', captured: '2026-03-18', tones: ['pl-g', 'pr-g', 'face-g'],
+        excerpts: {
+          'zh-Hans': '土金交接，面色与掌丘同停。',
+          'zh-Hant': '土金交接，面色與掌丘同停。',
+          en: 'Earth meets metal; face tone and palm mounts pause together.',
+          ja: '土金の交わり。面色と掌丘が同じところで止まる。',
+        },
+      },
+      {
+        id: 'd', captured: '2025-12-09', tones: ['pl-g', 'pr-g', 'face-g'],
+        excerpts: {
+          'zh-Hans': '水气藏形，位点宜对夜读。',
+          'zh-Hant': '水氣藏形，位點宜對夜讀。',
+          en: 'Water qi hides in form; read the loci against night hours.',
+          ja: '水気が形に隠れる。位点は夜の時間と対照せよ。',
+        },
+      },
+      {
+        id: 'e', captured: '2025-09-21', tones: ['pl-g', 'pr-g', 'face-g'],
+        excerpts: {
+          'zh-Hans': '秋金主令，三轴窗口收束。',
+          'zh-Hant': '秋金主令，三軸窗口收束。',
+          en: 'Autumn metal holds the command; the three-axis window tightens.',
+          ja: '秋金が主令。三軸の窓が収まる。',
+        },
+      },
+    ]
+    const DRAFT_COPY = {
+      'zh-Hans': ['新一期', '点此录入'],
+      'zh-Hant': ['新一期', '點此錄入'],
+      en: ['New period', 'Tap to capture'],
+      ja: ['新しい一期', 'タップして撮影'],
+    }
+    const GAP = 228
+    const CARD_W = 108
+    const FAN_W = 300
+
+    const body = document.body
+    const emptyEl = document.getElementById('empty')
+    const emptyStack = document.getElementById('empty-stack')
+    const studioStack = document.getElementById('studio-stack')
+    const wheel = document.getElementById('wheel')
+    const viewer = document.getElementById('viewer')
+    const shot = document.getElementById('shot')
+    const shotPhoto = document.getElementById('shot-photo')
+    const consent = document.getElementById('consent')
+    const consentBody = document.getElementById('consent-body')
+    const agree = document.getElementById('consent-agree')
+    const studio = document.getElementById('studio')
+    const caseEl = document.getElementById('case')
+    const casePeriod = document.getElementById('case-period')
+
+    let locale = 'zh-Hans'
+    let items = ALL.slice(0, 3)
+    let filled = false
+    let consented = false
+    let readDone = false
+    let scroll = 0
+    let anim = null
+    const view = { s: 1, x: 0, y: 0 }
+
+    const DRAFT = { id: 'draft', draft: true }
+
+    function caption(item) {
+      if (item.draft) return DRAFT_COPY[locale]
+      const date = new Date(item.captured + 'T12:00:00').toLocaleDateString(locale, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+      return [date, item.excerpts[locale]]
+    }
+
+    function track() {
+      return [DRAFT].concat(items)
+    }
+
+    function maxIndex() {
+      return Math.max(0, track().length - 1)
+    }
+
+    function restOnLatest() {
+      scroll = items.length > 0 ? 1 : 0
+    }
+
+    function clamp(n, a, b) { return Math.max(a, Math.min(b, n)) }
+    function lerp(a, b, t) { return a + (b - a) * t }
+    function smooth(t) { return t * t * (3 - 2 * t) }
+
+    function pose(t, part) {
+      const e = smooth(clamp(t, 0, 1))
+      const cx = (FAN_W - CARD_W) / 2
+      if (part === 'palm_l') {
+        return { x: lerp(cx - 7, 8, e), y: lerp(18, 32, e), r: lerp(-2.5, -9, e), z: 1 }
+      }
+      if (part === 'palm_r') {
+        return { x: lerp(cx + 7, FAN_W - CARD_W - 8, e), y: lerp(22, 38, e), r: lerp(2.5, 9, e), z: 1 }
+      }
+      return { x: lerp(cx, cx, e), y: lerp(8, 0, e), r: lerp(-0.4, -1.4, e), z: 3 }
+    }
+
+    function drawStack(el, spread, tones) {
+      el.innerHTML = ''
+      ;['palm_l', 'palm_r', 'face'].forEach((part, pi) => {
+        const p = pose(spread, part)
+        const card = document.createElement('div')
+        card.className = 'polaroid' + (tones ? '' : ' ghost')
+        card.style.left = p.x + 'px'
+        card.style.top = p.y + 'px'
+        card.style.transform = 'rotate(' + p.r + 'deg)'
+        card.style.zIndex = String(p.z)
+        const photo = document.createElement('div')
+        photo.className = 'photo' + (tones ? ' ' + tones[pi] : '')
+        card.appendChild(photo)
+        el.appendChild(card)
+      })
+    }
+
+    function setAgree(ok) {
+      readDone = ok
+      agree.disabled = !ok
+      agree.textContent = ok ? '我已阅读并同意' : '请先读完'
+    }
+
+    function checkConsentRead() {
+      const el = consentBody
+      if (el.scrollHeight <= el.clientHeight + 8) {
+        setAgree(true)
+        return
+      }
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 16) setAgree(true)
+    }
+
+    function openConsent() {
+      setAgree(false)
+      consent.classList.add('on')
+      consentBody.scrollTop = 0
+      requestAnimationFrame(checkConsentRead)
+    }
+
+    function closeSheets() {
+      consent.classList.remove('on')
+      studio.classList.remove('on')
+      caseEl.classList.remove('on')
+    }
+
+    function render() {
+      emptyEl.hidden = filled
+      wheel.hidden = !filled
+      casePeriod.innerHTML = filled
+        ? '更新本期 <span>拍照</span>'
+        : '新一期 <span>拍照</span>'
+      drawStack(emptyStack, 0, null)
+      drawStack(studioStack, 1, filled ? ALL[0].tones : null)
+      if (!filled) {
+        wheel.innerHTML = ''
+        return
+      }
+      wheel.innerHTML = ''
+      const rows = track()
+      scroll = clamp(scroll, 0, maxIndex())
+      rows.forEach((item, i) => {
+        const d = i - scroll
+        const t = clamp(1 - Math.abs(d), 0, 1)
+        const fall = Math.min(2.2, Math.abs(d))
+        const scale = 1 - 0.22 * fall
+        const opacity = 1 - 0.38 * fall
+        const row = document.createElement('div')
+        row.className = 'row-item'
+        if (item.draft) {
+          row.dataset.draft = '1'
+          row.style.pointerEvents = 'auto'
+          row.style.cursor = 'pointer'
+        }
+        row.style.transform = 'translate3d(0,' + (d * GAP) + 'px,0) scale(' + scale + ')'
+        row.style.opacity = String(Math.max(0.18, opacity))
+        row.style.zIndex = String(Math.round(20 - Math.abs(d) * 4))
+        const fan = document.createElement('div')
+        fan.className = 'fan'
+        fan.dataset.draft = item.draft ? '1' : '0'
+        ;['palm_l', 'palm_r', 'face'].forEach((part, pi) => {
+          const p = pose(t, part)
+          const card = document.createElement('div')
+          card.className = 'polaroid' + (item.draft ? ' ghost' : '')
+          card.dataset.part = part
+          card.style.left = p.x + 'px'
+          card.style.top = p.y + 'px'
+          card.style.transform = 'rotate(' + p.r + 'deg)'
+          card.style.zIndex = String(p.z)
+          const photo = document.createElement('div')
+          photo.className = 'photo' + (item.draft ? '' : ' ' + item.tones[pi])
+          card.appendChild(photo)
+          fan.appendChild(card)
+        })
+        const meta = document.createElement('div')
+        meta.className = 'meta'
+        meta.style.opacity = String(Math.max(0, t))
+        const [title, sub] = caption(item)
+        const titleEl = document.createElement('div')
+        titleEl.className = 'title'
+        titleEl.textContent = title
+        const subEl = document.createElement('div')
+        subEl.className = 'sub'
+        subEl.textContent = sub
+        meta.appendChild(titleEl)
+        meta.appendChild(subEl)
+        row.appendChild(meta)
+        row.appendChild(fan)
+        wheel.appendChild(row)
+      })
+    }
+
+    function snapTo(target) {
+      const to = clamp(target, 0, maxIndex())
+      const from = scroll
+      const t0 = performance.now()
+      cancelAnimationFrame(anim)
+      const tick = (now) => {
+        const u = clamp((now - t0) / 280, 0, 1)
+        const e = 1 - Math.pow(1 - u, 3)
+        scroll = from + (to - from) * e
+        render()
+        if (u < 1) anim = requestAnimationFrame(tick)
+      }
+      anim = requestAnimationFrame(tick)
+    }
+
+    function startCapture() {
+      if (!consented) {
+        openConsent()
+        return
+      }
+      studio.classList.add('on')
+    }
+
+    document.getElementById('themes').addEventListener('click', (e) => {
+      const btn = e.target.closest('button')
+      if (!btn) return
+      document.querySelectorAll('#themes button').forEach((b) => b.classList.remove('active'))
+      btn.classList.add('active')
+      body.setAttribute('data-theme', btn.dataset.theme)
+    })
+    document.getElementById('locales').addEventListener('click', (e) => {
+      const btn = e.target.closest('button')
+      if (!btn) return
+      document.querySelectorAll('#locales button').forEach((b) => b.classList.remove('active'))
+      btn.classList.add('active')
+      locale = btn.dataset.locale
+      document.documentElement.lang = locale
+      render()
+    })
+    document.getElementById('states').addEventListener('click', (e) => {
+      const btn = e.target.closest('button')
+      if (!btn) return
+      document.querySelectorAll('#states button').forEach((b) => b.classList.remove('active'))
+      btn.classList.add('active')
+      filled = btn.dataset.state === 'filled'
+      if (filled) restOnLatest()
+      closeSheets()
+      render()
+    })
+    document.getElementById('counts').addEventListener('click', (e) => {
+      const btn = e.target.closest('button')
+      if (!btn) return
+      document.querySelectorAll('#counts button').forEach((b) => b.classList.remove('active'))
+      btn.classList.add('active')
+      items = ALL.slice(0, Number(btn.dataset.count))
+      restOnLatest()
+      filled = true
+      consented = true
+      document.querySelectorAll('#states button').forEach((b) => {
+        b.classList.toggle('active', b.dataset.state === 'filled')
+      })
+      closeSheets()
+      render()
+    })
+
+    emptyEl.addEventListener('click', startCapture)
+    document.getElementById('case-open').addEventListener('click', () => caseEl.classList.add('on'))
+    document.getElementById('case-close').addEventListener('click', () => caseEl.classList.remove('on'))
+    casePeriod.addEventListener('click', () => {
+      caseEl.classList.remove('on')
+      startCapture()
+    })
+    consentBody.addEventListener('scroll', checkConsentRead)
+    document.getElementById('consent-cancel').addEventListener('click', () => consent.classList.remove('on'))
+    agree.addEventListener('click', () => {
+      if (agree.disabled) return
+      consented = true
+      consent.classList.remove('on')
+      studio.classList.add('on')
+    })
+    document.getElementById('studio-back').addEventListener('click', () => studio.classList.remove('on'))
+    document.getElementById('studio-done').addEventListener('click', () => {
+      filled = true
+      consented = true
+      restOnLatest()
+      studio.classList.remove('on')
+      document.querySelectorAll('#states button').forEach((b) => {
+        b.classList.toggle('active', b.dataset.state === 'filled')
+      })
+      render()
+    })
+
+    let drag = null
+    wheel.addEventListener('pointerdown', (e) => {
+      if (!filled) return
+      cancelAnimationFrame(anim)
+      drag = {
+        y: e.clientY,
+        start: scroll,
+        moved: false,
+        hitDraft: Boolean(e.target.closest('[data-draft="1"]')),
+        hitCard: e.target.closest('.polaroid'),
+      }
+      wheel.setPointerCapture(e.pointerId)
+    })
+    wheel.addEventListener('pointermove', (e) => {
+      if (!drag) return
+      const dy = e.clientY - drag.y
+      if (Math.abs(dy) > 4) drag.moved = true
+      scroll = drag.start - dy / GAP
+      render()
+    })
+    wheel.addEventListener('pointerup', () => {
+      if (!drag) return
+      const { moved, hitDraft, hitCard } = drag
+      drag = null
+      const nearest = Math.round(clamp(scroll, 0, maxIndex()))
+      if (!moved && hitDraft) {
+        startCapture()
+        snapTo(0)
+        return
+      }
+      if (!moved && hitCard && Math.abs(scroll - nearest) < 0.18) {
+        const photo = hitCard.querySelector('.photo')
+        if (photo) openViewer(photo.className)
+        snapTo(nearest)
+        return
+      }
+      snapTo(nearest)
+    })
+    wheel.addEventListener('wheel', (e) => {
+      e.preventDefault()
+      cancelAnimationFrame(anim)
+      scroll += e.deltaY / 420
+      scroll = clamp(scroll, 0, maxIndex())
+      render()
+      clearTimeout(wheel._snap)
+      wheel._snap = setTimeout(() => snapTo(Math.round(scroll)), 90)
+    }, { passive: false })
+
+    function applyShot() {
+      shot.style.transform = 'translate(' + view.x + 'px,' + view.y + 'px) scale(' + view.s + ')'
+    }
+    function openViewer(cls) {
+      shotPhoto.className = cls
+      view.s = 1; view.x = 0; view.y = 0
+      applyShot()
+      viewer.classList.add('on')
+    }
+    document.getElementById('viewer-close').addEventListener('click', () => viewer.classList.remove('on'))
+    let pan = null
+    viewer.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('.close')) return
+      pan = { x: e.clientX, y: e.clientY, ox: view.x, oy: view.y }
+    })
+    viewer.addEventListener('pointermove', (e) => {
+      if (!pan) return
+      view.x = pan.ox + e.clientX - pan.x
+      view.y = pan.oy + e.clientY - pan.y
+      applyShot()
+    })
+    viewer.addEventListener('pointerup', () => { pan = null })
+    viewer.addEventListener('wheel', (e) => {
+      e.preventDefault()
+      view.s = clamp(view.s + (e.deltaY < 0 ? 0.1 : -0.1), 0.6, 3.5)
+      applyShot()
+    }, { passive: false })
+
+    render()
+  </script>
+</body>
+</html>

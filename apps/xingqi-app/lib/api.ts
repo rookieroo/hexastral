@@ -94,9 +94,9 @@ export function isTransientNetworkError(msg: string): boolean {
 
 /** True if server (or local cache) says biometric disclosure was accepted. */
 export async function fetchBiometricConsent(): Promise<boolean> {
-  const cached = await getCachedBiometricConsent()
   const userId = await getPortfolioUserId()
-  if (!userId) return cached
+  if (!userId) return false
+  const cached = await getCachedBiometricConsent()
   const path = `/api/user/${encodeURIComponent(userId)}/biometric-consent`
   try {
     const signed = await signRequest({ body: '', userId, method: 'GET', path })

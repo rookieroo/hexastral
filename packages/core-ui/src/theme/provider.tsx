@@ -30,7 +30,12 @@ import {
   SPACING,
   TYPOGRAPHY,
 } from '@zhop/hexastral-tokens/palette'
-import { getSatelliteAccent, type SatelliteKey } from '@zhop/hexastral-tokens/satellites'
+import {
+  faceOraclePalette,
+  faceOracleSurfaces,
+  getSatelliteAccent,
+  type SatelliteKey,
+} from '@zhop/hexastral-tokens/satellites'
 import { createContext, type ReactNode, useContext, useMemo } from 'react'
 
 // ── Brand identity ─────────────────────────────────────────────────────────
@@ -172,7 +177,15 @@ function buildTheme(brand: CoreUIBrand, mode: CoreUIMode, accentVariant?: string
       accentGhost = isDark ? ink.goldGhost : ink.brownGhost
       surfaceTint = accentGhost
     }
+    if (brand === 'faceoracle') {
+      accent = isDark ? faceOraclePalette.jadeOnDark : faceOraclePalette.jade
+      accentBright = isDark ? faceOraclePalette.jadeOnDarkBright : faceOraclePalette.jadeBright
+      accentGhost = isDark ? faceOraclePalette.jadeOnDarkGhost : faceOraclePalette.jadeGhost
+      surfaceTint = isDark ? faceOraclePalette.jadeOnDarkGhost : faceOraclePalette.inkWash
+    }
   }
+
+  const faceSurfaces = brand === 'faceoracle' ? faceOracleSurfaces[isDark ? 'dark' : 'light'] : null
 
   return {
     brand,
@@ -180,6 +193,7 @@ function buildTheme(brand: CoreUIBrand, mode: CoreUIMode, accentVariant?: string
     isDark,
     colors: {
       ...baseTokens,
+      ...(faceSurfaces ?? {}),
       accent,
       accentBright,
       accentGhost,

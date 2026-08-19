@@ -41,7 +41,7 @@ The `brand` prop locks per-app accent colors. Defined in `@zhop/hexastral-tokens
 | `feng` | Flagship | 墨青 #0F1E26 / copper #B08D5B |
 | `compass` | Satellite (Fēng feeder) | copper |
 | `coincast` | Satellite | amber + wood-grain |
-| `faceoracle` | Satellite | jade green |
+| `faceoracle` | Satellite | Paper ink / Dark ink (`#2C2A27` / `#D8D4CB`) |
 | `dreamoracle` | Satellite | indigo + silver |
 | `numerology` | Satellite | violet/blue |
 

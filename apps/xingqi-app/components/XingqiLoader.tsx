@@ -3,6 +3,7 @@
  * vertically (↑↓↑ sine). Use instead of ActivityIndicator in Xingqi surfaces.
  */
 
+import { useTheme } from '@zhop/core-ui'
 import { useEffect } from 'react'
 import { View } from 'react-native'
 import Animated, {
@@ -14,10 +15,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 
-const BEADS = [
-  { r: 5.5, color: '#FAFAFA', opacity: 1, phase: 0 },
-  { r: 4.2, color: '#52A878', opacity: 0.85, phase: Math.PI },
-  { r: 3.2, color: '#3F7B5C', opacity: 0.55, phase: 0 },
+const BEAD_META = [
+  { r: 5.5, opacity: 0.28, phase: 0 },
+  { r: 4.2, opacity: 0.62, phase: Math.PI },
+  { r: 3.2, opacity: 0.95, phase: 0 },
 ] as const
 
 const CYCLE_MS = 900
@@ -45,7 +46,6 @@ function Bead({
   gap: number
 }) {
   const style = useAnimatedStyle(() => {
-    // Adjacent beads: phase 0 vs π → opposite vertical direction.
     const y = Math.sin(progress.value * Math.PI * 2 + phase) * AMP
     return {
       transform: [{ translateY: y }],
@@ -70,6 +70,7 @@ function Bead({
 }
 
 export function XingqiLoader({ size = 44, label = 'Loading' }: XingqiLoaderProps) {
+  const { colors } = useTheme()
   const progress = useSharedValue(0)
   const gap = Math.max(4, size * 0.12)
 
@@ -94,8 +95,8 @@ export function XingqiLoader({ size = 44, label = 'Loading' }: XingqiLoaderProps
         justifyContent: 'center',
       }}
     >
-      {BEADS.map((b, i) => (
-        <Bead key={i} {...b} progress={progress} gap={gap} />
+      {BEAD_META.map((b, i) => (
+        <Bead key={i} {...b} color={colors.accent} progress={progress} gap={gap} />
       ))}
     </View>
   )

@@ -1,5 +1,5 @@
-import { CaptureStepScreen } from '@/components/CaptureStepScreen'
+import { CaptureStudioScreen } from '@/components/CaptureStudioScreen'
 
-export default function CaptureLeftPalmScreen() {
-  return <CaptureStepScreen part='palm_l' nextHref='/capture/right' />
+export default function CaptureScreen() {
+  return <CaptureStudioScreen />
 }

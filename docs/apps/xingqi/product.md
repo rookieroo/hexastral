@@ -2,14 +2,16 @@
 
 Client app: [`apps/xingqi-app`](../../apps/xingqi-app). Architecture: [ADR-0028](../../decisions/0028-face-oracle-dual-track.md).
 
-**Shell:** Yuel-quality chrome (Sign-In / BirthForm / Settings / report density), assembled greenfield — not a dirty kindred rsync.  
+**Shell chrome:** paper + ink follows the system appearance — Paper ink (`mode='light'`) and Dark ink (`mode='dark'`). `faceOraclePalette` stone ink on paper; light accent `#2C2A27`, dark accent `#D8D4CB`. Home: two states, one capture entry — empty is a stacked placeholder; filled is a full-screen photo-stack wheel (draft row on top, center fans, neighbors stack). Caption is locale date + frozen excerpt. Mock: [home-ui-mock.html](./home-ui-mock.html).  
 **Display brand:** Syel (SEE-el) · `com.hexastral.syel` · scheme `syel`. Method layer may still say 形气 / 相.  
 **API / RC opaque ids:** portfolio target `faceoracle`, SKUs `faceoracle_*` (unchanged server catalog).
 
 **i18n:** four locales only — `zh` / `zh-Hant` / `en` / `ja` (not the monorepo 9-locale satellite default).  
 `zh-Hant` is a **separate copy track** (shell, alerts, chapter chrome, term glosses, push) — never substitute Simplified for Traditional. Reading body LLM already forces Traditional via `faceoracle-locale.ts`.
 
-**Positioning:** Syel is **folk 算命 practice in app form** — face + palms **corroborated with** BaZi (日主·大运·流年), the same combined toolkit a traditional reader uses. Not a photo-chat toy; not a Yuel-style personal 命书 (BaZi-forward chapters); not a Yuun-style personal 黄历 (calendar-forward). Oneshot = sealed five-chapter brief where **形与命互证** (loci[] · three axes · computed DaYun/LiuNian). Pro = archive + qi layer (Timeline / What-if / in-report chat / period recapture). VLM quality/modality gates reject thin or mismatched extracts (`photo_quality_low` / `modality_mismatch`).
+**Positioning:** Syel is **folk 算命 in app form** (job **J2** in [lantai/demand.md](../lantai/demand.md)): face + palms **corroborated with** BaZi. Not a daily journal; not Lantai. Lantai is **J3 capture** (meals / custom fields) and does **not** ship an official face/palm template. Optional **Sync to Notion** is export of a finished reading, not daily three-photo capture.
+
+Oneshot = sealed brief where **形与命互证**. Pro = archive + qi layer (Timeline / What-if / chat / period recapture). VLM gates reject thin extracts (`photo_quality_low` / `modality_mismatch`).
 
 **Life axes (equal weight):** career/colleagues · love/intimacy · health/pace.  
 Ban only **census 铁口** (已婚/未婚、有N个孩子、家人性格档案).  
@@ -24,7 +26,7 @@ Ban only **census 铁口** (已婚/未婚、有N个孩子、家人性格档案).
 ## Funnel
 
 1. Biometric consent  
-2. Three-photo wizard (left palm → right palm → face)  
+2. Three-photo capture (one stacked-slot screen: left palm, right palm, face)  
 3. Birth Form (`BirthForm`, `fieldPrefix='self'`)  
 4. Paywall (single ≥ $9.99 **or** Pro)  
 5. Reading
@@ -46,17 +48,11 @@ Ban only **census 铁口** (已婚/未婚、有N个孩子、家人性格档案).
 
 ## Notion export (optional)
 
-Capture stays in Syel (consent → three photos → birth → reading). **Do not** collect 精气神 through Lantai or Shortcuts.
+Syel owns the three-photo → birth → reading funnel. Lantai does **not** offer a daily face/palm journal ([demand.md](../lantai/demand.md)).
 
-After a reading, one **Sync to Notion** control:
+After a Syel reading, **Sync to Notion** may write a snapshot row + `syel://` (default: **no source photos** — ADR-0028). No connection → prompt to connect in Lantai once. Not a separate SKU.
 
-- Same portfolio identity as Lantai. Reuse `lantai_connections` (the user connects Notion once in Lantai).
-- Writes a structured snapshot row + schematic overlay + `syel://` deep link.
-- Default: **no source photos** into Notion or HexAstral disk (ADR-0028).
-- No Lantai connection → prompt to open Lantai and connect a workspace once.
-- Not a Lantai SKU. Not an AI template. Ledger / diet / custom prompts are a **separate future app**, not Syel and not Lantai.
-
-See [apps/lantai/plan.md](../lantai/plan.md) §3.
+See [lantai/demand.md](../lantai/demand.md).
 
 ## Report architecture
 

@@ -1,5 +1,13 @@
-import { CaptureStepScreen } from '@/components/CaptureStepScreen'
+import { Redirect, useLocalSearchParams } from 'expo-router'
 
-export default function CaptureFaceScreen() {
-  return <CaptureStepScreen part='face' nextHref={null} />
+export default function CaptureFaceRedirect() {
+  const params = useLocalSearchParams<{ mode?: string }>()
+  return (
+    <Redirect
+      href={{
+        pathname: '/capture',
+        params: { part: 'face', ...(params.mode ? { mode: params.mode } : {}) },
+      }}
+    />
+  )
 }

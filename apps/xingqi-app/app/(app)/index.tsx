@@ -1,60 +1,39 @@
 /**
- * Home — report-first. Hero = latest reading's verdict (tap → full report);
- * a photo strip opens the fullscreen locus viewer.
- * Birth nudge only when incomplete; edit entry lives in Settings.
- * Archive list lives in Settings. Sticky bottom CTA for thumb reach.
+ * Home — two states, one capture entry.
+ * Empty: stacked placeholders; tap starts consent → capture.
+ * Filled: full-height photo-stack wheel (local snapshots).
  */
 
-import { Button, useTheme } from '@zhop/core-ui'
-import {
-  deletePortfolioReading,
-  fetchReadings,
-  type PortfolioReadingItem,
-} from '@zhop/portfolio-client'
-import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
+import { useTheme } from '@zhop/core-ui'
+import { fetchReadings, type PortfolioReadingItem } from '@zhop/portfolio-client'
+import { getPortfolioUserId, hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { useFocusEffect, useRouter } from 'expo-router'
-import { CalendarDays, Settings2 } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import { runOnJS } from 'react-native-reanimated'
+import { Alert, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { FeaturedReadingCard } from '@/components/FeaturedReadingCard'
-import { HomeVerdictCard } from '@/components/HomeVerdictCard'
-import { PhotoStrip } from '@/components/PhotoStrip'
+import { OffsetPhotoStack } from '@/components/OffsetPhotoStack'
+import { PeriodPhotoWheel } from '@/components/PeriodPhotoWheel'
+import { SealMark } from '@/components/SealMark'
 import { XingqiLoader } from '@/components/XingqiLoader'
 import { XingqiMark } from '@/components/XingqiMark'
 import { fetchBiometricConsent } from '@/lib/api'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
-import {
-  formReadingListTitle,
-  homeArchiveCopy,
-  homeInputsCopy,
-  partLabels,
-  readingLocaleBadge,
-} from '@/lib/living-copy'
+import { draftPeriodCopy, partLabels, sealCaseCopy } from '@/lib/living-copy'
 import { pickUi } from '@/lib/locale-zh'
-import { captureHrefForPart } from '@/lib/period-photos'
-import { type CapturePart, draftReadyForPaywall, hydrateReadingDraft } from '@/lib/reading-draft'
+import { periodCaption } from '@/lib/period-caption'
+import { type CapturePart, hydrateReadingDraft } from '@/lib/reading-draft'
 import {
   bindReadingJobLifecycle,
   consumeReadingJobDone,
   consumeReadingJobError,
   getReadingJobState,
   type ReadingJobState,
-  readingJobSteps,
   resumeReadingJobIfNeeded,
-  showReadingStartedHandoff,
-  startReadingJob,
   subscribeReadingJob,
 } from '@/lib/reading-job'
-import { clearLastReadingPhotoSnapshot } from '@/lib/reading-photo-stamp'
-import { deleteReadingPhotoFolder } from '@/lib/reading-photos'
-import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
 import { readingHasReportBody } from '@/lib/report-chapters'
-import { verdictFromReading } from '@/lib/verdict'
 
 export default function XingqiHomeScreen() {
   const router = useRouter()
@@ -63,40 +42,37 @@ export default function XingqiHomeScreen() {
   const locale = resolveLocale()
   const s = (hans: string, hant: string, en: string, ja?: string) =>
     pickUi(locale, hans, hant, en, ja)
+  const seal = sealCaseCopy(locale)
+  const labels = partLabels(locale)
+  const draftCopy = draftPeriodCopy(locale)
   const entitlements = useEntitlements()
   const isPro =
     hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')
   const [items, setItems] = useState<PortfolioReadingItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [hasBirth, setHasBirth] = useState(false)
+  const [photoTick, setPhotoTick] = useState(0)
   const [job, setJob] = useState<ReadingJobState>(() => getReadingJobState())
   const hasLoadedRef = useRef(false)
   const lastFetchAtRef = useRef(0)
+  const enteringRef = useRef(false)
+  const [entering, setEntering] = useState(false)
 
-  /**
-   * full = cold start (show loader). soft = keep current UI, refresh in background.
-   * Returning from /result /settings /locus must not flash a full-screen reload.
-   */
   const reload = useCallback(async (mode: 'full' | 'soft' = 'full') => {
     if (mode === 'full') setLoading(true)
     try {
-      const [hist, draft] = await Promise.all([
-        fetchReadings(PORTFOLIO_TARGET_APP),
-        hydrateReadingDraft(),
-      ])
+      const [hist] = await Promise.all([fetchReadings(PORTFOLIO_TARGET_APP), hydrateReadingDraft()])
       setItems(hist.readings ?? [])
-      setHasBirth(Boolean(draft.solarDate && draft.timeIndex != null && draft.gender))
       hasLoadedRef.current = true
       lastFetchAtRef.current = Date.now()
     } catch {
       if (mode === 'full') setItems([])
     } finally {
       setLoading(false)
+      setPhotoTick((n) => n + 1)
     }
   }, [])
 
   useEffect(() => subscribeReadingJob(setJob), [])
-
   useEffect(() => bindReadingJobLifecycle(locale, isPro), [locale, isPro])
 
   useEffect(() => {
@@ -105,7 +81,6 @@ export default function XingqiHomeScreen() {
       if (!claimed) return
       const id = claimed.readingId
       const payload = claimed.resultPayload
-      // Skip auto-open if body is empty — stay on list so user sees the row.
       let hasBody = false
       try {
         const raw = JSON.parse(decodeURIComponent(payload)) as Record<string, unknown>
@@ -115,11 +90,7 @@ export default function XingqiHomeScreen() {
       }
       void reload('soft').then(() => {
         if (!hasBody) return
-        // replace — never stack another /result on home/paywall/deeplink races
-        router.replace({
-          pathname: '/result',
-          params: { readingId: id },
-        } as never)
+        router.replace({ pathname: '/result', params: { readingId: id } } as never)
       })
       return
     }
@@ -159,12 +130,14 @@ export default function XingqiHomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      enteringRef.current = false
+      setEntering(false)
       void (async () => {
         const now = Date.now()
-        // Back-nav spam (result → home → settings → home): skip network if fresh.
         const FRESH_MS = 12_000
         if (hasLoadedRef.current && now - lastFetchAtRef.current < FRESH_MS) {
           resumeReadingJobIfNeeded(locale, isPro)
+          setPhotoTick((n) => n + 1)
           return
         }
         await reload(hasLoadedRef.current ? 'soft' : 'full')
@@ -173,11 +146,12 @@ export default function XingqiHomeScreen() {
     }, [reload, locale, isPro])
   )
 
-  const openSettings = useCallback(() => {
-    router.push('/(app)/settings')
-  }, [router])
-
   const requireConsent = useCallback(async (): Promise<boolean> => {
+    const userId = await getPortfolioUserId()
+    if (!userId) {
+      router.push({ pathname: '/sign-in', params: { next: 'consent' } } as never)
+      return false
+    }
     try {
       const consented = await fetchBiometricConsent()
       if (!consented) {
@@ -191,8 +165,13 @@ export default function XingqiHomeScreen() {
     }
   }, [router])
 
-  const startReading = useCallback(async () => {
+  const beginOnboarding = useCallback(async () => {
+    if (enteringRef.current) return
+    enteringRef.current = true
+    setEntering(true)
     if (job.status === 'running') {
+      enteringRef.current = false
+      setEntering(false)
       Alert.alert(
         s('解读进行中', '解讀進行中', 'Reading in progress', '解読中'),
         s(
@@ -204,394 +183,153 @@ export default function XingqiHomeScreen() {
       )
       return
     }
-    if (!(await requireConsent())) return
-
-    // Pro with a ready draft: skip unlock sheet — start in background.
-    if (isPro) {
-      const draft = await hydrateReadingDraft()
-      if (draftReadyForPaywall(draft)) {
-        if (
-          items.length > 0 &&
-          (await alertIfPhotosUnchanged({
-            draft,
-            locale,
-            onUpdatePhotos: () => router.push('/capture' as never),
-          }))
-        ) {
-          return
-        }
-        const started = startReadingJob({
-          locale,
-          outputKind: 'period_brief',
-          isPro: true,
-          draft,
-          onQueued: () => {
-            void showReadingStartedHandoff({ locale })
-          },
-        })
-        if (!started) {
-          Alert.alert(
-            s('解读进行中', '解讀進行中', 'Reading in progress', '解読中'),
-            s(
-              '请等待当前解读完成。',
-              '請等待目前解讀完成。',
-              'Wait for the current reading to finish.',
-              '現在の解読が終わるまでお待ちください。'
-            )
-          )
-        }
-        return
-      }
+    if (!(await requireConsent())) {
+      enteringRef.current = false
+      setEntering(false)
+      return
     }
-
     router.push('/capture')
-  }, [isPro, items.length, job.status, locale, requireConsent, router])
-
-  const openBirth = useCallback(async () => {
-    if (!(await requireConsent())) return
-    router.push('/birth')
-  }, [requireConsent, router])
-
-  const swipeToSettings = useMemo(
-    () =>
-      Gesture.Pan()
-        .activeOffsetX([-16, 16])
-        .failOffsetY([-20, 20])
-        .onEnd((e) => {
-          if (e.translationX < -55 || e.velocityX < -650) {
-            runOnJS(openSettings)()
-          }
-        }),
-    [openSettings]
-  )
+  }, [job.status, locale, requireConsent, router])
 
   const hasReading = items.length > 0
-  const copy = homeArchiveCopy(locale)
-  const inputsCopy = homeInputsCopy(locale)
-  const stripLabels = partLabels(locale)
-  const featured = items[0]
-  const verdict = useMemo(
-    () => (featured ? verdictFromReading(featured, locale) : null),
-    [featured, locale]
+  const wheelItems = useMemo(
+    () => [
+      { id: '__draft__', draft: true as const, title: draftCopy.title, excerpt: draftCopy.excerpt },
+      ...items.map((item) => {
+        const cap = periodCaption(item, locale)
+        return { id: item.id, title: cap.title, excerpt: cap.excerpt }
+      }),
+    ],
+    [draftCopy.excerpt, draftCopy.title, items, locale]
   )
-
-  const confirmDelete = useCallback(
-    (item: PortfolioReadingItem) => {
-      Alert.alert(
-        s('删除解读？', '刪除解讀？', 'Delete reading?', 'リーディングを削除しますか？'),
-        s(
-          '将从账号中永久删除此条形气解读，无法恢复。',
-          '將從帳號中永久刪除此條形氣解讀，無法恢復。',
-          'Permanently removes this form-qi reading from your account.',
-          'この形気リーディングをアカウントから完全に削除します。元に戻せません。'
-        ),
-        [
-          { text: s('取消', '取消', 'Cancel', 'キャンセル'), style: 'cancel' },
-          {
-            text: s('删除', '刪除', 'Delete', '削除'),
-            style: 'destructive',
-            onPress: () => {
-              void (async () => {
-                try {
-                  await deletePortfolioReading(PORTFOLIO_TARGET_APP, item.id)
-                  await deleteReadingPhotoFolder(item.id)
-                  await clearLastReadingPhotoSnapshot()
-                  await reload('soft')
-                } catch {
-                  Alert.alert(s('删除失败', '刪除失敗', 'Delete failed', '削除に失敗しました'))
-                }
-              })()
-            },
-          },
-        ]
-      )
-    },
-    [locale, reload]
-  )
-
-  const readingMeta = useCallback(
-    (item: PortfolioReadingItem) => {
-      const localeBadge = readingLocaleBadge(item.locale)
-      const dateLabel = item.createdAt?.slice(0, 10) ?? ''
-      return [s('形气', '形氣', 'Form-qi', '形気'), dateLabel, localeBadge]
-        .filter(Boolean)
-        .join(' · ')
-    },
-    [locale]
-  )
-
-  const openFeatured = useCallback(() => {
-    if (!featured) return
-    router.push({ pathname: '/result', params: { readingId: featured.id } } as never)
-  }, [featured, router])
 
   const onPressPart = useCallback(
-    (part: CapturePart, hasPhoto: boolean) => {
-      if (!featured) return
+    (readingId: string, part: CapturePart, hasPhoto: boolean) => {
       if (hasPhoto) {
-        router.push({ pathname: '/locus', params: { readingId: featured.id, part } } as never)
+        router.push({ pathname: '/locus', params: { readingId, part } } as never)
         return
       }
       void (async () => {
         if (!(await requireConsent())) return
-        router.push({ pathname: captureHrefForPart(part), params: { mode: 'slot' } } as never)
+        router.push({ pathname: '/capture', params: { mode: 'slot', part } } as never)
       })()
     },
-    [featured, requireConsent, router]
+    [requireConsent, router]
   )
 
-  const ctaLabel =
-    job.status === 'running'
-      ? s('解读进行中…', '解讀進行中…', 'Reading in progress…', '解読中…')
-      : !hasReading
-        ? s('开始解读', '開始解讀', 'Start reading', '解読を開始')
-        : isPro
-          ? s('更新本期', '更新本期', 'Refresh period', '今期を更新')
-          : s('再读一次', '再讀一次', 'New reading', 'もう一度')
-
   return (
-    <GestureDetector gesture={swipeToSettings}>
-      <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      {loading ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <XingqiLoader label={s('加载中', '載入中', 'Loading', '読み込み中')} />
+        </View>
+      ) : null}
+
+      <View
+        pointerEvents={hasReading && !loading ? 'auto' : 'none'}
+        style={{
+          display: hasReading && !loading ? 'flex' : 'none',
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+        }}
+      >
+        <PeriodPhotoWheel
+          items={wheelItems}
+          revision={photoTick}
+          initialIndex={1}
+          onPressPart={onPressPart}
+          onPressDraft={() => void beginOnboarding()}
+          onPressLabel={(readingId) =>
+            router.push({ pathname: '/result', params: { readingId } } as never)
+          }
+        />
+        {job.status === 'running' ? (
+          <Text
+            pointerEvents='none'
+            style={{
+              position: 'absolute',
+              left: spacing.xl,
+              right: spacing.xl,
+              bottom: insets.bottom + spacing.sm,
+              textAlign: 'center',
+              color: colors.dim,
+              fontSize: 12,
+            }}
+          >
+            {s(
+              '解读进行中，可离开。',
+              '解讀進行中，可離開。',
+              'Reading in progress. You can leave.',
+              '解読中。アプリを閉じても大丈夫です。'
+            )}
+          </Text>
+        ) : null}
+      </View>
+
+      <Pressable
+        onPress={() => void beginOnboarding()}
+        disabled={entering}
+        accessibilityRole='button'
+        accessibilityState={{ disabled: entering }}
+        accessibilityLabel={s('开始录入照片', '開始錄入照片', 'Start capturing', '撮影を始める')}
+        style={{
+          display: !loading && !hasReading ? 'flex' : 'none',
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingHorizontal: spacing.xl,
+          backgroundColor: colors.bg,
+        }}
+      >
+        <OffsetPhotoStack uris={{}} spread={0} compact labels={labels} />
+        <Text style={{ color: colors.secondary, fontSize: 14, marginTop: spacing.lg }}>
+          {s(
+            '点此录入 · 仅存本机',
+            '點此錄入 · 僅存本機',
+            'Tap to capture · on device only',
+            'タップして撮影 · この端末のみ'
+          )}
+        </Text>
+      </Pressable>
+
+      <View
+        pointerEvents='box-none'
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          paddingTop: insets.top,
+        }}
+      >
         <View
+          pointerEvents='box-none'
           style={{
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingHorizontal: spacing.xl,
-            paddingVertical: spacing.md,
+            paddingVertical: spacing.sm,
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-            <XingqiMark size={28} color={colors.accent} />
-            <Text style={{ color: colors.text, fontSize: 20, fontWeight: '600' }}>Syel</Text>
-          </View>
+          <XingqiMark size={36} />
           <Pressable
-            onPress={openSettings}
+            onPress={() => router.push('/(app)/settings')}
             hitSlop={12}
             accessibilityRole='button'
-            accessibilityLabel={s('设置', '設定', 'Settings', '設定')}
+            accessibilityLabel={seal.title}
           >
-            <Settings2 size={22} color={colors.text} strokeWidth={1.5} />
+            <SealMark size={22} color={colors.text} accessibilityLabel={seal.title} />
           </Pressable>
         </View>
-
-        <ScrollView
-          style={{ flex: 1 }}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingHorizontal: spacing.xl,
-            paddingBottom: spacing.lg,
-            gap: spacing.lg,
-            // Only grow when empty so the "no readings" state can center —
-            // with a featured reading, pack content top→down (no middle void).
-            ...(items.length === 0 && !loading ? { flexGrow: 1 } : null),
-          }}
-        >
-          {job.status === 'running' ? (
-            <View
-              style={{
-                paddingVertical: spacing.lg,
-                gap: spacing.sm,
-                borderBottomWidth: StyleSheet.hairlineWidth,
-                borderBottomColor: colors.separator,
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <View style={{ flex: 1, gap: 5, minWidth: 0 }}>
-                  <Text
-                    style={{
-                      fontFamily: 'CrimsonPro',
-                      color: colors.text,
-                      fontSize: 21,
-                      lineHeight: 27,
-                    }}
-                    numberOfLines={1}
-                  >
-                    {s('形气解读', '形氣解讀', 'Form-qi reading', '形気リーディング')}
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: 'IBMPlexMono',
-                      color: colors.dim,
-                      fontSize: 11,
-                      letterSpacing: 1.1,
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    {s('进行中', '進行中', 'In progress', '進行中')}
-                    {` · ${Math.max(job.progress, job.phase === 'extracting' ? 5 : job.phase === 'queued' ? 10 : 20)}%`}
-                  </Text>
-                </View>
-                <XingqiLoader label={s('解读中', '解讀中', 'Reading', '解読中')} size={28} />
-              </View>
-              <View style={{ gap: 6, marginTop: 4 }}>
-                {readingJobSteps(job.phase, locale).map((step) => (
-                  <View
-                    key={step.key}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
-                  >
-                    <Text
-                      style={{
-                        color: step.done ? colors.accent : step.active ? colors.text : colors.dim,
-                        fontSize: 12,
-                        width: 14,
-                      }}
-                    >
-                      {step.done ? '✓' : step.active ? '·' : '○'}
-                    </Text>
-                    <Text
-                      style={{
-                        color: step.active ? colors.text : colors.secondary,
-                        fontSize: 13,
-                        flex: 1,
-                      }}
-                    >
-                      {step.label}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-              <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17, marginTop: 4 }}>
-                {s(
-                  '可离开应用。完成后可点推送或回此列表打开。',
-                  '可離開應用。完成後可點推送或回此列表打開。',
-                  'You can leave. Open via push or this row when ready.',
-                  'アプリを閉じても大丈夫です。完了したらプッシュ通知、またはこの一覧から開けます。'
-                )}
-              </Text>
-            </View>
-          ) : null}
-
-          {loading ? (
-            <View style={{ paddingVertical: spacing.xl * 2, alignItems: 'center' }}>
-              <XingqiLoader label={s('加载中', '載入中', 'Loading', '読み込み中')} />
-            </View>
-          ) : null}
-
-          {!loading && items.length === 0 && job.status !== 'running' ? (
-            <View
-              style={{
-                flex: 1,
-                minHeight: 220,
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingVertical: spacing.xl,
-              }}
-            >
-              <Text style={{ color: colors.dim, fontSize: 13 }}>
-                {s('尚无解读', '尚無解讀', 'No readings yet', '形気リーディングはまだありません')}
-              </Text>
-            </View>
-          ) : null}
-
-          {!loading && featured && verdict ? (
-            <HomeVerdictCard
-              latestLabel={copy.latestLabel}
-              goldenLine={verdict.goldenLine}
-              meta={readingMeta(featured)}
-              axes={verdict.axes}
-              openHint={copy.openHint}
-              onPress={openFeatured}
-              onDelete={() => confirmDelete(featured)}
-              deleteLabel={s('删除', '刪除', 'Delete', '削除')}
-              colors={{
-                text: colors.text,
-                dim: colors.dim,
-                accent: colors.accent,
-                secondary: colors.secondary,
-                separator: colors.separator,
-                bg: colors.bg,
-              }}
-              spacing={spacing}
-            />
-          ) : null}
-
-          {!loading && featured && !verdict ? (
-            <FeaturedReadingCard
-              title={formReadingListTitle(locale)}
-              meta={readingMeta(featured)}
-              hint={copy.openHint}
-              onPress={openFeatured}
-              onDelete={() => confirmDelete(featured)}
-              colors={{
-                text: colors.text,
-                dim: colors.dim,
-                accent: colors.accent,
-                secondary: colors.secondary,
-                separator: colors.separator,
-                bg: colors.bg,
-              }}
-              spacing={spacing}
-              deleteLabel={s('删除', '刪除', 'Delete', '削除')}
-            />
-          ) : null}
-
-          {!loading && featured ? (
-            <PhotoStrip
-              readingId={featured.id}
-              sectionLabel={inputsCopy.formLabel}
-              labels={stripLabels}
-              colors={{
-                text: colors.text,
-                dim: colors.dim,
-                accent: colors.accent,
-                secondary: colors.secondary,
-                separator: colors.separator,
-                bg: colors.bg,
-              }}
-              spacing={spacing}
-              onPressPart={onPressPart}
-            />
-          ) : null}
-
-          {/* Incomplete birth only — once set, edit lives in Settings. */}
-          {!loading && !hasBirth ? (
-            <Pressable
-              onPress={() => void openBirth()}
-              accessibilityRole='button'
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing.sm,
-                paddingVertical: spacing.md,
-                borderTopWidth: 0.5,
-                borderTopColor: colors.separator,
-              }}
-            >
-              <CalendarDays size={18} color={colors.dim} strokeWidth={1.6} />
-              <Text style={{ color: colors.secondary, fontSize: 14, flex: 1 }}>
-                {inputsCopy.birth}
-              </Text>
-              <Text style={{ color: colors.dim, fontSize: 12 }}>
-                {s('去填写', '去填寫', 'Add', '入力する')}
-              </Text>
-            </Pressable>
-          ) : null}
-        </ScrollView>
-
-        <View
-          style={{
-            paddingHorizontal: spacing.xl,
-            paddingTop: spacing.md,
-            paddingBottom: insets.bottom + spacing.md,
-            backgroundColor: colors.bg,
-          }}
-        >
-          <Button
-            variant='primary'
-            onPress={() => void startReading()}
-            disabled={job.status === 'running'}
-          >
-            {ctaLabel}
-          </Button>
-        </View>
       </View>
-    </GestureDetector>
+    </View>
   )
 }

@@ -41,7 +41,8 @@ The catalog defines entitlement keys
 | `kindred_pro` | Yuel Pro: personal 命书, monthly relationship layer, living layer (timeline / what-if / AI chat with **monthly allowance**), 3 synastry unlocks or birth recomputes per month | **Yes** |
 | `auspice_pro` | Yuun Pro: BaZi life timeline & what-if, personal BaZi/ZiWei deep-read, family unlimited, 农历 birthday push, full 黄历, widgets ×3, Apple Watch, cross-device sync | **Yes** |
 | `coincast_pro` | Yaul Pro: unlimited casts + AI on each cast + coin skins | **Yes** (Yaul launch) |
-| `lantai_unlock` / `lantai_workspaces` | Lantai slots / multi-ws | **No** — catalog in `products.ts`; create in ASC+RC at M1b. Do **not** create `lantai_pro_*` for the Lantai listing (AI ingest is a separate future app). |
+| `lantai_unlock` / `lantai_workspaces` | Lantai slots / multi-ws | **No** until M1b — catalog in `products.ts` |
+| `lantai_pro` / `lantai_pro_plus` | Lantai AI points (45 / 140), same subscription group | **No** until M1c — see [apps/lantai/plan.md](../apps/lantai/plan.md) §4 |
 | `fate_pro` | Pro experience inside the `fate` funnel app (all chapters + daily LLM) | **No** — universe-only, no standalone product (fate is a funnel app) |
 | `universe_pro` | Cross-app bundle: implies all per-app Pros + every satellite's Pro | **No** — deferred to Phase 2 (§7) |
 
@@ -122,14 +123,13 @@ ADR-0028; ASC one-shot floor USD 9.99), and the single-purchase SKUs
 (`hexastral_cast_single`, `hexastral_fate_reading`, `hexastral_feng_single`).
 
 **Lantai (parallel, catalog-only until ASC + RC exist):** non-consumable
-`lantai_unlock` ($2.99 → entitlement `lantai_unlock`) and `lantai_workspaces`
-($9.99 → `lantai_unlock` + `lantai_workspaces`). Lantai **does not sell a
-subscription.** `lantai_pro_*` may remain in `products.ts` as a reserved SKU
-for a future AI ingest app; do not create those products in the Lantai ASC
-listing. Slot access is the **server union** `lantai_pro || lantai_unlock`
-(pro unused until that app exists). How `lantai_workspaces` upsells after
-unlock (RC upgrade vs second non-consumable) is still open — see
-[apps/lantai/plan.md](../apps/lantai/plan.md) §11.
+`lantai_unlock` ($2.99 → `lantai_unlock`) and `lantai_workspaces` ($9.99 →
+`lantai_unlock` + `lantai_workspaces`) at **M1b**. Subscriptions **M1c**:
+`lantai_pro` ($3.99/mo, $39.99/yr → 45 AI points) and `lantai_pro_plus`
+($9.99/mo, $99.99/yr → 140 points) in **one** RC subscription group. Slot
+access is the server union `unlock \|\| workspaces \|\| pro \|\| pro_plus`.
+How `lantai_workspaces` upsells after unlock is still open — see
+[apps/lantai/plan.md](../apps/lantai/plan.md) §4 and §11.
 
 Founder-agreed pricing is the binding number where given; Yuun monthly/annual mirror the
 prices advertised in [apps/auspice-app/aso-metadata.json](../../apps/auspice-app/aso-metadata.json)

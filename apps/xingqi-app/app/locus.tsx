@@ -41,7 +41,6 @@ import {
   palmPointDebugSources,
   starsForPart,
 } from '@/lib/locus-data'
-import { captureHrefForPart } from '@/lib/period-photos'
 import { resolveReadingPhotoUri } from '@/lib/reading-photos'
 
 const MIN_SCALE = 1
@@ -246,7 +245,7 @@ export default function LocusViewerScreen() {
   }
 
   const recapture = () => {
-    router.push({ pathname: captureHrefForPart(part), params: { mode: 'slot' } } as never)
+    router.push({ pathname: '/capture', params: { mode: 'slot', part } } as never)
   }
 
   return (

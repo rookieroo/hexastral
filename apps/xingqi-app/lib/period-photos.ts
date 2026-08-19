@@ -131,11 +131,3 @@ export async function periodPhotoMap(): Promise<Partial<Record<CapturePart, stri
   }
   return out
 }
-
-export function captureHrefForPart(
-  part: CapturePart
-): '/capture' | '/capture/right' | '/capture/face' {
-  if (part === 'palm_r') return '/capture/right'
-  if (part === 'face') return '/capture/face'
-  return '/capture'
-}

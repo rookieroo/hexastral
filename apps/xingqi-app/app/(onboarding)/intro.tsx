@@ -102,7 +102,7 @@ export default function IntroScreen() {
         }}
       >
         <Animated.View style={markStyle}>
-          <XingqiMark size={INTRO_MARK} color={colors.accent} />
+          <XingqiMark size={INTRO_MARK} />
         </Animated.View>
         <Animated.View entering={FadeIn.delay(200).duration(700)} style={chromeStyle}>
           <Text

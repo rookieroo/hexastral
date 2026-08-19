@@ -140,7 +140,7 @@ export default function XingqiReadingChatScreen() {
     brandUrl: XINGQI_BRAND_URL,
     installUrl: XINGQI_INSTALL_URL,
     logoSource: require('../assets/icon.png'),
-    userBubbleColor: '#2F6F5E',
+    userBubbleColor: colors.accent,
     locale,
     caption: (lead) => xingqiShareCaption(locale, lead),
     labels: {

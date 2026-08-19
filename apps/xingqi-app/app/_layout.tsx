@@ -3,8 +3,7 @@
  * Funnel + settings are full-screen pushes. Only paywall is modal.
  */
 
-import { CoreUIProvider } from '@zhop/core-ui'
-import { darkTokens } from '@zhop/hexastral-tokens/palette'
+import { CoreUIProvider, useTheme } from '@zhop/core-ui'
 import {
   getPortfolioUserId,
   usePortfolioSatelliteBootstrap,
@@ -13,14 +12,26 @@ import {
 import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import { useEffect } from 'react'
-import { StyleSheet } from 'react-native'
+import { type ReactNode, useEffect, useState } from 'react'
+import { Appearance, StyleSheet, useColorScheme, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { initializeFaceIap, loginFaceIap } from '@/lib/iap'
 import { useXingqiNotificationDeepLink } from '@/lib/notification-deeplink'
+
+function useSyelMode(): 'light' | 'dark' {
+  const hook = useColorScheme()
+  const [native, setNative] = useState(() => Appearance.getColorScheme())
+  useEffect(() => {
+    const sub = Appearance.addChangeListener(({ colorScheme }) => setNative(colorScheme))
+    setNative(Appearance.getColorScheme())
+    Appearance.setColorScheme(null)
+    return () => sub.remove()
+  }, [])
+  return (hook ?? native) === 'dark' ? 'dark' : 'light'
+}
 
 function SatelliteGrowthMount() {
   usePortfolioSatelliteBootstrap({
@@ -47,6 +58,87 @@ function NotificationDeepLinkMount(): null {
   return null
 }
 
+function ThemedRoot({ children }: { children: ReactNode }) {
+  const { colors, isDark } = useTheme()
+  return (
+    <View style={[styles.root, { backgroundColor: colors.bg }]}>
+      <SatelliteGrowthMount />
+      <IapMount />
+      <NotificationDeepLinkMount />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      {children}
+    </View>
+  )
+}
+
+function AppStack() {
+  const { colors } = useTheme()
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: 'slide_from_right',
+        gestureEnabled: true,
+        fullScreenGestureEnabled: true,
+        contentStyle: { flex: 1, backgroundColor: colors.bg },
+      }}
+    >
+      <Stack.Screen name='index' />
+      <Stack.Screen name='(onboarding)' options={{ animation: 'fade' }} />
+      <Stack.Screen name='(app)' options={{ animation: 'none' }} />
+      <Stack.Screen name='sign-in' />
+      <Stack.Screen name='consent' />
+      <Stack.Screen name='capture' />
+      <Stack.Screen name='birth' options={{ headerShown: false }} />
+      <Stack.Screen
+        name='result'
+        options={{
+          headerShown: false,
+          gestureEnabled: true,
+          fullScreenGestureEnabled: false,
+        }}
+      />
+      <Stack.Screen name='privacy' options={{ headerShown: false }} />
+      <Stack.Screen name='history' options={{ headerShown: false }} />
+      <Stack.Screen
+        name='glossary'
+        options={{
+          headerShown: false,
+          gestureEnabled: true,
+          fullScreenGestureEnabled: false,
+        }}
+      />
+      <Stack.Screen
+        name='terms'
+        options={{
+          headerShown: false,
+          gestureEnabled: true,
+          fullScreenGestureEnabled: false,
+        }}
+      />
+      <Stack.Screen
+        name='reading-chat'
+        options={{
+          headerShown: false,
+          gestureEnabled: true,
+          fullScreenGestureEnabled: false,
+        }}
+      />
+      <Stack.Screen name='timeline' options={{ headerShown: false }} />
+      <Stack.Screen name='makeif' options={{ headerShown: false }} />
+      <Stack.Screen
+        name='locus'
+        options={{
+          headerShown: false,
+          gestureEnabled: true,
+          fullScreenGestureEnabled: false,
+        }}
+      />
+      <Stack.Screen name='(commerce)' options={{ presentation: 'modal' }} />
+    </Stack>
+  )
+}
+
 export default function RootLayout() {
   useFonts({
     LibreBaskerville: require('../assets/fonts/LibreBaskerville-Regular.ttf'),
@@ -54,80 +146,15 @@ export default function RootLayout() {
     'CrimsonPro-Italic': require('../assets/fonts/CrimsonPro-Italic.ttf'),
     IBMPlexMono: require('../assets/fonts/IBMPlexMono-Regular.ttf'),
   })
+  const mode = useSyelMode()
 
   return (
-    <GestureHandlerRootView style={styles.root}>
+    <GestureHandlerRootView style={styles.flex}>
       <SafeAreaProvider>
-        <CoreUIProvider brand='faceoracle' mode='dark'>
-          <SatelliteGrowthMount />
-          <IapMount />
-          <NotificationDeepLinkMount />
-          <StatusBar style='light' />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              animation: 'slide_from_right',
-              gestureEnabled: true,
-              fullScreenGestureEnabled: true,
-              contentStyle: { flex: 1, backgroundColor: darkTokens.bg },
-            }}
-          >
-            <Stack.Screen name='index' />
-            <Stack.Screen name='(onboarding)' options={{ animation: 'fade' }} />
-            {/* none: intro fly-in already lands the mark; avoid a second stack entrance */}
-            <Stack.Screen name='(app)' options={{ animation: 'none' }} />
-            <Stack.Screen name='sign-in' />
-            <Stack.Screen name='consent' />
-            <Stack.Screen name='capture' />
-            <Stack.Screen name='birth' options={{ headerShown: false }} />
-            <Stack.Screen
-              name='result'
-              options={{
-                headerShown: false,
-                gestureEnabled: true,
-                fullScreenGestureEnabled: false,
-              }}
-            />
-            <Stack.Screen name='privacy' options={{ headerShown: false }} />
-            <Stack.Screen name='history' options={{ headerShown: false }} />
-            <Stack.Screen
-              name='glossary'
-              options={{
-                headerShown: false,
-                gestureEnabled: true,
-                // Edge-only: same as iOS system / Kindred glossary — full-screen
-                // back-swipe was too sensitive on long vertical scrolls.
-                fullScreenGestureEnabled: false,
-              }}
-            />
-            <Stack.Screen
-              name='terms'
-              options={{
-                headerShown: false,
-                gestureEnabled: true,
-                fullScreenGestureEnabled: false,
-              }}
-            />
-            <Stack.Screen
-              name='reading-chat'
-              options={{
-                headerShown: false,
-                gestureEnabled: true,
-                fullScreenGestureEnabled: false,
-              }}
-            />
-            <Stack.Screen name='timeline' options={{ headerShown: false }} />
-            <Stack.Screen name='makeif' options={{ headerShown: false }} />
-            <Stack.Screen
-              name='locus'
-              options={{
-                headerShown: false,
-                gestureEnabled: true,
-                fullScreenGestureEnabled: false,
-              }}
-            />
-            <Stack.Screen name='(commerce)' options={{ presentation: 'modal' }} />
-          </Stack>
+        <CoreUIProvider brand='faceoracle' mode={mode}>
+          <ThemedRoot>
+            <AppStack />
+          </ThemedRoot>
         </CoreUIProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
@@ -135,5 +162,6 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: darkTokens.bg },
+  flex: { flex: 1 },
+  root: { flex: 1 },
 })

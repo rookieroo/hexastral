@@ -1,5 +1,5 @@
 /**
- * Settings — Yuun-style grouped cards; keep content minimal.
+ * 印匣 — account / device case. Grouped cards; keep content minimal.
  */
 
 import { useTheme } from '@zhop/core-ui'
@@ -25,12 +25,13 @@ import {
   SettingsSection,
   SettingsToggleRow,
 } from '@/components/settings/SettingsSection'
-import { revokeBiometricConsent } from '@/lib/api'
+import { fetchBiometricConsent, revokeBiometricConsent } from '@/lib/api'
 import { setCachedBiometricConsent } from '@/lib/biometric-consent-cache'
 import { devSetServerPro } from '@/lib/dev-tools'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { privacyPolicyUrl, resolveLocale } from '@/lib/i18n'
 import { restorePurchases } from '@/lib/iap'
+import { sealCaseCopy } from '@/lib/living-copy'
 import { pickUi } from '@/lib/locale-zh'
 import { resetOnboarding } from '@/lib/onboarding'
 import { getXingqiPushPrefs, setXingqiPushPrefs, type XingqiPushPrefs } from '@/lib/push-preference'
@@ -151,8 +152,35 @@ export default function SettingsScreen() {
         }}
       >
         <Text style={{ color: colors.text, fontSize: 22, fontWeight: '600' }}>
-          {s('设置', '設定', 'Settings', '設定')}
+          {sealCaseCopy(locale).title}
         </Text>
+
+        <SettingsSection>
+          <SettingsCard>
+            <SettingsRow
+              label={
+                readingCount > 0
+                  ? sealCaseCopy(locale).refreshPeriod
+                  : sealCaseCopy(locale).newPeriod
+              }
+              onPress={() => {
+                void (async () => {
+                  try {
+                    const ok = await fetchBiometricConsent()
+                    if (!ok) {
+                      router.push('/consent')
+                      return
+                    }
+                  } catch {
+                    router.push('/consent')
+                    return
+                  }
+                  router.push('/capture' as never)
+                })()
+              }}
+            />
+          </SettingsCard>
+        </SettingsSection>
 
         {!userId ? (
           <SettingsSection>

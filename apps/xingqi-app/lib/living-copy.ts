@@ -241,6 +241,37 @@ export function homeInputsCopy(locale: Locale): {
   }
 }
 
+/** Account / device case — not the generic word Settings. */
+export function sealCaseCopy(locale: Locale): {
+  title: string
+  newPeriod: string
+  refreshPeriod: string
+} {
+  switch (locale) {
+    case 'zh':
+      return { title: '印匣', newPeriod: '新一期', refreshPeriod: '更新本期' }
+    case 'zh-Hant':
+      return { title: '印匣', newPeriod: '新一期', refreshPeriod: '更新本期' }
+    case 'ja':
+      return { title: '文箱', newPeriod: '新しい一期', refreshPeriod: '今期を更新' }
+    default:
+      return { title: 'Case', newPeriod: 'New period', refreshPeriod: 'Refresh period' }
+  }
+}
+
+export function draftPeriodCopy(locale: Locale): { title: string; excerpt: string } {
+  switch (locale) {
+    case 'zh':
+      return { title: '新一期', excerpt: '点此录入' }
+    case 'zh-Hant':
+      return { title: '新一期', excerpt: '點此錄入' }
+    case 'ja':
+      return { title: '新しい一期', excerpt: 'タップして撮影' }
+    default:
+      return { title: 'New period', excerpt: 'Tap to capture' }
+  }
+}
+
 /** History row title — chrome i18n, never raw LLM overview. */
 export function formReadingListTitle(locale: Locale): string {
   switch (locale) {
@@ -330,6 +361,142 @@ export function homeArchiveCopy(locale: Locale): {
         statusLabel: 'Now',
         attentionLabel: 'Watch',
         actionLabel: 'Key',
+      }
+  }
+}
+
+/** Home care notes + compact period strip chrome. */
+export function homeCareCopy(locale: Locale): {
+  pace: string
+  rest: string
+  body: string
+  fallbacks: [string, string, string]
+} {
+  switch (locale) {
+    case 'zh':
+      return {
+        pace: '作息',
+        rest: '睡眠',
+        body: '饮食',
+        fallbacks: [
+          '这几天尽量按时吃饭，晚上别拖到太晚。',
+          '有三晚争取在午夜前睡下，气色会稳一些。',
+          '少熬夜赶工。节奏比硬扛更重要。',
+        ],
+      }
+    case 'zh-Hant':
+      return {
+        pace: '作息',
+        rest: '睡眠',
+        body: '飲食',
+        fallbacks: [
+          '這幾天盡量按時吃飯，晚上別拖到太晚。',
+          '有三晚爭取在午夜前睡下，氣色會穩一些。',
+          '少熬夜趕工。節奏比硬扛更重要。',
+        ],
+      }
+    case 'ja':
+      return {
+        pace: 'ペース',
+        rest: '睡眠',
+        body: '食事',
+        fallbacks: [
+          'この数日は決まった時間に食事を。夜は遅くしすぎない。',
+          '三日は深夜前に眠る。形が疲れているときは休息から。',
+          '徹夜を減らす。無理よりリズム。',
+        ],
+      }
+    default:
+      return {
+        pace: 'Pace',
+        rest: 'Rest',
+        body: 'Meals',
+        fallbacks: [
+          'Keep regular meals this week. Skip late dinners when evenings feel rushed.',
+          'Sleep before midnight on three nights. The form looks tired when rest is thin.',
+          'Ease off late nights. Pace matters more than pushing through.',
+        ],
+      }
+  }
+}
+
+export function homePeriodStripCopy(locale: Locale): { label: string } {
+  switch (locale) {
+    case 'zh':
+      return { label: '近窗' }
+    case 'zh-Hant':
+      return { label: '近窗' }
+    case 'ja':
+      return { label: '近い窓' }
+    default:
+      return { label: 'Near window' }
+  }
+}
+
+export function captureStudioCopy(locale: Locale): {
+  quality: string
+  empty: string
+  privacy: string
+  camera: string
+  retake: string
+  library: string
+  replaceLibrary: string
+  done: string
+  continueBirth: string
+  nextSlot: string
+} {
+  switch (locale) {
+    case 'zh':
+      return {
+        quality: '高清、完整、光线均匀。模糊或裁切会让报告变浅。',
+        empty: '点选槽位 · 拍照或相册 · 仅存本机',
+        privacy: '原图仅存本机；分析时上传，服务器处理完不保留。',
+        camera: '拍照',
+        retake: '重拍',
+        library: '相册',
+        replaceLibrary: '从相册替换',
+        done: '完成',
+        continueBirth: '继续填写生辰',
+        nextSlot: '下一张',
+      }
+    case 'zh-Hant':
+      return {
+        quality: '高清、完整、光線均勻。模糊或裁切會讓報告變淺。',
+        empty: '點選槽位 · 拍照或相簿 · 僅存本機',
+        privacy: '原圖僅存本機；分析時上傳，伺服器處理完不保留。',
+        camera: '拍照',
+        retake: '重拍',
+        library: '相簿',
+        replaceLibrary: '從相簿替換',
+        done: '完成',
+        continueBirth: '繼續填寫生辰',
+        nextSlot: '下一張',
+      }
+    case 'ja':
+      return {
+        quality: '鮮明・全体・均一な光。ぼやけやトリミングはリーディングが薄くなります。',
+        empty: '枠を選ぶ · カメラまたはアルバム · この端末のみ',
+        privacy: '写真は端末に保存。抽出のためだけにアップロードし、サーバーでは破棄します。',
+        camera: 'カメラ',
+        retake: '撮り直す',
+        library: 'アルバム',
+        replaceLibrary: 'アルバムから差し替え',
+        done: '完了',
+        continueBirth: '生辰情報へ',
+        nextSlot: '次へ',
+      }
+    default:
+      return {
+        quality: 'Sharp, complete, even light. Blur or crop makes a thin reading.',
+        empty: 'Tap a slot · camera or library · on this device only',
+        privacy: 'Photos stay on device; uploaded only for extraction, then discarded server-side.',
+        camera: 'Camera',
+        retake: 'Retake',
+        library: 'Library',
+        replaceLibrary: 'Replace from library',
+        done: 'Done',
+        continueBirth: 'Continue to birth info',
+        nextSlot: 'Next',
       }
   }
 }

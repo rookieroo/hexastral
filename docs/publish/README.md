@@ -30,7 +30,7 @@ Last updated: 2026-07-31.
 | **Kanyu** | `feng-app` | ⚠️ Engine + queue OK; **LLM prose quality not submit-blocking for V1 wave order but not Review-grade yet** — see [feng/report-quality-plan.md](../apps/feng/report-quality-plan.md) | Vision/synthesis P0 + ASC/RC |
 | **Yaul** | `coin-cast-app` | ❌ **Not App Store ready** — casting/physics largely coded, but ASO claims 五帝钱 skins that are not shipped; privacy URL gated while `visibility: hidden`; production RC/ASC placeholders | Product sign-off + ASO fix + legal URL + ASC/RC — [coincast/README.md](../apps/coincast/README.md) § Readiness |
 
-**Ship / submit order (technical):** Yuun → Yuel → (Kanyu after prose P0) → Yaul last. Syel is post-wave but code-ready for parallel console prep.
+**Ship / submit order (technical):** Yuun → Yuel → **Syel** (not the same review day as Yuel). Kanyu / Yaul / Lantai deferred.
 
 **API / D1:** `ALLOW_DEV_PRO: "0"` live; HMAC exemptions for notify stale-token + physiognomy `purge-inactive`; migrations through **0040** (0039 push no-verbatim-repeat guard + 0040 push metrics `auspice_push_sends`/`auspice_push_opens`). Prefer `bun db:migrate:prod` then `bun deploy` — do not assume “through 0018” or older tips from previous docs.
 

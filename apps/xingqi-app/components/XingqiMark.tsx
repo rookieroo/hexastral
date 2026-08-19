@@ -1,18 +1,22 @@
 /**
- * XingqiMark — locked brand mark: three qi beads on a qi arc (white → jade),
- * a small "qi flow" that stays legible at icon scale.
- * Raster SSOT: assets/mark.svg → icon.png / splash.png / adaptive-icon.png
+ * XingqiMark — three qi beads on a qi arc.
+ * Paper/ink beads (not a single-tint lockup, not the retired jade greens).
  */
 
+import { useTheme } from '@zhop/core-ui'
+import { faceOraclePalette } from '@zhop/hexastral-tokens/satellites'
 import Svg, { Circle, Path } from 'react-native-svg'
 
 interface XingqiMarkProps {
   size?: number
-  /** Deep jade for the trailing bead. Default brand deep jade. */
-  color?: string
 }
 
-export function XingqiMark({ size = 64, color = '#3F7B5C' }: XingqiMarkProps) {
+export function XingqiMark({ size = 64 }: XingqiMarkProps) {
+  const { isDark, colors } = useTheme()
+  const arc = isDark ? faceOraclePalette.jadeOnDark : faceOraclePalette.jade
+  const beadLo = isDark ? colors.dim : faceOraclePalette.beadMist
+  const beadMid = isDark ? faceOraclePalette.jadeOnDark : faceOraclePalette.jadeBright
+  const beadHi = isDark ? faceOraclePalette.jadeOnDarkBright : faceOraclePalette.jade
   return (
     <Svg
       width={size}
@@ -21,19 +25,17 @@ export function XingqiMark({ size = 64, color = '#3F7B5C' }: XingqiMarkProps) {
       accessibilityRole='image'
       accessibilityLabel='Syel'
     >
-      {/* qi arc threading the three beads (rises, then settles) */}
       <Path
         d='M18 36 C24 29 28 27 32 27 C37 27 41 30 46 33'
-        stroke='#52A878'
-        strokeWidth={1.5}
+        stroke={arc}
+        strokeWidth={1.8}
         strokeLinecap='round'
         fill='none'
-        opacity={0.34}
+        opacity={0.42}
       />
-      {/* three qi beads: white source → bright jade → deep jade (high contrast on dark) */}
-      <Circle cx={18} cy={36} r={4.4} fill='#FAFAFA' />
-      <Circle cx={32} cy={27} r={3.4} fill='#5FB98A' />
-      <Circle cx={46} cy={33} r={2.7} fill={color} opacity={0.95} />
+      <Circle cx={18} cy={36} r={4.4} fill={beadLo} />
+      <Circle cx={32} cy={27} r={3.4} fill={beadMid} />
+      <Circle cx={46} cy={33} r={2.7} fill={beadHi} />
     </Svg>
   )
 }

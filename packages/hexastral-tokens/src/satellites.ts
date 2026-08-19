@@ -52,15 +52,49 @@ export const coinCastSceneColors = {
   yaoPanelOverlayLight: 'rgba(24,24,27,0.94)',
 } as const
 
-// ── Face Oracle — jade + ink-wash (camera-first physiognomy) ───────────────
+// ── Face Oracle / Syel — paper + ink (camera-first physiognomy) ─────────────
+//
+// Key names stay `jade*` so call sites do not rename. Values are warm stone ink
+// (paper mock), distinct from coincast gold and feng/lantai zinc.
 
-/** 玉色墨韵 — classical jade green with ink wash. */
+/** Paper ink (light) + Dark ink (dark). Key names stay `jade*` for call sites. */
 export const faceOraclePalette = {
-  jade: '#3F7B5C',
-  jadeBright: '#52A878',
-  jadeMute: 'rgba(63,123,92,0.45)',
-  jadeGhost: 'rgba(63,123,92,0.08)',
-  inkWash: 'rgba(60,36,21,0.04)',
+  jade: '#2C2A27',
+  jadeBright: '#4A4742',
+  jadeMute: 'rgba(44,42,39,0.45)',
+  jadeGhost: 'rgba(44,42,39,0.08)',
+  inkWash: 'rgba(44,42,39,0.04)',
+  jadeOnDark: '#D8D4CB',
+  jadeOnDarkBright: '#ECEAE4',
+  jadeOnDarkMute: 'rgba(216,212,203,0.45)',
+  jadeOnDarkGhost: 'rgba(216,212,203,0.10)',
+  beadMist: '#C8C4BA',
+} as const
+
+/** Shell surfaces from home-ui-mock.html (Paper / Dark ink). */
+export const faceOracleSurfaces = {
+  light: {
+    bg: '#F4F1EA',
+    card: '#FAF8F3',
+    cardElevated: '#F4F1EA',
+    separator: 'rgba(28, 27, 25, 0.12)',
+    text: '#1C1B19',
+    secondary: '#6B6862',
+    dim: '#8A877F',
+    tint: '#1C1B19',
+    tintFg: '#F4F1EA',
+  },
+  dark: {
+    bg: '#121211',
+    card: '#1A1918',
+    cardElevated: '#22211F',
+    separator: 'rgba(236, 234, 228, 0.12)',
+    text: '#ECEAE4',
+    secondary: '#9A978F',
+    dim: '#8A877F',
+    tint: '#ECEAE4',
+    tintFg: '#121211',
+  },
 } as const
 
 // ── Dream Oracle — indigo + silver (the night palette) ─────────────────────

@@ -21,9 +21,9 @@ Internal **directory / API** codenames (`auspice`, `kindred`, …) and RevenueCa
 (donor code already ported into Yuel; API/web routes for numerology/dream may
 remain for future reuse). Legacy `hexastral-app` is also not a launch target.
 
-**Syel (post-wave):** independent satellite (`apps/xingqi-app`, display **Syel**) — three photos (L/R palm + face) + birth Form + dual IAP (consumable ≥ $9.99 + `faceoracle_pro` Timeline with photo-slot quota + event table for push). Optional post-reading **Sync to Notion** reuses Lantai’s workspace connection; capture does not move to Shortcuts. Spec: [ADR-0028](./decisions/0028-face-oracle-dual-track.md) · [apps/xingqi/product.md](./apps/xingqi/product.md).
+**Syel (after Yuel):** J2 问命 — three photos + birth + IAP reading / Pro timeline. Not a daily journal. Spec: [apps/xingqi/product.md](./apps/xingqi/product.md) · split: [apps/lantai/demand.md](./apps/lantai/demand.md) · home mock: [apps/xingqi/home-ui-mock.html](./apps/xingqi/home-ui-mock.html).
 
-**Lantai (parallel track, not this four-app wave):** custom Notion Shortcuts app (`apps/lantai-app`, display **Lantai** / Flare for Notion). Core path: connect workspace → pick **the user’s own database** → toggle properties → zero-edit install. Official starters are optional. Public API on hexastral-api `/api/lantai/*`. GTM via Xiaohongshu + TestFlight. **Not** AI ingest; **not** 精气神 capture. Syel may later add a post-reading **Sync to Notion** that reuses Lantai’s workspace connection. Plan: [apps/lantai/plan.md](./apps/lantai/plan.md).
+**Lantai (parallel):** J3 记一笔 — in-app capture + observation (diet + custom DB). Shortcuts and Notion optional. No official face/palm template. [demand.md](./apps/lantai/demand.md) · [plan.md](./apps/lantai/plan.md).
 
 ---
 
@@ -35,7 +35,7 @@ One Worker hosts launch-wave apps, plus Lantai when wired:
 - `/api/feng/*` — Feng chapters
 - `/api/divination/*` — CoinCast casting (when wired)
 - `/api/portfolio/auth/{apple,google}` — unified identity
-- `/api/lantai/*` — Lantai Notion OAuth + configs (HMAC); public `GET /s/:id` for Shortcuts (secret-link)
+- `/api/lantai/*` — Notion OAuth + configs (HMAC); iCloud slot files hold `config_id`; `POST /api/lantai/ai/jobs` (secret-link `config_id`, Kimi + Queue); `GET /s/:id` legacy only
 
 Deploy: `cd apps/hexastral-api && bun deploy`. No CI — validate locally with `bun run preflight`.
 
@@ -55,13 +55,11 @@ Per [ADR-0019](./decisions/0019-v1-wave-narrowed-cycle-feng-yuan.md) (updated 20
 
 1. **Yuun** — daily utility anchor + publisher credit (**W1 live**)
 2. **Yuel** — portfolio upsell; Yuun 亲友 carry-over is the moat (**W2 live / brand host open**)
-3. **Kanyu / Yaul** — **deferred**: craft bar (风水深度) and GTM/physical-cast gap not ready
-4. **Syel last** — face/palm biometric sensitivity + App Review risk; after Yuun+Yuel stabilize
+3. **Syel** — next engineering + ASC after Yuel (not the same review day). Funnel unchanged; home UI mock: [apps/xingqi/home-ui-mock.html](./apps/xingqi/home-ui-mock.html)
+4. **Kanyu / Yaul** — **deferred**: craft bar and GTM/physical-cast gap
+5. **Lantai** — parallel, not in this ASC queue; do not block Syel chrome work
 
-**Lantai** may be built in parallel after Yuun/Yuel are in review (Xiaohongshu SKU + custom Shortcuts). It is **not** in the four-app ASC queue. Do not block Yuun/Yuel on it.
-
-Builds can run in parallel; ASC **submission** priority is Yuun → Yuel. Do not force
-Kanyu / Yaul / Syel into the next store wave.
+Builds can run in parallel; ASC **submission** priority is Yuun → Yuel → **Syel**. Do not submit Syel on the same day as Yuel.
 
 ---
 
@@ -74,9 +72,9 @@ Kanyu / Yaul / Syel into the next store wave.
 | **Flagship** | Yuel (Kanyu later) | Depth, Pro reports, primary monetization |
 | **Funnel** | Yuun (Yaul later) | Daily entry → upsell to flagship |
 
-**Technical submission order:** Yuun → Yuel; Kanyu / Yaul / Syel not in the active wave.
+**Technical submission order:** Yuun → Yuel → Syel. Kanyu / Yaul / Lantai stay deferred.
 
-Single source for visibility, sitemap, and homepage cards: `apps/hexastral-web/lib/growth/launch-status.ts`. Bump `visibility` per wave (W1 Yuun → W2 Yuel → defer Kanyu/Yaul → Syel last).
+Single source for visibility, sitemap, and homepage cards: `apps/hexastral-web/lib/growth/launch-status.ts`. Bump `visibility` per wave (W1 Yuun → W2 Yuel → Syel next; defer Kanyu/Yaul).
 
 **Not indexed on hexastral.com:** DreamOracle, FaceOracle, StarPalace, EightPillars, omnibus HexAstral iOS app, `/onboarding` flagship funnel.
 

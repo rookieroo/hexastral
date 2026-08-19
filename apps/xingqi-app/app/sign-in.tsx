@@ -12,7 +12,7 @@ import {
 } from '@zhop/satellite-runtime'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import Constants from 'expo-constants'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -52,6 +52,8 @@ export default function SignInScreen() {
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
   const router = useRouter()
+  const rawNext = useLocalSearchParams<{ next?: string | string[] }>().next
+  const next = Array.isArray(rawNext) ? rawNext[0] : rawNext
   const locale = resolveLocale()
   const s = (hans: string, hant: string, en: string, ja?: string) =>
     pickUi(locale, hans, hant, en, ja)
@@ -100,6 +102,15 @@ export default function SignInScreen() {
     })()
   }, [])
 
+  const finishSignIn = () => {
+    if (next === 'consent') {
+      router.replace('/consent')
+      return
+    }
+    if (router.canGoBack()) router.back()
+    else router.replace('/(app)')
+  }
+
   const onApple = async () => {
     if (busy) return
     setBusy('apple')
@@ -126,8 +137,7 @@ export default function SignInScreen() {
         surface: 'apple_auth',
         credentialPresent: true,
       })
-      if (router.canGoBack()) router.back()
-      else router.replace('/(app)')
+      finishSignIn()
     } catch (err) {
       if (isAppleCancel(err)) return
       if (__DEV__) console.error('[Xingqi] Apple sign-in failed', err)
@@ -170,8 +180,7 @@ export default function SignInScreen() {
         storagePrefix: PORTFOLIO_STORAGE_PREFIX,
       })
       await loginFaceIap(userId)
-      if (router.canGoBack()) router.back()
-      else router.replace('/(app)')
+      finishSignIn()
     } catch (err) {
       if (__DEV__) console.error('[Xingqi] Google sign-in failed', err)
       setError(
@@ -200,7 +209,7 @@ export default function SignInScreen() {
       }}
     >
       <View style={{ alignItems: 'center', marginBottom: spacing.md }}>
-        <XingqiMark size={72} color={colors.accent} />
+        <XingqiMark size={72} />
       </View>
       <Text style={{ color: colors.text, fontSize: 28, fontWeight: '600', textAlign: 'center' }}>
         Syel

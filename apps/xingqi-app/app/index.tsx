@@ -1,4 +1,4 @@
-import { darkTokens } from '@zhop/hexastral-tokens/palette'
+import { useTheme } from '@zhop/core-ui'
 import { Redirect } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
@@ -8,6 +8,7 @@ import { isOnboardingComplete } from '@/lib/onboarding'
 type EntryStatus = 'pending' | 'splash' | 'returning'
 
 export default function EntryScreen() {
+  const { colors } = useTheme()
   const [status, setStatus] = useState<EntryStatus>('pending')
 
   useEffect(() => {
@@ -27,7 +28,7 @@ export default function EntryScreen() {
   }, [])
 
   if (status === 'pending') {
-    return <View style={{ flex: 1, backgroundColor: darkTokens.bg }} />
+    return <View style={{ flex: 1, backgroundColor: colors.bg }} />
   }
   if (status === 'splash') return <Redirect href='/(onboarding)/intro' />
   return <Redirect href='/(app)' />

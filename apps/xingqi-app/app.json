@@ -6,12 +6,15 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "syel",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#09090B"
+      "backgroundColor": "#F4F1EA",
+      "dark": {
+        "backgroundColor": "#121211"
+      }
     },
     "ios": {
       "supportsTablet": true,
@@ -25,6 +28,7 @@
       ],
       "infoPlist": {
         "CFBundleDisplayName": "Syel",
+        "UIUserInterfaceStyle": "Automatic",
         "NSCameraUsageDescription": "Syel uses the camera to capture left palm, right palm, and face photos for structured form-qi cultural study — not medical diagnosis.",
         "NSPhotoLibraryUsageDescription": "Syel accesses your photo library when you choose existing palm or face photos for form-qi cultural study.",
         "UIBackgroundModes": ["remote-notification"],
@@ -67,7 +71,7 @@
       "package": "com.hexastral.syel",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#09090B"
+        "backgroundColor": "#F4F1EA"
       }
     },
     "extra": {
@@ -82,7 +86,9 @@
       "expo-router",
       "expo-dev-client",
       "expo-notifications",
+      "./plugins/withAutomaticAppearance.js",
       "./plugins/withIosPodDeploymentTarget.cjs",
+      "./plugins/withGoogleModularHeaders.js",
       [
         "expo-apple-authentication",
         { "iosTeamId": "L9Z47DW56X" }

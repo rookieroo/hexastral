@@ -88,14 +88,17 @@ Design assets: [design/](./design/) · Market research: [research/](./research/)
 
 | Doc | Purpose |
 |---|---|
-| [apps/lantai/plan.md](./apps/lantai/plan.md) | Custom Notion Shortcuts against the user’s own DB; templates optional. hexastral-api `/api/lantai`. AI ingest is a separate future app; Syel owns Sync to Notion. |
+| [apps/lantai/demand.md](./apps/lantai/demand.md) | **SSOT:** jobs → Lantai vs Syel |
+| [apps/lantai/plan.md](./apps/lantai/plan.md) | Lantai implementation (J3 capture) |
+| [apps/lantai/legal-feasibility.md](./apps/lantai/legal-feasibility.md) | Consent memo (diet / optional vision) |
 
-### Syel (`apps/xingqi-app`) — post-wave
+### Syel (`apps/xingqi-app`) — after Yuel
 
 | Doc | Purpose |
 |---|---|
 | [apps/xingqi/product.md](./apps/xingqi/product.md) | Three-photo + birth funnel, dual IAP |
-| [apps/xingqi/launch.md](./apps/xingqi/launch.md) | 提审清单骨架（post-wave，Yuun+Yuel 之后） |
+| [apps/xingqi/home-ui-mock.html](./apps/xingqi/home-ui-mock.html) | Home chrome theme mock (paper + ink) |
+| [apps/xingqi/launch.md](./apps/xingqi/launch.md) | 提审清单骨架（Yuun → Yuel → Syel，勿与 Yuel 同日） |
 | [apps/xingqi/regression-checklist.md](./apps/xingqi/regression-checklist.md) | 真机回归清单 |
 | [decisions/0028-face-oracle-dual-track.md](./decisions/0028-face-oracle-dual-track.md) | ADR — dual track + events + privacy (API ids `faceoracle`) |
 
