@@ -12,6 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { DevProChip } from '@/components/DevProChip'
 import { OffsetPhotoStack } from '@/components/OffsetPhotoStack'
 import { PeriodPhotoWheel } from '@/components/PeriodPhotoWheel'
 import { SealMark } from '@/components/SealMark'
@@ -49,8 +50,13 @@ export default function XingqiHomeScreen() {
   const labels = partLabels(locale)
   const draftCopy = draftPeriodCopy(locale)
   const entitlements = useEntitlements()
-  const isPro =
-    hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')
+  const [devProTick, setDevProTick] = useState(0)
+  const isPro = useMemo(() => {
+    void devProTick
+    return (
+      hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')
+    )
+  }, [devProTick, entitlements])
   const [items, setItems] = useState<PortfolioReadingItem[]>([])
   const [loading, setLoading] = useState(false)
   const [photoTick, setPhotoTick] = useState(0)
@@ -395,14 +401,17 @@ export default function XingqiHomeScreen() {
           }}
         >
           <XingqiMark size={36} />
-          <Pressable
-            onPress={() => router.push('/(app)/settings')}
-            hitSlop={12}
-            accessibilityRole='button'
-            accessibilityLabel={seal.title}
-          >
-            <SealMark size={22} color={colors.text} accessibilityLabel={seal.title} />
-          </Pressable>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <DevProChip onChange={() => setDevProTick((n) => n + 1)} />
+            <Pressable
+              onPress={() => router.push('/(app)/settings')}
+              hitSlop={12}
+              accessibilityRole='button'
+              accessibilityLabel={seal.title}
+            >
+              <SealMark size={22} color={colors.text} accessibilityLabel={seal.title} />
+            </Pressable>
+          </View>
         </View>
       </View>
     </View>

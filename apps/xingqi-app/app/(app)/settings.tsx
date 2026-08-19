@@ -10,7 +10,6 @@ import {
   getDevEntitlementOverride,
   getPortfolioUserId,
   hasEntitlement,
-  setDevEntitlementOverride,
   useEntitlements,
 } from '@zhop/satellite-runtime'
 import * as Linking from 'expo-linking'
@@ -27,7 +26,7 @@ import {
 } from '@/components/settings/SettingsSection'
 import { fetchBiometricConsent, revokeBiometricConsent } from '@/lib/api'
 import { setCachedBiometricConsent } from '@/lib/biometric-consent-cache'
-import { devSetServerPro } from '@/lib/dev-tools'
+import { cycleDevEntitlementOverride, devEntitlementLabel } from '@/lib/dev-pro-toggle'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { privacyPolicyUrl, resolveLocale } from '@/lib/i18n'
 import { restorePurchases } from '@/lib/iap'
@@ -120,26 +119,7 @@ export default function SettingsScreen() {
   }
 
   const cycleDevPro = () => {
-    const next: DevEntitlementOverride = devPro === null ? 'pro' : devPro === 'pro' ? 'free' : null
-    setDevEntitlementOverride(next)
-    setDevPro(next)
-    if (next === 'pro') {
-      void devSetServerPro(true).then((ok) => {
-        if (!ok) {
-          Alert.alert(
-            'DEV Pro',
-            s(
-              '服务端授权失败（需已登录）。',
-              '服務端授權失敗（需已登入）。',
-              'Server grant failed.',
-              'サーバー側の付与に失敗しました（ログインが必要です）。'
-            )
-          )
-        }
-      })
-    } else if (next === 'free') {
-      void devSetServerPro(false)
-    }
+    void cycleDevEntitlementOverride().then(setDevPro)
   }
 
   return (
@@ -386,7 +366,7 @@ export default function SettingsScreen() {
             <SettingsCard>
               <SettingsRow
                 label='Force entitlement'
-                trailing={devPro === null ? 'Off' : devPro === 'pro' ? 'PRO' : 'FREE'}
+                trailing={devEntitlementLabel(devPro)}
                 onPress={cycleDevPro}
                 divider
               />
