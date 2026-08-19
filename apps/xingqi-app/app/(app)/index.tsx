@@ -19,6 +19,7 @@ import { XingqiLoader } from '@/components/XingqiLoader'
 import { XingqiMark } from '@/components/XingqiMark'
 import { fetchBiometricConsent } from '@/lib/api'
 import { setCaptureMagicHandoff } from '@/lib/capture-magic-handoff'
+import { consumeIntroHomeHandoff } from '@/lib/intro-home-handoff'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
 import { draftPeriodCopy, partLabels, sealCaseCopy } from '@/lib/living-copy'
@@ -58,6 +59,7 @@ export default function XingqiHomeScreen() {
   const lastFetchAtRef = useRef(0)
   const enteringRef = useRef(false)
   const stackAnchorRef = useRef<View>(null)
+  const skipStackResetRef = useRef(consumeIntroHomeHandoff())
   const [entering, setEntering] = useState(false)
   const [stackSpread, setStackSpread] = useState(0)
   const [stackRitual, setStackRitual] = useState(0)
@@ -145,8 +147,12 @@ export default function XingqiHomeScreen() {
     useCallback(() => {
       enteringRef.current = false
       setEntering(false)
-      setStackSpread(0)
-      setStackRitual(0)
+      if (!skipStackResetRef.current) {
+        setStackSpread(0)
+        setStackRitual(0)
+      } else {
+        skipStackResetRef.current = false
+      }
       void (async () => {
         const now = Date.now()
         const FRESH_MS = 12_000

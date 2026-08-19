@@ -147,6 +147,7 @@ export function OffsetPhotoStack({
   compact = false,
   inkEnabled = false,
   instantPose = false,
+  interactive,
   onPressPart,
 }: {
   readingId?: string
@@ -159,6 +160,7 @@ export function OffsetPhotoStack({
   compact?: boolean
   inkEnabled?: boolean
   instantPose?: boolean
+  interactive?: boolean
   onPressPart?: (part: CapturePart, hasPhoto: boolean) => void
 }) {
   const { isDark, colors } = useTheme()
@@ -208,6 +210,7 @@ export function OffsetPhotoStack({
 
   const labelFor = (part: CapturePart) =>
     part === 'palm_l' ? labels.palmL : part === 'palm_r' ? labels.palmR : labels.face
+  const canPress = interactive ?? !compact
 
   return (
     <View
@@ -236,7 +239,7 @@ export function OffsetPhotoStack({
           label={labelFor(part)}
           labelColor={colors.secondary}
           active={activePart === part}
-          interactive={!compact}
+          interactive={canPress}
           inkEnabled={inkEnabled}
           showLabels={compact}
           onPressPart={onPressPart}

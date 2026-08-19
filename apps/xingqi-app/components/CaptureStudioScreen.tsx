@@ -152,6 +152,7 @@ export function CaptureStudioScreen() {
   const rootRef = useRef<View>(null)
   const [overlayTop, setOverlayTop] = useState<number | null>(null)
   const showTargetStack = !magicMode || magicDone
+  const showChrome = !magicMode || magicDone
 
   const displayUris = useMemo(() => {
     const next: Partial<Record<CapturePart, string>> = {}
@@ -214,7 +215,9 @@ export function CaptureStudioScreen() {
         1,
         { duration: 520, easing: Easing.out(Easing.cubic) },
         (finished) => {
-          if (finished) runOnJS(setMagicDone)(true)
+          if (finished) {
+            runOnJS(setMagicDone)(true)
+          }
         }
       )
     }, MAGIC_HOLD_MS)
@@ -227,7 +230,6 @@ export function CaptureStudioScreen() {
   }, [magicDone, magicMode, magicProgress, magicTravelY])
 
   const magicOverlayStyle = useAnimatedStyle(() => ({
-    opacity: magicDone ? 0 : 1,
     transform: [{ translateY: magicTravelSv.value * magicProgress.value }],
   }))
 
@@ -405,14 +407,8 @@ export function CaptureStudioScreen() {
         gap: spacing.md,
       }}
     >
-      <View style={{ zIndex: 2, marginBottom: spacing.sm }}>
-        <Text
-          style={{
-            color: colors.secondary,
-            fontSize: 13,
-            opacity: magicMode && !magicDone ? 0 : 1,
-          }}
-        >
+      <View style={{ zIndex: 2, marginBottom: spacing.sm, display: showChrome ? 'flex' : 'none' }}>
+        <Text style={{ color: colors.secondary, fontSize: 13 }}>
           {slotMode
             ? s('本期槽位', '本期槽位', 'Period slot', '今回のスロット')
             : s('三张入镜', '三張入鏡', 'Three photos', '三枚の写真')}
@@ -423,7 +419,6 @@ export function CaptureStudioScreen() {
             fontSize: 22,
             fontWeight: '600',
             marginTop: spacing.xs,
-            opacity: magicMode && !magicDone ? 0 : 1,
           }}
         >
           {partTitle}
@@ -434,7 +429,6 @@ export function CaptureStudioScreen() {
             fontSize: 14,
             lineHeight: 20,
             marginTop: spacing.xs,
-            opacity: magicMode && !magicDone ? 0 : 1,
           }}
         >
           {copy.quality}
@@ -468,6 +462,7 @@ export function CaptureStudioScreen() {
             spread={poseSpread}
             ritual={poseRitual}
             compact
+            interactive
             instantPose={handoff != null}
           />
         ) : null}
@@ -479,14 +474,18 @@ export function CaptureStudioScreen() {
           fontSize: 12,
           lineHeight: 18,
           textAlign: 'center',
-          opacity: magicMode && !magicDone ? 0 : 1,
+          display: showChrome ? 'flex' : 'none',
         }}
       >
         {hasActive ? copy.privacy : copy.empty}
       </Text>
 
       <View
-        style={{ flexDirection: 'row', gap: spacing.sm, opacity: magicMode && !magicDone ? 0 : 1 }}
+        style={{
+          flexDirection: 'row',
+          gap: spacing.sm,
+          display: showChrome ? 'flex' : 'none',
+        }}
       >
         <Pressable
           onPress={() => void shoot()}
@@ -520,14 +519,15 @@ export function CaptureStudioScreen() {
         </Pressable>
       </View>
 
-      <Button
-        variant='primary'
-        onPress={onPrimary}
-        disabled={busy || (slotMode ? !hasActive : !allReady)}
-        style={{ opacity: magicMode && !magicDone ? 0 : 1 }}
-      >
-        {slotMode ? copy.done : copy.continueBirth}
-      </Button>
+      <View style={{ display: showChrome ? 'flex' : 'none' }}>
+        <Button
+          variant='primary'
+          onPress={onPrimary}
+          disabled={busy || (slotMode ? !hasActive : !allReady)}
+        >
+          {slotMode ? copy.done : copy.continueBirth}
+        </Button>
+      </View>
 
       {magicMode && !magicDone && overlayTop != null ? (
         <Animated.View

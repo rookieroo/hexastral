@@ -10,7 +10,6 @@ import { useMemo, useRef } from 'react'
 import { Pressable, Text, useWindowDimensions } from 'react-native'
 import Animated, {
   Easing,
-  FadeIn,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -19,6 +18,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { XingqiMark } from '@/components/XingqiMark'
+import { setIntroHomeHandoff } from '@/lib/intro-home-handoff'
 import { resolveLocale } from '@/lib/i18n'
 import { markOnboardingComplete } from '@/lib/onboarding'
 
@@ -30,7 +30,7 @@ const HINT = {
 } as const
 
 const INTRO_MARK = 96
-const HOME_MARK = 28
+const HOME_MARK = 36
 const FLY_MS = 480
 
 export default function IntroScreen() {
@@ -64,16 +64,17 @@ export default function IntroScreen() {
     if (advanced.current) return
     advanced.current = true
     void markOnboardingComplete()
+    setIntroHomeHandoff()
 
     const homeX = spacing.xl + HOME_MARK / 2
-    const homeY = insets.top + spacing.md + HOME_MARK / 2
+    const homeY = insets.top + spacing.sm + HOME_MARK / 2
     const introX = width / 2
     const introY = height / 2 - 12
     const easing = Easing.out(Easing.cubic)
 
     markTx.value = withTiming(homeX - introX, { duration: FLY_MS, easing })
     markTy.value = withTiming(homeY - introY, { duration: FLY_MS, easing })
-    chromeOpacity.value = withTiming(0, { duration: 240, easing: Easing.in(Easing.quad) })
+    chromeOpacity.value = withTiming(0, { duration: 220, easing: Easing.out(Easing.quad) })
     markScale.value = withTiming(
       HOME_MARK / INTRO_MARK,
       { duration: FLY_MS, easing },
@@ -104,7 +105,7 @@ export default function IntroScreen() {
         <Animated.View style={markStyle}>
           <XingqiMark size={INTRO_MARK} />
         </Animated.View>
-        <Animated.View entering={FadeIn.delay(200).duration(700)} style={chromeStyle}>
+        <Animated.View style={chromeStyle}>
           <Text
             style={{
               color: colors.text,
@@ -118,7 +119,6 @@ export default function IntroScreen() {
         </Animated.View>
 
         <Animated.View
-          entering={FadeIn.delay(600).duration(800)}
           style={[
             chromeStyle,
             {
