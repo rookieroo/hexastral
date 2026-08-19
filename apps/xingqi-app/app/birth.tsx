@@ -164,18 +164,11 @@ export default function BirthScreen() {
       } catch {
         // local draft enough for paywall / reading
       }
+      if (!draftHasThreePhotos(getReadingDraft())) {
+        router.replace('/capture' as never)
+        return
+      }
       if (!draftReadyForPaywall(getReadingDraft())) {
-        if (!draftHasThreePhotos(getReadingDraft())) {
-          setError(
-            s(
-              '请先在首页完成左掌、右掌与面部照片',
-              '請先在首頁完成左掌、右掌與面部照片',
-              'Add left palm, right palm, and face photos first',
-              'ホームで左手・右手・顔の写真を先に撮影してください'
-            )
-          )
-          return
-        }
         setError(s('资料不完整', '資料不完整', 'Incomplete draft', '入力内容が不完全です'))
         return
       }
@@ -214,10 +207,10 @@ export default function BirthScreen() {
       </Text>
       <Text style={{ color: colors.secondary, fontSize: 14, lineHeight: 20 }}>
         {s(
-          '完整解读需要三张照片与生辰。生辰用于形气与八字对照。',
-          '完整解讀需要三張照片與生辰。生辰用於形氣與八字對照。',
-          'A complete form-qi reading needs three photos plus birth info for face/palm form × BaZi cross-reference.',
-          '完全な形気リーディングには三枚の写真と生辰情報（顔・掌の形 × 八字対照）が必要です。'
+          '完整解读需要生辰与三张照片。先录入生辰，再录入左掌、右掌与面部。',
+          '完整解讀需要生辰與三張照片。先錄入生辰，再錄入左掌、右掌與面部。',
+          'A complete reading needs birth info and three photos. Enter birth details first, then capture palms and face.',
+          '完全なリーディングには生辰と三枚の写真が必要です。先に生辰を入力し、その後掌と顔を撮影します。'
         )}
       </Text>
       <BirthForm
@@ -247,9 +240,16 @@ export default function BirthScreen() {
       {error ? <Text style={{ color: colors.accent }}>{error}</Text> : null}
       <View>
         <Button variant='primary' onPress={() => void onContinue()} disabled={busy}>
-          {isPro
-            ? s('开始解读', '開始解讀', 'Start reading', '解読を開始')
-            : s('继续到解锁', '繼續到解鎖', 'Continue to unlock', '購入手続きへ')}
+          {(() => {
+            const draft = getReadingDraft()
+            if (!draftHasThreePhotos(draft)) {
+              return s('继续录入照片', '繼續錄入照片', 'Continue to photos', '写真の撮影へ')
+            }
+            if (isPro) {
+              return s('开始解读', '開始解讀', 'Start reading', '解読を開始')
+            }
+            return s('继续到解锁', '繼續到解鎖', 'Continue to unlock', '購入手続きへ')
+          })()}
         </Button>
       </View>
     </ScrollView>

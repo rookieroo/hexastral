@@ -25,7 +25,7 @@ import { resolveLocale } from '@/lib/i18n'
 import { draftPeriodCopy, partLabels, sealCaseCopy } from '@/lib/living-copy'
 import { pickUi } from '@/lib/locale-zh'
 import { periodCaption } from '@/lib/period-caption'
-import { type CapturePart, hydrateReadingDraft } from '@/lib/reading-draft'
+import { type CapturePart, draftHasBirthInfo, hydrateReadingDraft } from '@/lib/reading-draft'
 import {
   bindReadingJobLifecycle,
   consumeReadingJobDone,
@@ -36,7 +36,7 @@ import {
   subscribeReadingJob,
 } from '@/lib/reading-job'
 import { readingHasReportBody } from '@/lib/report-chapters'
-import { POLAROID_FAN_MS } from '@/lib/stack-layout'
+import { POLAROID_FAN_MS, POLAROID_FAN_W, POLAROID_STACK_H } from '@/lib/stack-layout'
 
 export default function XingqiHomeScreen() {
   const router = useRouter()
@@ -60,6 +60,7 @@ export default function XingqiHomeScreen() {
   const enteringRef = useRef(false)
   const stackAnchorRef = useRef<View>(null)
   const skipStackResetRef = useRef(consumeIntroHomeHandoff())
+  const skipInitialReloadRef = useRef(skipStackResetRef.current)
   const [entering, setEntering] = useState(false)
   const [stackSpread, setStackSpread] = useState(0)
   const [stackRitual, setStackRitual] = useState(0)
@@ -147,13 +148,22 @@ export default function XingqiHomeScreen() {
     useCallback(() => {
       enteringRef.current = false
       setEntering(false)
-      if (!skipStackResetRef.current) {
+      if (skipStackResetRef.current) {
+        skipStackResetRef.current = false
+      } else {
         setStackSpread(0)
         setStackRitual(0)
-      } else {
-        skipStackResetRef.current = false
       }
       void (async () => {
+        if (skipInitialReloadRef.current) {
+          skipInitialReloadRef.current = false
+          await hydrateReadingDraft()
+          hasLoadedRef.current = true
+          lastFetchAtRef.current = Date.now()
+          setPhotoTick((n) => n + 1)
+          resumeReadingJobIfNeeded(locale, isPro)
+          return
+        }
         const now = Date.now()
         const FRESH_MS = 12_000
         if (hasLoadedRef.current && now - lastFetchAtRef.current < FRESH_MS) {
@@ -217,17 +227,24 @@ export default function XingqiHomeScreen() {
       )
       return
     }
-    // One expansion phase only: spread + ritual run together.
-    setStackSpread(1)
-    setStackRitual(1)
-    await new Promise((r) => setTimeout(r, POLAROID_FAN_MS))
     if (!(await requireConsent())) {
       enteringRef.current = false
       setEntering(false)
       return
     }
+    const draft = await hydrateReadingDraft()
+    if (!draftHasBirthInfo(draft)) {
+      enteringRef.current = false
+      setEntering(false)
+      router.push('/birth' as never)
+      return
+    }
+    // One expansion phase only: spread + ritual run together.
+    setStackSpread(1)
+    setStackRitual(1)
+    await new Promise((r) => setTimeout(r, POLAROID_FAN_MS))
     pushCaptureMagic()
-  }, [job.status, locale, pushCaptureMagic, requireConsent])
+  }, [job.status, locale, pushCaptureMagic, requireConsent, router, s])
 
   const hasReading = items.length > 0
   const wheelItems = useMemo(
@@ -326,7 +343,11 @@ export default function XingqiHomeScreen() {
           backgroundColor: colors.bg,
         }}
       >
-        <View ref={stackAnchorRef} collapsable={false}>
+        <View
+          ref={stackAnchorRef}
+          collapsable={false}
+          style={{ width: POLAROID_FAN_W, height: POLAROID_STACK_H }}
+        >
           <OffsetPhotoStack
             uris={{}}
             spread={stackSpread}

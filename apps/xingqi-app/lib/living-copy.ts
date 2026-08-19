@@ -443,6 +443,7 @@ export function captureStudioCopy(locale: Locale): {
   replaceLibrary: string
   done: string
   continueBirth: string
+  continueUnlock: string
   nextSlot: string
 } {
   switch (locale) {
@@ -457,6 +458,7 @@ export function captureStudioCopy(locale: Locale): {
         replaceLibrary: '从相册替换',
         done: '完成',
         continueBirth: '继续填写生辰',
+        continueUnlock: '继续到解锁',
         nextSlot: '下一张',
       }
     case 'zh-Hant':
@@ -470,6 +472,7 @@ export function captureStudioCopy(locale: Locale): {
         replaceLibrary: '從相簿替換',
         done: '完成',
         continueBirth: '繼續填寫生辰',
+        continueUnlock: '繼續到解鎖',
         nextSlot: '下一張',
       }
     case 'ja':
@@ -483,6 +486,7 @@ export function captureStudioCopy(locale: Locale): {
         replaceLibrary: 'アルバムから差し替え',
         done: '完了',
         continueBirth: '生辰情報へ',
+        continueUnlock: '購入手続きへ',
         nextSlot: '次へ',
       }
     default:
@@ -496,6 +500,7 @@ export function captureStudioCopy(locale: Locale): {
         replaceLibrary: 'Replace from library',
         done: 'Done',
         continueBirth: 'Continue to birth info',
+        continueUnlock: 'Continue to unlock',
         nextSlot: 'Next',
       }
   }

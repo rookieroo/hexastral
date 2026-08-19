@@ -21,6 +21,7 @@ import { consumeCaptureMagicHandoff } from '@/lib/capture-magic-handoff'
 import { persistPeriodPhoto } from '@/lib/period-photos'
 import {
   type CapturePart,
+  draftHasBirthInfo,
   draftHasThreePhotos,
   draftReadyForPaywall,
   getReadingDraft,
@@ -29,7 +30,7 @@ import {
 } from '@/lib/reading-draft'
 import { showReadingStartedHandoff, startReadingJob } from '@/lib/reading-job'
 import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
-import { POLAROID_STACK_H } from '@/lib/stack-layout'
+import { POLAROID_FAN_W, POLAROID_STACK_H } from '@/lib/stack-layout'
 
 const PARTS: CapturePart[] = ['palm_l', 'palm_r', 'face']
 const MAGIC_HOLD_MS = 90
@@ -448,7 +449,9 @@ export function CaptureStudioScreen() {
         }}
         style={{
           marginTop: spacing.lg,
-          height: magicMode && !magicDone ? POLAROID_STACK_H : undefined,
+          width: POLAROID_FAN_W,
+          height: POLAROID_STACK_H,
+          alignSelf: 'center',
           zIndex: 1,
         }}
         pointerEvents={showTargetStack ? 'auto' : 'none'}
@@ -525,7 +528,13 @@ export function CaptureStudioScreen() {
           onPress={onPrimary}
           disabled={busy || (slotMode ? !hasActive : !allReady)}
         >
-          {slotMode ? copy.done : copy.continueBirth}
+          {slotMode
+            ? copy.done
+            : allReady
+              ? draftHasBirthInfo(getReadingDraft())
+                ? copy.continueUnlock
+                : copy.continueBirth
+              : copy.nextSlot}
         </Button>
       </View>
 
@@ -535,22 +544,25 @@ export function CaptureStudioScreen() {
           style={[
             {
               position: 'absolute',
-              left: spacing.xl,
-              right: spacing.xl,
+              left: 0,
+              right: 0,
               top: overlayTop,
+              alignItems: 'center',
               zIndex: 3,
             },
             magicOverlayStyle,
           ]}
         >
-          <OffsetPhotoStack
-            uris={displayUris}
-            labels={labels}
-            spread={poseSpread}
-            ritual={poseRitual}
-            compact
-            instantPose
-          />
+          <View style={{ width: POLAROID_FAN_W, height: POLAROID_STACK_H }}>
+            <OffsetPhotoStack
+              uris={displayUris}
+              labels={labels}
+              spread={poseSpread}
+              ritual={poseRitual}
+              compact
+              instantPose
+            />
+          </View>
         </Animated.View>
       ) : null}
     </View>

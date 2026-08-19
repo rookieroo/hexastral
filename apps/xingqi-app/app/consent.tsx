@@ -17,7 +17,12 @@ import { setCachedBiometricConsent } from '@/lib/biometric-consent-cache'
 import { estimateConsentReadMs } from '@/lib/consent-read'
 import { resolveLocale } from '@/lib/i18n'
 import { pickUi } from '@/lib/locale-zh'
-import { clearReadingDraft } from '@/lib/reading-draft'
+import { draftHasBirthInfo, hydrateReadingDraft, clearReadingDraft } from '@/lib/reading-draft'
+
+async function routeAfterConsent(): Promise<'birth' | 'capture'> {
+  const draft = await hydrateReadingDraft()
+  return draftHasBirthInfo(draft) ? 'capture' : 'birth'
+}
 
 export default function BiometricConsentScreen() {
   const { colors, spacing } = useTheme()
@@ -104,7 +109,8 @@ export default function BiometricConsentScreen() {
         const ok = await fetchBiometricConsent()
         if (cancelled) return
         if (ok) {
-          router.replace('/capture')
+          const next = await routeAfterConsent()
+          router.replace(next === 'birth' ? '/birth' : '/capture')
           return
         }
       } catch {
@@ -124,7 +130,8 @@ export default function BiometricConsentScreen() {
     setError(null)
     try {
       await recordBiometricConsent()
-      router.replace('/capture')
+      const next = await routeAfterConsent()
+      router.replace(next === 'birth' ? '/birth' : '/capture')
     } catch (err) {
       const msg = err instanceof Error ? err.message : ''
       if (msg === 'signin_required') {

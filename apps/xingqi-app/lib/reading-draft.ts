@@ -114,6 +114,10 @@ export function draftHasThreePhotos(d: ReadingDraft = draft): boolean {
   return Boolean(d.palmLeftUri && d.palmRightUri && d.faceUri)
 }
 
+export function draftHasBirthInfo(d: ReadingDraft = draft): boolean {
+  return Boolean(d.solarDate) && d.timeIndex != null && Boolean(d.gender)
+}
+
 export function draftReadyForPaywall(d: ReadingDraft = draft): boolean {
   return draftHasThreePhotos(d) && Boolean(d.solarDate) && d.timeIndex != null && Boolean(d.gender)
 }
