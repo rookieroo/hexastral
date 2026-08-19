@@ -146,6 +146,7 @@ export function OffsetPhotoStack({
   ritual = 0,
   compact = false,
   inkEnabled = false,
+  instantPose = false,
   onPressPart,
 }: {
   readingId?: string
@@ -157,6 +158,7 @@ export function OffsetPhotoStack({
   ritual?: number
   compact?: boolean
   inkEnabled?: boolean
+  instantPose?: boolean
   onPressPart?: (part: CapturePart, hasPhoto: boolean) => void
 }) {
   const { isDark, colors } = useTheme()
@@ -170,15 +172,23 @@ export function OffsetPhotoStack({
   const ritualSv = useSharedValue(ritual)
 
   useEffect(() => {
+    if (instantPose) {
+      spreadSv.value = spread
+      return
+    }
     spreadSv.value = withTiming(spread, { duration: POLAROID_FAN_MS, easing: FAN_EASE })
-  }, [spread, spreadSv])
+  }, [instantPose, spread, spreadSv])
 
   useEffect(() => {
+    if (instantPose) {
+      ritualSv.value = ritual
+      return
+    }
     ritualSv.value = withTiming(ritual, {
       duration: POLAROID_RITUAL_MS,
       easing: Easing.inOut(Easing.cubic),
     })
-  }, [ritual, ritualSv])
+  }, [instantPose, ritual, ritualSv])
 
   useEffect(() => {
     if (urisProp) return

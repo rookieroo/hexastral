@@ -57,6 +57,7 @@ export default function XingqiHomeScreen() {
   const hasLoadedRef = useRef(false)
   const lastFetchAtRef = useRef(0)
   const enteringRef = useRef(false)
+  const stackAnchorRef = useRef<View>(null)
   const [entering, setEntering] = useState(false)
   const [stackSpread, setStackSpread] = useState(0)
   const [stackRitual, setStackRitual] = useState(0)
@@ -178,6 +179,19 @@ export default function XingqiHomeScreen() {
     }
   }, [router])
 
+  const pushCaptureMagic = useCallback(() => {
+    const anchor = stackAnchorRef.current
+    if (!anchor) {
+      setCaptureMagicHandoff({ spread: 1, ritual: 1, startCenterY: 0 })
+      router.push({ pathname: '/capture', params: { magic: '1' } } as never)
+      return
+    }
+    anchor.measureInWindow((_x, y, _w, h) => {
+      setCaptureMagicHandoff({ spread: 1, ritual: 1, startCenterY: y + h / 2 })
+      router.push({ pathname: '/capture', params: { magic: '1' } } as never)
+    })
+  }, [router])
+
   const beginOnboarding = useCallback(async () => {
     if (enteringRef.current) return
     enteringRef.current = true
@@ -205,9 +219,8 @@ export default function XingqiHomeScreen() {
       setEntering(false)
       return
     }
-    setCaptureMagicHandoff({ spread: 1, ritual: 1 })
-    router.push({ pathname: '/capture', params: { magic: '1' } } as never)
-  }, [job.status, locale, requireConsent, router])
+    pushCaptureMagic()
+  }, [job.status, locale, pushCaptureMagic, requireConsent])
 
   const hasReading = items.length > 0
   const wheelItems = useMemo(
@@ -306,19 +319,22 @@ export default function XingqiHomeScreen() {
           backgroundColor: colors.bg,
         }}
       >
-        <OffsetPhotoStack
-          uris={{}}
-          spread={stackSpread}
-          ritual={stackRitual}
-          compact
-          labels={labels}
-        />
+        <View ref={stackAnchorRef} collapsable={false}>
+          <OffsetPhotoStack
+            uris={{}}
+            spread={stackSpread}
+            ritual={stackRitual}
+            compact
+            labels={labels}
+          />
+        </View>
         <Text
           style={{
             color: colors.secondary,
             fontSize: 14,
-            marginTop: spacing.lg,
             opacity: stackSpread === 0 ? 1 : 0,
+            height: stackSpread === 0 ? undefined : 0,
+            marginTop: stackSpread === 0 ? spacing.lg : 0,
           }}
         >
           {s(

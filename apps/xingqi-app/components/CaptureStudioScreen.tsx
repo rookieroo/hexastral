@@ -143,11 +143,14 @@ export function CaptureStudioScreen() {
   const [uris, setUris] = useState<Partial<Record<CapturePart, string>>>({})
   const [bust, setBust] = useState(0)
   const [busy, setBusy] = useState(false)
-  const [stackTargetCenterY, setStackTargetCenterY] = useState<number | null>(null)
+  const [stackTargetScreenCenterY, setStackTargetScreenCenterY] = useState<number | null>(null)
   const [magicTravelY, setMagicTravelY] = useState<number | null>(null)
   const [magicDone, setMagicDone] = useState(!magicMode)
   const magicProgress = useSharedValue(magicMode ? 0 : 1)
   const magicTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const stackAnchorRef = useRef<View>(null)
+  const rootRef = useRef<View>(null)
+  const [overlayTop, setOverlayTop] = useState<number | null>(null)
 
   const displayUris = useMemo(() => {
     const next: Partial<Record<CapturePart, string>> = {}
@@ -186,14 +189,23 @@ export function CaptureStudioScreen() {
     return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : magicMode ? 1 : 0
   })()
 
-  const magicStartCenterY = height * 0.5
+  const magicStartScreenCenterY = handoff?.startCenterY ?? height * 0.5
   const magicDeltaY = magicTravelY ?? 0
+  const lockStackPose = magicMode && !magicDone
 
   useEffect(() => {
-    if (!magicMode || magicDone || stackTargetCenterY == null) return
+    if (!magicMode || magicDone || overlayTop != null) return
+    rootRef.current?.measureInWindow((_x, rootY, _w, rootH) => {
+      const startY = handoff?.startCenterY ?? rootY + rootH / 2
+      setOverlayTop(startY - POLAROID_STACK_H / 2 - rootY)
+    })
+  }, [handoff?.startCenterY, magicDone, magicMode, overlayTop])
+
+  useEffect(() => {
+    if (!magicMode || magicDone || stackTargetScreenCenterY == null) return
     if (magicTravelY != null) return
-    setMagicTravelY(stackTargetCenterY - magicStartCenterY)
-  }, [magicDone, magicMode, magicStartCenterY, magicTravelY, stackTargetCenterY])
+    setMagicTravelY(stackTargetScreenCenterY - magicStartScreenCenterY)
+  }, [magicDone, magicMode, magicStartScreenCenterY, magicTravelY, stackTargetScreenCenterY])
 
   useEffect(() => {
     if (!magicMode || magicDone || magicTravelY == null) return
@@ -383,6 +395,8 @@ export function CaptureStudioScreen() {
 
   return (
     <View
+      ref={rootRef}
+      collapsable={false}
       style={{
         flex: 1,
         backgroundColor: colors.bg,
@@ -392,47 +406,56 @@ export function CaptureStudioScreen() {
         gap: spacing.md,
       }}
     >
-      <Text
-        style={{
-          color: colors.secondary,
-          fontSize: 13,
-          opacity: magicMode && !magicDone ? 0 : 1,
-        }}
-      >
-        {slotMode
-          ? s('本期槽位', '本期槽位', 'Period slot', '今回のスロット')
-          : s('三张入镜', '三張入鏡', 'Three photos', '三枚の写真')}
-      </Text>
-      <Text
-        style={{
-          color: colors.text,
-          fontSize: 22,
-          fontWeight: '600',
-          opacity: magicMode && !magicDone ? 0 : 1,
-        }}
-      >
-        {partTitle}
-      </Text>
-      <Text
-        style={{
-          color: colors.secondary,
-          fontSize: 14,
-          lineHeight: 20,
-          opacity: magicMode && !magicDone ? 0 : 1,
-        }}
-      >
-        {copy.quality}
-      </Text>
+      <View style={{ zIndex: 2 }}>
+        <Text
+          style={{
+            color: colors.secondary,
+            fontSize: 13,
+            opacity: magicMode && !magicDone ? 0 : 1,
+          }}
+        >
+          {slotMode
+            ? s('本期槽位', '本期槽位', 'Period slot', '今回のスロット')
+            : s('三张入镜', '三張入鏡', 'Three photos', '三枚の写真')}
+        </Text>
+        <Text
+          style={{
+            color: colors.text,
+            fontSize: 22,
+            fontWeight: '600',
+            marginTop: spacing.xs,
+            opacity: magicMode && !magicDone ? 0 : 1,
+          }}
+        >
+          {partTitle}
+        </Text>
+        <Text
+          style={{
+            color: colors.secondary,
+            fontSize: 14,
+            lineHeight: 20,
+            marginTop: spacing.xs,
+            opacity: magicMode && !magicDone ? 0 : 1,
+          }}
+        >
+          {copy.quality}
+        </Text>
+      </View>
 
       <View
-        onLayout={(e) => {
-          if (stackTargetCenterY != null) return
-          const { y, height: stackH } = e.nativeEvent.layout
-          setStackTargetCenterY(y + stackH / 2)
+        ref={stackAnchorRef}
+        collapsable={false}
+        onLayout={() => {
+          if (stackTargetScreenCenterY != null) return
+          stackAnchorRef.current?.measureInWindow((_x, y, _w, h) => {
+            setStackTargetScreenCenterY(y + h / 2)
+          })
         }}
         style={{
-          marginTop: spacing.md,
+          marginTop: spacing.lg,
+          paddingTop: 24,
           opacity: magicMode && !magicDone ? 0 : 1,
+          zIndex: 1,
         }}
         pointerEvents={magicMode && !magicDone ? 'none' : 'auto'}
       >
@@ -444,6 +467,7 @@ export function CaptureStudioScreen() {
           spread={poseSpread}
           ritual={poseRitual}
           compact
+          instantPose={lockStackPose}
         />
       </View>
 
@@ -503,7 +527,7 @@ export function CaptureStudioScreen() {
         {slotMode ? copy.done : copy.continueBirth}
       </Button>
 
-      {magicMode && !magicDone && magicTravelY != null ? (
+      {magicMode && !magicDone && overlayTop != null ? (
         <Animated.View
           pointerEvents='none'
           style={[
@@ -511,8 +535,8 @@ export function CaptureStudioScreen() {
               position: 'absolute',
               left: spacing.xl,
               right: spacing.xl,
-              top: magicStartCenterY - POLAROID_STACK_H / 2,
-              zIndex: 1,
+              top: overlayTop,
+              zIndex: 3,
             },
             magicOverlayStyle,
           ]}
@@ -520,11 +544,10 @@ export function CaptureStudioScreen() {
           <OffsetPhotoStack
             uris={displayUris}
             labels={labels}
-            activePart={activePart}
             spread={poseSpread}
             ritual={poseRitual}
-            onPressPart={() => undefined}
             compact
+            instantPose
           />
         </Animated.View>
       ) : null}
