@@ -177,9 +177,9 @@ export function CaptureStudioScreen() {
 
   const poseRitual = (() => {
     const raw = params.ritual
-    if (!raw) return 0
+    if (!raw) return magicMode ? 1 : 0
     const n = Number(raw)
-    return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0
+    return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : magicMode ? 1 : 0
   })()
 
   const magicStartCenterY = height * 0.5
