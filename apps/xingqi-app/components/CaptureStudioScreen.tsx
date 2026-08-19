@@ -28,7 +28,6 @@ import {
 } from '@/lib/reading-draft'
 import { showReadingStartedHandoff, startReadingJob } from '@/lib/reading-job'
 import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
-import { POLAROID_STACK_H } from '@/lib/stack-layout'
 
 const PARTS: CapturePart[] = ['palm_l', 'palm_r', 'face']
 
@@ -141,6 +140,7 @@ export function CaptureStudioScreen() {
   const [bust, setBust] = useState(0)
   const [busy, setBusy] = useState(false)
   const [stackTargetCenterY, setStackTargetCenterY] = useState<number | null>(null)
+  const [stackTargetHeight, setStackTargetHeight] = useState<number>(0)
   const [magicDone, setMagicDone] = useState(!magicMode)
   const magicProgress = useSharedValue(magicMode ? 0 : 1)
 
@@ -370,18 +370,43 @@ export function CaptureStudioScreen() {
         gap: spacing.md,
       }}
     >
-      <Text style={{ color: colors.secondary, fontSize: 13 }}>
+      <Text
+        style={{
+          color: colors.secondary,
+          fontSize: 13,
+          opacity: magicMode && !magicDone ? 0 : 1,
+        }}
+      >
         {slotMode
           ? s('本期槽位', '本期槽位', 'Period slot', '今回のスロット')
           : s('三张入镜', '三張入鏡', 'Three photos', '三枚の写真')}
       </Text>
-      <Text style={{ color: colors.text, fontSize: 22, fontWeight: '600' }}>{partTitle}</Text>
-      <Text style={{ color: colors.secondary, fontSize: 14, lineHeight: 20 }}>{copy.quality}</Text>
+      <Text
+        style={{
+          color: colors.text,
+          fontSize: 22,
+          fontWeight: '600',
+          opacity: magicMode && !magicDone ? 0 : 1,
+        }}
+      >
+        {partTitle}
+      </Text>
+      <Text
+        style={{
+          color: colors.secondary,
+          fontSize: 14,
+          lineHeight: 20,
+          opacity: magicMode && !magicDone ? 0 : 1,
+        }}
+      >
+        {copy.quality}
+      </Text>
 
       <View
         onLayout={(e) => {
           const { y, height: stackH } = e.nativeEvent.layout
           setStackTargetCenterY(y + stackH / 2)
+          setStackTargetHeight(stackH)
         }}
         style={{ opacity: magicMode && !magicDone ? 0 : 1 }}
         pointerEvents={magicMode && !magicDone ? 'none' : 'auto'}
@@ -396,11 +421,21 @@ export function CaptureStudioScreen() {
         />
       </View>
 
-      <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18, textAlign: 'center' }}>
+      <Text
+        style={{
+          color: colors.dim,
+          fontSize: 12,
+          lineHeight: 18,
+          textAlign: 'center',
+          opacity: magicMode && !magicDone ? 0 : 1,
+        }}
+      >
         {hasActive ? copy.privacy : copy.empty}
       </Text>
 
-      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+      <View
+        style={{ flexDirection: 'row', gap: spacing.sm, opacity: magicMode && !magicDone ? 0 : 1 }}
+      >
         <Pressable
           onPress={() => void shoot()}
           disabled={busy}
@@ -437,6 +472,7 @@ export function CaptureStudioScreen() {
         variant='primary'
         onPress={onPrimary}
         disabled={busy || (slotMode ? !hasActive : !allReady)}
+        style={{ opacity: magicMode && !magicDone ? 0 : 1 }}
       >
         {slotMode ? copy.done : copy.continueBirth}
       </Button>
@@ -447,10 +483,9 @@ export function CaptureStudioScreen() {
           style={[
             {
               position: 'absolute',
-              left: 0,
-              right: 0,
-              top: magicStartCenterY - POLAROID_STACK_H / 2,
-              alignItems: 'center',
+              left: spacing.xl,
+              right: spacing.xl,
+              top: magicStartCenterY - Math.max(1, stackTargetHeight) / 2,
             },
             magicOverlayStyle,
           ]}
@@ -458,9 +493,10 @@ export function CaptureStudioScreen() {
           <OffsetPhotoStack
             uris={displayUris}
             labels={labels}
+            activePart={activePart}
             spread={poseSpread}
             ritual={poseRitual}
-            compact
+            onPressPart={() => undefined}
           />
         </Animated.View>
       ) : null}

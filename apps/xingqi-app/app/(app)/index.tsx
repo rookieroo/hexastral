@@ -34,7 +34,7 @@ import {
   subscribeReadingJob,
 } from '@/lib/reading-job'
 import { readingHasReportBody } from '@/lib/report-chapters'
-import { POLAROID_FAN_MS, POLAROID_RITUAL_MS } from '@/lib/stack-layout'
+import { POLAROID_FAN_MS } from '@/lib/stack-layout'
 
 export default function XingqiHomeScreen() {
   const router = useRouter()
@@ -195,10 +195,10 @@ export default function XingqiHomeScreen() {
       )
       return
     }
+    // One expansion phase only: spread + ritual run together.
     setStackSpread(1)
-    await new Promise((r) => setTimeout(r, POLAROID_FAN_MS))
     setStackRitual(1)
-    await new Promise((r) => setTimeout(r, POLAROID_RITUAL_MS))
+    await new Promise((r) => setTimeout(r, POLAROID_FAN_MS))
     if (!(await requireConsent())) {
       enteringRef.current = false
       setEntering(false)
