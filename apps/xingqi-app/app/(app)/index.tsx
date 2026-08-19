@@ -204,7 +204,7 @@ export default function XingqiHomeScreen() {
       setEntering(false)
       return
     }
-    router.push({ pathname: '/capture', params: { spread: '1', ritual: '1' } } as never)
+    router.push({ pathname: '/capture', params: { spread: '1', ritual: '1', magic: '1' } } as never)
   }, [job.status, locale, requireConsent, router])
 
   const hasReading = items.length > 0

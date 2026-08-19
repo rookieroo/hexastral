@@ -2,8 +2,15 @@ import { Button, useTheme } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import * as ImagePicker from 'expo-image-picker'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
-import { useCallback, useMemo, useState } from 'react'
-import { Alert, Linking, Pressable, Text, View } from 'react-native'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Alert, Linking, Pressable, Text, useWindowDimensions, View } from 'react-native'
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { OffsetPhotoStack } from '@/components/OffsetPhotoStack'
@@ -21,6 +28,7 @@ import {
 } from '@/lib/reading-draft'
 import { showReadingStartedHandoff, startReadingJob } from '@/lib/reading-job'
 import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
+import { POLAROID_STACK_H } from '@/lib/stack-layout'
 
 const PARTS: CapturePart[] = ['palm_l', 'palm_r', 'face']
 
@@ -119,8 +127,11 @@ export function CaptureStudioScreen() {
     part?: string
     spread?: string
     ritual?: string
+    magic?: string
   }>()
+  const { height } = useWindowDimensions()
   const slotMode = params.mode === 'slot'
+  const magicMode = params.magic === '1' && !slotMode
   const entitlements = useEntitlements()
   const isPro =
     hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')
@@ -129,6 +140,9 @@ export function CaptureStudioScreen() {
   const [uris, setUris] = useState<Partial<Record<CapturePart, string>>>({})
   const [bust, setBust] = useState(0)
   const [busy, setBusy] = useState(false)
+  const [stackTargetCenterY, setStackTargetCenterY] = useState<number | null>(null)
+  const [magicDone, setMagicDone] = useState(!magicMode)
+  const magicProgress = useSharedValue(magicMode ? 0 : 1)
 
   const displayUris = useMemo(() => {
     const next: Partial<Record<CapturePart, string>> = {}
@@ -164,6 +178,25 @@ export function CaptureStudioScreen() {
     const n = Number(raw)
     return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0
   })()
+
+  const magicStartCenterY = height * 0.5
+  const magicDeltaY = (stackTargetCenterY ?? magicStartCenterY) - magicStartCenterY
+
+  useEffect(() => {
+    if (!magicMode || magicDone || stackTargetCenterY == null) return
+    magicProgress.value = withTiming(
+      1,
+      { duration: 560, easing: Easing.inOut(Easing.cubic) },
+      (finished) => {
+        if (finished) runOnJS(setMagicDone)(true)
+      }
+    )
+  }, [magicDone, magicMode, magicProgress, stackTargetCenterY])
+
+  const magicOverlayStyle = useAnimatedStyle(() => ({
+    opacity: magicDone ? 0 : 1,
+    transform: [{ translateY: magicDeltaY * magicProgress.value }],
+  }))
 
   const continueFunnel = useCallback(async () => {
     if (!draftHasThreePhotos(getReadingDraft())) return
@@ -345,14 +378,23 @@ export function CaptureStudioScreen() {
       <Text style={{ color: colors.text, fontSize: 22, fontWeight: '600' }}>{partTitle}</Text>
       <Text style={{ color: colors.secondary, fontSize: 14, lineHeight: 20 }}>{copy.quality}</Text>
 
-      <OffsetPhotoStack
-        uris={displayUris}
-        labels={labels}
-        activePart={activePart}
-        onPressPart={(part) => setActivePart(part)}
-        spread={poseSpread}
-        ritual={poseRitual}
-      />
+      <View
+        onLayout={(e) => {
+          const { y, height: stackH } = e.nativeEvent.layout
+          setStackTargetCenterY(y + stackH / 2)
+        }}
+        style={{ opacity: magicMode && !magicDone ? 0 : 1 }}
+        pointerEvents={magicMode && !magicDone ? 'none' : 'auto'}
+      >
+        <OffsetPhotoStack
+          uris={displayUris}
+          labels={labels}
+          activePart={activePart}
+          onPressPart={(part) => setActivePart(part)}
+          spread={poseSpread}
+          ritual={poseRitual}
+        />
+      </View>
 
       <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18, textAlign: 'center' }}>
         {hasActive ? copy.privacy : copy.empty}
@@ -398,6 +440,30 @@ export function CaptureStudioScreen() {
       >
         {slotMode ? copy.done : copy.continueBirth}
       </Button>
+
+      {magicMode && !magicDone ? (
+        <Animated.View
+          pointerEvents='none'
+          style={[
+            {
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: magicStartCenterY - POLAROID_STACK_H / 2,
+              alignItems: 'center',
+            },
+            magicOverlayStyle,
+          ]}
+        >
+          <OffsetPhotoStack
+            uris={displayUris}
+            labels={labels}
+            spread={poseSpread}
+            ritual={poseRitual}
+            compact
+          />
+        </Animated.View>
+      ) : null}
     </View>
   )
 }
