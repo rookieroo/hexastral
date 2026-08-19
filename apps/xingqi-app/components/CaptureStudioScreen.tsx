@@ -2,7 +2,7 @@ import { Button, useTheme } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import * as ImagePicker from 'expo-image-picker'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Linking, Pressable, Text, useWindowDimensions, View } from 'react-native'
 import Animated, {
   Easing,
@@ -30,6 +30,7 @@ import { showReadingStartedHandoff, startReadingJob } from '@/lib/reading-job'
 import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
 
 const PARTS: CapturePart[] = ['palm_l', 'palm_r', 'face']
+const MAGIC_HOLD_MS = 90
 
 function parsePart(raw: unknown): CapturePart | undefined {
   if (raw === 'palm_l' || raw === 'palm_r' || raw === 'face') return raw
@@ -141,8 +142,10 @@ export function CaptureStudioScreen() {
   const [busy, setBusy] = useState(false)
   const [stackTargetCenterY, setStackTargetCenterY] = useState<number | null>(null)
   const [stackTargetHeight, setStackTargetHeight] = useState<number>(0)
+  const [magicTravelY, setMagicTravelY] = useState<number | null>(null)
   const [magicDone, setMagicDone] = useState(!magicMode)
   const magicProgress = useSharedValue(magicMode ? 0 : 1)
+  const magicTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const displayUris = useMemo(() => {
     const next: Partial<Record<CapturePart, string>> = {}
@@ -180,18 +183,33 @@ export function CaptureStudioScreen() {
   })()
 
   const magicStartCenterY = height * 0.5
-  const magicDeltaY = (stackTargetCenterY ?? magicStartCenterY) - magicStartCenterY
+  const magicDeltaY = magicTravelY ?? 0
 
   useEffect(() => {
-    if (!magicMode || magicDone || stackTargetCenterY == null) return
-    magicProgress.value = withTiming(
-      1,
-      { duration: 560, easing: Easing.inOut(Easing.cubic) },
-      (finished) => {
-        if (finished) runOnJS(setMagicDone)(true)
+    if (!magicMode || magicDone || stackTargetCenterY == null || stackTargetHeight <= 0) return
+    if (magicTravelY != null) return
+    setMagicTravelY(stackTargetCenterY - magicStartCenterY)
+  }, [magicDone, magicMode, magicStartCenterY, magicTravelY, stackTargetCenterY, stackTargetHeight])
+
+  useEffect(() => {
+    if (!magicMode || magicDone || magicTravelY == null) return
+    magicProgress.value = 0
+    magicTimerRef.current = setTimeout(() => {
+      magicProgress.value = withTiming(
+        1,
+        { duration: 520, easing: Easing.out(Easing.cubic) },
+        (finished) => {
+          if (finished) runOnJS(setMagicDone)(true)
+        }
+      )
+    }, MAGIC_HOLD_MS)
+    return () => {
+      if (magicTimerRef.current) {
+        clearTimeout(magicTimerRef.current)
+        magicTimerRef.current = null
       }
-    )
-  }, [magicDone, magicMode, magicProgress, stackTargetCenterY])
+    }
+  }, [magicDone, magicMode, magicProgress, magicTravelY])
 
   const magicOverlayStyle = useAnimatedStyle(() => ({
     opacity: magicDone ? 0 : 1,
@@ -404,6 +422,7 @@ export function CaptureStudioScreen() {
 
       <View
         onLayout={(e) => {
+          if (stackTargetCenterY != null) return
           const { y, height: stackH } = e.nativeEvent.layout
           setStackTargetCenterY(y + stackH / 2)
           setStackTargetHeight(stackH)
@@ -477,7 +496,7 @@ export function CaptureStudioScreen() {
         {slotMode ? copy.done : copy.continueBirth}
       </Button>
 
-      {magicMode && !magicDone ? (
+      {magicMode && !magicDone && magicTravelY != null ? (
         <Animated.View
           pointerEvents='none'
           style={[
