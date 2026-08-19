@@ -17,6 +17,7 @@ import { OffsetPhotoStack } from '@/components/OffsetPhotoStack'
 import { resolveLocale } from '@/lib/i18n'
 import { captureStudioCopy, partLabels } from '@/lib/living-copy'
 import { pickUi } from '@/lib/locale-zh'
+import { consumeCaptureMagicHandoff } from '@/lib/capture-magic-handoff'
 import { persistPeriodPhoto } from '@/lib/period-photos'
 import {
   type CapturePart,
@@ -123,6 +124,7 @@ export function CaptureStudioScreen() {
     pickUi(locale, hans, hant, en, ja)
   const copy = captureStudioCopy(locale)
   const labels = partLabels(locale)
+  const handoff = useMemo(() => consumeCaptureMagicHandoff(), [])
   const params = useLocalSearchParams<{
     mode?: string
     part?: string
@@ -170,6 +172,7 @@ export function CaptureStudioScreen() {
 
   const poseSpread = (() => {
     const raw = params.spread
+    if (handoff) return handoff.spread
     if (!raw) return 1
     const n = Number(raw)
     return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 1
@@ -177,6 +180,7 @@ export function CaptureStudioScreen() {
 
   const poseRitual = (() => {
     const raw = params.ritual
+    if (handoff) return handoff.ritual
     if (!raw) return magicMode ? 1 : 0
     const n = Number(raw)
     return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : magicMode ? 1 : 0
@@ -427,7 +431,7 @@ export function CaptureStudioScreen() {
           setStackTargetCenterY(y + stackH / 2)
         }}
         style={{
-          marginTop: spacing.xs,
+          marginTop: spacing.md,
           opacity: magicMode && !magicDone ? 0 : 1,
         }}
         pointerEvents={magicMode && !magicDone ? 'none' : 'auto'}
@@ -508,6 +512,7 @@ export function CaptureStudioScreen() {
               left: spacing.xl,
               right: spacing.xl,
               top: magicStartCenterY - POLAROID_STACK_H / 2,
+              zIndex: 1,
             },
             magicOverlayStyle,
           ]}

@@ -18,6 +18,7 @@ import { SealMark } from '@/components/SealMark'
 import { XingqiLoader } from '@/components/XingqiLoader'
 import { XingqiMark } from '@/components/XingqiMark'
 import { fetchBiometricConsent } from '@/lib/api'
+import { setCaptureMagicHandoff } from '@/lib/capture-magic-handoff'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
 import { draftPeriodCopy, partLabels, sealCaseCopy } from '@/lib/living-copy'
@@ -204,7 +205,8 @@ export default function XingqiHomeScreen() {
       setEntering(false)
       return
     }
-    router.push({ pathname: '/capture', params: { spread: '1', ritual: '1', magic: '1' } } as never)
+    setCaptureMagicHandoff({ spread: 1, ritual: 1 })
+    router.push({ pathname: '/capture', params: { magic: '1' } } as never)
   }, [job.status, locale, requireConsent, router])
 
   const hasReading = items.length > 0

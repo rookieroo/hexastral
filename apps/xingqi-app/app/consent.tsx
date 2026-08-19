@@ -12,10 +12,12 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { XingqiLoader } from '@/components/XingqiLoader'
-import { fetchBiometricConsent, recordBiometricConsent } from '@/lib/api'
+import { fetchBiometricConsent, recordBiometricConsent, revokeBiometricConsent } from '@/lib/api'
+import { setCachedBiometricConsent } from '@/lib/biometric-consent-cache'
 import { estimateConsentReadMs } from '@/lib/consent-read'
 import { resolveLocale } from '@/lib/i18n'
 import { pickUi } from '@/lib/locale-zh'
+import { clearReadingDraft } from '@/lib/reading-draft'
 
 export default function BiometricConsentScreen() {
   const { colors, spacing } = useTheme()
@@ -221,6 +223,24 @@ export default function BiometricConsentScreen() {
         <Button variant='ghost' onPress={() => router.back()}>
           {s('取消', '取消', 'Cancel', 'キャンセル')}
         </Button>
+        {__DEV__ ? (
+          <Button
+            variant='ghost'
+            onPress={() => {
+              void (async () => {
+                await setCachedBiometricConsent(false)
+                await clearReadingDraft({ wipePhotos: true })
+                try {
+                  await revokeBiometricConsent()
+                } catch {
+                  // local reset is enough for dev loop
+                }
+              })()
+            }}
+          >
+            DEV: Clear consent
+          </Button>
+        ) : null}
       </View>
     </View>
   )
