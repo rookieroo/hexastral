@@ -114,7 +114,12 @@ export function CaptureStudioScreen() {
     pickUi(locale, hans, hant, en, ja)
   const copy = captureStudioCopy(locale)
   const labels = partLabels(locale)
-  const params = useLocalSearchParams<{ mode?: string; part?: string }>()
+  const params = useLocalSearchParams<{
+    mode?: string
+    part?: string
+    spread?: string
+    ritual?: string
+  }>()
   const slotMode = params.mode === 'slot'
   const entitlements = useEntitlements()
   const isPro =
@@ -145,6 +150,20 @@ export function CaptureStudioScreen() {
       })
     }, [params.part])
   )
+
+  const poseSpread = (() => {
+    const raw = params.spread
+    if (!raw) return 1
+    const n = Number(raw)
+    return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 1
+  })()
+
+  const poseRitual = (() => {
+    const raw = params.ritual
+    if (!raw) return 0
+    const n = Number(raw)
+    return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0
+  })()
 
   const continueFunnel = useCallback(async () => {
     if (!draftHasThreePhotos(getReadingDraft())) return
@@ -331,6 +350,8 @@ export function CaptureStudioScreen() {
         labels={labels}
         activePart={activePart}
         onPressPart={(part) => setActivePart(part)}
+        spread={poseSpread}
+        ritual={poseRitual}
       />
 
       <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 18, textAlign: 'center' }}>

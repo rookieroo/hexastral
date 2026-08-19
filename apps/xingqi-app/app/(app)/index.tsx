@@ -34,6 +34,7 @@ import {
   subscribeReadingJob,
 } from '@/lib/reading-job'
 import { readingHasReportBody } from '@/lib/report-chapters'
+import { POLAROID_FAN_MS, POLAROID_RITUAL_MS } from '@/lib/stack-layout'
 
 export default function XingqiHomeScreen() {
   const router = useRouter()
@@ -56,10 +57,20 @@ export default function XingqiHomeScreen() {
   const lastFetchAtRef = useRef(0)
   const enteringRef = useRef(false)
   const [entering, setEntering] = useState(false)
+  const [stackSpread, setStackSpread] = useState(0)
+  const [stackRitual, setStackRitual] = useState(0)
 
   const reload = useCallback(async (mode: 'full' | 'soft' = 'full') => {
     if (mode === 'full') setLoading(true)
     try {
+      const userId = await getPortfolioUserId()
+      if (!userId) {
+        await hydrateReadingDraft()
+        setItems([])
+        hasLoadedRef.current = true
+        lastFetchAtRef.current = Date.now()
+        return
+      }
       const [hist] = await Promise.all([fetchReadings(PORTFOLIO_TARGET_APP), hydrateReadingDraft()])
       setItems(hist.readings ?? [])
       hasLoadedRef.current = true
@@ -98,7 +109,6 @@ export default function XingqiHomeScreen() {
       const err = consumeReadingJobError()
       if (!err) return
       if (err === 'signin_required') {
-        router.push('/sign-in')
         return
       }
       if (err === 'biometric_consent_required') {
@@ -132,6 +142,8 @@ export default function XingqiHomeScreen() {
     useCallback(() => {
       enteringRef.current = false
       setEntering(false)
+      setStackSpread(0)
+      setStackRitual(0)
       void (async () => {
         const now = Date.now()
         const FRESH_MS = 12_000
@@ -183,12 +195,16 @@ export default function XingqiHomeScreen() {
       )
       return
     }
+    setStackSpread(1)
+    await new Promise((r) => setTimeout(r, POLAROID_FAN_MS))
+    setStackRitual(1)
+    await new Promise((r) => setTimeout(r, POLAROID_RITUAL_MS))
     if (!(await requireConsent())) {
       enteringRef.current = false
       setEntering(false)
       return
     }
-    router.push('/capture')
+    router.push({ pathname: '/capture', params: { spread: '1', ritual: '1' } } as never)
   }, [job.status, locale, requireConsent, router])
 
   const hasReading = items.length > 0
@@ -288,8 +304,21 @@ export default function XingqiHomeScreen() {
           backgroundColor: colors.bg,
         }}
       >
-        <OffsetPhotoStack uris={{}} spread={0} compact labels={labels} />
-        <Text style={{ color: colors.secondary, fontSize: 14, marginTop: spacing.lg }}>
+        <OffsetPhotoStack
+          uris={{}}
+          spread={stackSpread}
+          ritual={stackRitual}
+          compact
+          labels={labels}
+        />
+        <Text
+          style={{
+            color: colors.secondary,
+            fontSize: 14,
+            marginTop: spacing.lg,
+            opacity: stackSpread === 0 ? 1 : 0,
+          }}
+        >
           {s(
             '点此录入 · 仅存本机',
             '點此錄入 · 僅存本機',

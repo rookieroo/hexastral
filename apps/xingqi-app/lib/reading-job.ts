@@ -5,7 +5,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { getPushPermissionStatus, requestPushPermission } from '@zhop/satellite-runtime'
+import { getPortfolioUserId, getPushPermissionStatus, requestPushPermission } from '@zhop/satellite-runtime'
 import { Alert, AppState, type AppStateStatus, Linking } from 'react-native'
 
 import {
@@ -705,6 +705,8 @@ export function resumeReadingJobIfNeeded(locale: string, isPro: boolean): boolea
 
   inFlight = (async () => {
     try {
+      const userId = await getPortfolioUserId()
+      if (!userId) return
       const active = await fetchActiveFaceReadingJob()
       const storedId = await loadStoredJobId()
       const jobId = active?.jobId ?? storedId ?? state.jobId
@@ -715,6 +717,7 @@ export function resumeReadingJobIfNeeded(locale: string, isPro: boolean): boolea
       await attachAndPollJob(jobId, locale, isPro)
     } catch (err) {
       const msg = err instanceof Error ? err.message : ''
+      if (msg === 'signin_required') return
       console.warn('[xingqi-reading-job/resume]', msg || err)
       const jobId = state.jobId ?? (await loadStoredJobId())
       if (isQuitSafeAfterEnqueue(msg, jobId)) {

@@ -68,12 +68,7 @@ function Polaroid({
       left: pose.left,
       top: pose.top,
       zIndex: pose.z,
-    }
-  })
-  const rotStyle = useAnimatedStyle(() => {
-    const pose = polaroidPoses(wheelSpread(index - scroll.value), boxW, cardW)[part]
-    return {
-      transform: [{ rotate: `${pose.rotateDeg}deg` }],
+      transform: [{ rotate: `${pose.rotateDeg}deg` }, { scale: pose.scale }],
     }
   })
 
@@ -89,15 +84,13 @@ function Polaroid({
         posStyle,
       ]}
     >
-      <Animated.View style={[{ flex: 1 }, rotStyle]}>
-        <PolaroidChrome onPress={onPress}>
-          {uri && !draft ? (
-            <LocalPhoto uri={uri} style={{ width: '100%', height: '100%' }} />
-          ) : (
-            <PolaroidGhost />
-          )}
-        </PolaroidChrome>
-      </Animated.View>
+      <PolaroidChrome onPress={onPress}>
+        {uri && !draft ? (
+          <LocalPhoto uri={uri} style={{ width: '100%', height: '100%' }} />
+        ) : (
+          <PolaroidGhost />
+        )}
+      </PolaroidChrome>
     </Animated.View>
   )
 }

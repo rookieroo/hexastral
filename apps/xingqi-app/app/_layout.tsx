@@ -88,7 +88,7 @@ function AppStack() {
       <Stack.Screen name='(app)' options={{ animation: 'none' }} />
       <Stack.Screen name='sign-in' />
       <Stack.Screen name='consent' />
-      <Stack.Screen name='capture' />
+      <Stack.Screen name='capture' options={{ animation: 'none' }} />
       <Stack.Screen name='birth' options={{ headerShown: false }} />
       <Stack.Screen
         name='result'

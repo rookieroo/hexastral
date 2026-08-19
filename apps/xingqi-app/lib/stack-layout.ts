@@ -1,11 +1,17 @@
 /**
- * Polaroid poses: spread 0 = stacked deck, 1 = fanned (face on top).
- * Shared by the home wheel and capture studio.
+ * Polaroid poses: spread 0 = tight deck, 1 = three-up fan.
+ * ritual 0–1 plays after the fan: lift, extra air, flatten rotation.
  */
 
 import type { CapturePart } from '@/lib/reading-draft'
 
-export type SlotPose = { left: number; top: number; rotateDeg: number; z: number }
+export type SlotPose = {
+  left: number
+  top: number
+  rotateDeg: number
+  scale: number
+  z: number
+}
 
 function clamp(n: number, a: number, b: number): number {
   'worklet'
@@ -23,37 +29,45 @@ function smoothstep(t: number): number {
   return x * x * (3 - 2 * x)
 }
 
-/** Matches docs/apps/xingqi/home-ui-mock.html (FAN_W / CARD_W). */
-export const POLAROID_FAN_W = 300
-export const POLAROID_CARD_W = 108
-export const POLAROID_CARD_H = 136
-export const POLAROID_STACK_H = 188
+export const POLAROID_FAN_W = 320
+export const POLAROID_CARD_W = 122
+export const POLAROID_CARD_H = 154
+export const POLAROID_STACK_H = 236
+export const POLAROID_FAN_MS = 720
+export const POLAROID_RITUAL_MS = 980
 
 export function polaroidPoses(
   spread: number,
   boxW: number,
-  cardW: number
+  cardW: number,
+  ritual = 0
 ): Record<CapturePart, SlotPose> {
   'worklet'
   const e = smoothstep(spread)
+  const r = smoothstep(ritual)
   const cx = (boxW - cardW) / 2
+  const fanLeft = 6
+  const fanRight = Math.max(6, boxW - cardW - 6)
   return {
     palm_l: {
-      left: lerp(cx - 7, 8, e),
-      top: lerp(18, 32, e),
-      rotateDeg: lerp(-2.5, -9, e),
+      left: lerp(cx - 7, fanLeft, e) + r * -12,
+      top: lerp(16, 28, e) + r * -18,
+      rotateDeg: lerp(-5.5, -6.5, e) * (1 - r * 0.45),
+      scale: lerp(0.97, 1, e) + r * 0.03,
       z: 1,
     },
     palm_r: {
-      left: lerp(cx + 7, Math.max(8, boxW - cardW - 8), e),
-      top: lerp(22, 38, e),
-      rotateDeg: lerp(2.5, 9, e),
-      z: 1,
+      left: lerp(cx + 8, fanRight, e) + r * 12,
+      top: lerp(12, 32, e) + r * -16,
+      rotateDeg: lerp(4.8, 6.2, e) * (1 - r * 0.45),
+      scale: lerp(0.985, 1, e) + r * 0.03,
+      z: 2,
     },
     face: {
-      left: cx,
-      top: lerp(8, 0, e),
-      rotateDeg: lerp(-0.4, -1.4, e),
+      left: lerp(cx, cx, e),
+      top: lerp(4, 10, e) + r * -22,
+      rotateDeg: lerp(-1.2, -1.4, e) * (1 - r * 0.5),
+      scale: lerp(1, 1, e) + r * 0.04,
       z: 3,
     },
   }
@@ -61,7 +75,6 @@ export function polaroidPoses(
 
 export const WHEEL_ROW_GAP = 228
 
-/** iOS-wheel: 1 at center, 0 one slot away. */
 export function wheelSpread(distance: number): number {
   'worklet'
   return clamp(1 - Math.abs(distance), 0, 1)

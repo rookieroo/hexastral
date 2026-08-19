@@ -1,27 +1,140 @@
 /**
- * Offset polaroid stack — compact ghost deck (home empty) or fanned studio.
+ * Offset polaroid stack — rectangular cards. Depth from offset / rotateZ / scale.
  */
 
 import { useTheme } from '@zhop/core-ui'
-import { Plus } from 'lucide-react-native'
 import { useEffect, useState } from 'react'
-import { View } from 'react-native'
+import { Text, View } from 'react-native'
+import Animated, {
+  Easing,
+  type SharedValue,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 
 import { LocalPhoto } from '@/components/LocalPhoto'
 import { PolaroidChrome, polaroidLift } from '@/components/PolaroidChrome'
 import { PolaroidGhost } from '@/components/PolaroidGhost'
-
 import type { CapturePart } from '@/lib/reading-draft'
 import { resolveReadingPhotoUri } from '@/lib/reading-photos'
 import {
   POLAROID_CARD_H,
   POLAROID_CARD_W,
+  POLAROID_FAN_MS,
   POLAROID_FAN_W,
+  POLAROID_RITUAL_MS,
   POLAROID_STACK_H,
   polaroidPoses,
 } from '@/lib/stack-layout'
 
 const PARTS: CapturePart[] = ['palm_l', 'palm_r', 'face']
+const FAN_EASE = Easing.inOut(Easing.cubic)
+
+function StackCard({
+  part,
+  uri,
+  spread,
+  ritual,
+  cardW,
+  cardH,
+  fanW,
+  isDark,
+  label,
+  labelColor,
+  active,
+  interactive,
+  inkEnabled,
+  showLabels,
+  onPressPart,
+}: {
+  part: CapturePart
+  uri?: string
+  spread: SharedValue<number>
+  ritual: SharedValue<number>
+  cardW: number
+  cardH: number
+  fanW: number
+  isDark: boolean
+  label: string
+  labelColor: string
+  active: boolean
+  interactive: boolean
+  inkEnabled: boolean
+  showLabels: boolean
+  onPressPart?: (part: CapturePart, hasPhoto: boolean) => void
+}) {
+  const lift = useSharedValue(0)
+  const posStyle = useAnimatedStyle(() => {
+    const pose = polaroidPoses(spread.value, fanW, cardW, ritual.value)[part]
+    const k = lift.value
+    return {
+      left: pose.left,
+      top: pose.top,
+      zIndex: active ? 6 : pose.z,
+      transform: [
+        { translateY: k * -10 },
+        { rotate: `${pose.rotateDeg}deg` },
+        { scale: pose.scale + k * 0.04 },
+      ],
+    }
+  })
+  const labelStyle = useAnimatedStyle(() => ({
+    opacity: showLabels ? ritual.value : 0,
+    transform: [{ translateY: (1 - ritual.value) * 8 }],
+  }))
+
+  return (
+    <Animated.View
+      style={[
+        {
+          position: 'absolute',
+          width: cardW,
+          height: cardH,
+          ...polaroidLift(isDark, poseLayer(part)),
+        },
+        posStyle,
+      ]}
+    >
+      <PolaroidChrome
+        active={active}
+        interactive={interactive}
+        accessibilityLabel={label}
+        inkDrawn={inkEnabled ? ritual : undefined}
+        onPress={() => onPressPart?.(part, Boolean(uri))}
+        onPressIn={() => {
+          lift.value = withTiming(1, { duration: 180, easing: Easing.out(Easing.cubic) })
+        }}
+        onPressOut={() => {
+          lift.value = withTiming(0, { duration: 280, easing: Easing.inOut(Easing.cubic) })
+        }}
+      >
+        {uri ? (
+          <LocalPhoto uri={uri} style={{ width: '100%', height: '100%' }} />
+        ) : (
+          <PolaroidGhost />
+        )}
+      </PolaroidChrome>
+      {showLabels ? (
+        <Animated.View
+          pointerEvents='none'
+          style={[
+            { position: 'absolute', left: 0, right: 0, top: cardH + 6, alignItems: 'center' },
+            labelStyle,
+          ]}
+        >
+          <Text style={{ color: labelColor, fontSize: 11, letterSpacing: 2 }}>{label}</Text>
+        </Animated.View>
+      ) : null}
+    </Animated.View>
+  )
+}
+
+function poseLayer(part: CapturePart): number {
+  if (part === 'face') return 2
+  if (part === 'palm_r') return 1
+  return 0
+}
 
 export function OffsetPhotoStack({
   readingId,
@@ -30,7 +143,9 @@ export function OffsetPhotoStack({
   labels,
   activePart,
   spread = 1,
+  ritual = 0,
   compact = false,
+  inkEnabled = false,
   onPressPart,
 }: {
   readingId?: string
@@ -39,17 +154,31 @@ export function OffsetPhotoStack({
   labels: { palmL: string; palmR: string; face: string }
   activePart?: CapturePart
   spread?: number
+  ritual?: number
   compact?: boolean
+  inkEnabled?: boolean
   onPressPart?: (part: CapturePart, hasPhoto: boolean) => void
 }) {
-  const { colors, isDark } = useTheme()
+  const { isDark, colors } = useTheme()
   const [boxW, setBoxW] = useState(POLAROID_FAN_W)
   const [loaded, setLoaded] = useState<Partial<Record<CapturePart, string>>>({})
   const fanW = compact ? POLAROID_FAN_W : boxW
-  const cardW = compact ? POLAROID_CARD_W : Math.min(148, Math.round(boxW * 0.42))
-  const cardH = compact ? POLAROID_CARD_H : Math.round(cardW * 1.26)
+  const cardW = compact ? POLAROID_CARD_W : Math.min(136, Math.round(boxW * 0.38))
+  const cardH = compact ? POLAROID_CARD_H : Math.round(cardW * (POLAROID_CARD_H / POLAROID_CARD_W))
   const uris = urisProp ?? loaded
-  const poses = polaroidPoses(spread, fanW, cardW)
+  const spreadSv = useSharedValue(spread)
+  const ritualSv = useSharedValue(ritual)
+
+  useEffect(() => {
+    spreadSv.value = withTiming(spread, { duration: POLAROID_FAN_MS, easing: FAN_EASE })
+  }, [spread, spreadSv])
+
+  useEffect(() => {
+    ritualSv.value = withTiming(ritual, {
+      duration: POLAROID_RITUAL_MS,
+      easing: Easing.inOut(Easing.cubic),
+    })
+  }, [ritual, ritualSv])
 
   useEffect(() => {
     if (urisProp) return
@@ -76,50 +205,33 @@ export function OffsetPhotoStack({
         if (!compact) setBoxW(e.nativeEvent.layout.width)
       }}
       style={{
-        height: compact ? POLAROID_STACK_H : cardH + 52,
+        height: compact ? POLAROID_STACK_H : cardH + 40,
         width: compact ? POLAROID_FAN_W : '100%',
         alignSelf: 'center',
         position: 'relative',
         overflow: 'visible',
       }}
     >
-      {PARTS.map((part) => {
-        const uri = uris[part]
-        const pose = poses[part]
-        return (
-          <View
-            key={part}
-            style={{
-              position: 'absolute',
-              left: pose.left,
-              top: pose.top,
-              zIndex: activePart === part ? 4 : pose.z,
-              width: cardW,
-              height: cardH,
-              ...polaroidLift(isDark),
-            }}
-          >
-            <View style={{ flex: 1, transform: [{ rotate: `${pose.rotateDeg}deg` }] }}>
-              <PolaroidChrome
-                active={activePart === part}
-                interactive={!compact}
-                accessibilityLabel={labelFor(part)}
-                onPress={() => onPressPart?.(part, Boolean(uri))}
-              >
-                {uri ? (
-                  <LocalPhoto uri={uri} style={{ width: '100%', height: '100%' }} />
-                ) : compact ? (
-                  <PolaroidGhost />
-                ) : (
-                  <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                    <Plus size={22} color={colors.dim} strokeWidth={1.5} />
-                  </View>
-                )}
-              </PolaroidChrome>
-            </View>
-          </View>
-        )
-      })}
+      {PARTS.map((part) => (
+        <StackCard
+          key={part}
+          part={part}
+          uri={uris[part]}
+          spread={spreadSv}
+          ritual={ritualSv}
+          cardW={cardW}
+          cardH={cardH}
+          fanW={fanW}
+          isDark={isDark}
+          label={labelFor(part)}
+          labelColor={colors.secondary}
+          active={activePart === part}
+          interactive={!compact}
+          inkEnabled={inkEnabled}
+          showLabels={compact}
+          onPressPart={onPressPart}
+        />
+      ))}
     </View>
   )
 }
