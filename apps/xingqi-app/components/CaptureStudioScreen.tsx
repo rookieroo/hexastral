@@ -151,6 +151,7 @@ export function CaptureStudioScreen() {
   const stackAnchorRef = useRef<View>(null)
   const rootRef = useRef<View>(null)
   const [overlayTop, setOverlayTop] = useState<number | null>(null)
+  const showTargetStack = !magicMode || magicDone
 
   const displayUris = useMemo(() => {
     const next: Partial<Record<CapturePart, string>> = {}
@@ -188,9 +189,6 @@ export function CaptureStudioScreen() {
     const n = Number(raw)
     return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : magicMode ? 1 : 0
   })()
-
-  const magicDeltaY = magicTravelY ?? 0
-  const lockStackPose = magicMode && !magicDone
 
   useEffect(() => {
     if (!magicMode || magicDone || overlayTop != null) return
@@ -456,20 +454,23 @@ export function CaptureStudioScreen() {
         }}
         style={{
           marginTop: spacing.lg,
+          height: magicMode && !magicDone ? POLAROID_STACK_H : undefined,
           zIndex: 1,
         }}
-        pointerEvents={magicMode && !magicDone ? 'none' : 'auto'}
+        pointerEvents={showTargetStack ? 'auto' : 'none'}
       >
-        <OffsetPhotoStack
-          uris={displayUris}
-          labels={labels}
-          activePart={activePart}
-          onPressPart={(part) => setActivePart(part)}
-          spread={poseSpread}
-          ritual={poseRitual}
-          compact
-          instantPose={lockStackPose}
-        />
+        {showTargetStack ? (
+          <OffsetPhotoStack
+            uris={displayUris}
+            labels={labels}
+            activePart={activePart}
+            onPressPart={(part) => setActivePart(part)}
+            spread={poseSpread}
+            ritual={poseRitual}
+            compact
+            instantPose={handoff != null}
+          />
+        ) : null}
       </View>
 
       <Text

@@ -51,7 +51,7 @@ export default function XingqiHomeScreen() {
   const isPro =
     hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')
   const [items, setItems] = useState<PortfolioReadingItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [photoTick, setPhotoTick] = useState(0)
   const [job, setJob] = useState<ReadingJobState>(() => getReadingJobState())
   const hasLoadedRef = useRef(false)
@@ -63,16 +63,17 @@ export default function XingqiHomeScreen() {
   const [stackRitual, setStackRitual] = useState(0)
 
   const reload = useCallback(async (mode: 'full' | 'soft' = 'full') => {
+    const userId = await getPortfolioUserId()
+    if (!userId) {
+      await hydrateReadingDraft()
+      setItems([])
+      hasLoadedRef.current = true
+      lastFetchAtRef.current = Date.now()
+      setPhotoTick((n) => n + 1)
+      return
+    }
     if (mode === 'full') setLoading(true)
     try {
-      const userId = await getPortfolioUserId()
-      if (!userId) {
-        await hydrateReadingDraft()
-        setItems([])
-        hasLoadedRef.current = true
-        lastFetchAtRef.current = Date.now()
-        return
-      }
       const [hist] = await Promise.all([fetchReadings(PORTFOLIO_TARGET_APP), hydrateReadingDraft()])
       setItems(hist.readings ?? [])
       hasLoadedRef.current = true
