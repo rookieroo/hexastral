@@ -142,18 +142,10 @@ export default function XingqiPaywallScreen() {
     if (!draftReadyForPaywall(draft)) {
       setError(
         s(
-          draft.outputKind === 'period_brief' || draft.updateKind === 'partial'
-            ? '请至少更新一张照片并确认生辰'
-            : '请先完成三张照片与生辰',
-          draft.outputKind === 'period_brief' || draft.updateKind === 'partial'
-            ? '請至少更新一張照片並確認生辰'
-            : '請先完成三張照片與生辰',
-          draft.outputKind === 'period_brief' || draft.updateKind === 'partial'
-            ? 'Update at least one photo and confirm birth info'
-            : 'Complete three photos and birth info first',
-          draft.outputKind === 'period_brief' || draft.updateKind === 'partial'
-            ? '写真を1枚以上更新し、生辰情報を確認してください'
-            : '三枚の写真と生辰情報を先に入力してください'
+          '请上传面部照片（左右掌可沿用上次特征），并确认生辰',
+          '請上傳面部照片（左右掌可沿用上次特徵），並確認生辰',
+          'Upload a face photo (palms may reuse last extract) and confirm birth info',
+          '顔写真をアップロード（手相は前回特徴を継承可）し、生辰を確認してください'
         )
       )
       setHomeCaptureHandoff()

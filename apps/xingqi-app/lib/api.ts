@@ -602,6 +602,8 @@ export async function runFaceReading(
   ): uri is string => {
     if (!uri) return false
     if (opts?.regen && featureId) return false
+    // Face must re-extract whenever a local JPEG is present.
+    if (part === 'face') return true
     if (!featureId) return true
     // Period partial: only upload replaced parts.
     if (draft.updateKind === 'partial' && partial?.includes(part)) return true

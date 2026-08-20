@@ -17,9 +17,8 @@ import {
   type CapturePart,
   draftAllowsPartial,
   draftChangedParts,
-  draftHasAnyPhoto,
   draftHasBirthInfo,
-  draftHasThreePhotos,
+  draftPhotoReadyForReading,
   draftReadyForPaywall,
   getReadingDraft,
   hydrateReadingDraft,
@@ -277,11 +276,12 @@ export function CaptureStudioScreen({
 
   const continueFunnel = useCallback(async () => {
     let draft = getReadingDraft()
-    if (draftAllowsPartial(draft)) {
-      const changed = await draftChangedParts(draft)
-      syncPartialMetaFromChanged(changed)
-      draft = getReadingDraft()
+    const changed = await draftChangedParts(draft)
+    syncPartialMetaFromChanged(changed)
+    if (changed.length > 0 && changed.length < 3 && !draft.outputKind) {
+      patchReadingDraft({ outputKind: 'period_brief' })
     }
+    draft = getReadingDraft()
     if (!draftReadyForPaywall(draft)) {
       if (!draftHasBirthInfo(draft)) {
         if (embedded) setHomeCaptureHandoff()
@@ -343,12 +343,12 @@ export function CaptureStudioScreen({
         syncPartialMetaFromChanged(changed)
         onPhotosChanged?.()
         if (slotMode) return
-        const after = { ...urisFromDraft(), [part]: clean }
-        // Auto-start only for first seal (all three fresh).
-        if (!draftAllowsPartial(getReadingDraft()) && draftHasThreePhotos(getReadingDraft())) {
+        // Face + palm coverage (JPEG or prior featureId) → start; else next empty slot.
+        if (draftPhotoReadyForReading(getReadingDraft()) && draftHasBirthInfo(getReadingDraft())) {
           await continueFunnel()
           return
         }
+        const after = { ...urisFromDraft(), [part]: clean }
         const nextEmpty = firstEmpty(after)
         if (after[nextEmpty]) {
           // All slots filled on a period refresh — stay on last part; CTA enabled.
@@ -447,18 +447,11 @@ export function CaptureStudioScreen({
   }
 
   const hasActive = activePart ? Boolean(uris[activePart]) : false
-  const allReady = PARTS.every((p) => uris[p])
   const draftNow = getReadingDraft()
   const periodMode = draftAllowsPartial(draftNow)
-  // Period: ≥1 new photo + feature coverage for empty slots. First seal: all three files.
-  const submitReady = periodMode
-    ? draftHasAnyPhoto(draftNow) &&
-      Boolean(
-        (draftNow.palmLeftUri || draftNow.palmLeftFeatureId) &&
-          (draftNow.palmRightUri || draftNow.palmRightFeatureId) &&
-          (draftNow.faceUri || draftNow.faceFeatureId)
-      )
-    : allReady
+  const canCarryPalms = Boolean(draftNow.palmLeftFeatureId && draftNow.palmRightFeatureId)
+  // Face JPEG required; palms may reuse prior featureIds.
+  const submitReady = draftPhotoReadyForReading(draftNow)
 
   const onPrimary = () => {
     const part = activePart ?? firstEmpty(urisFromDraft())
@@ -532,7 +525,7 @@ export function CaptureStudioScreen({
         >
           {needsSlotPick
             ? copy.selectSlot
-            : periodMode
+            : periodMode || canCarryPalms
               ? carryHint
               : hasActive
                 ? copy.privacy
@@ -584,7 +577,7 @@ export function CaptureStudioScreen({
       <Button
         variant='primary'
         onPress={onPrimary}
-        disabled={busy || (slotMode ? !hasActive : periodMode ? !submitReady : false)}
+        disabled={busy || (slotMode ? !hasActive : periodMode || canCarryPalms ? !submitReady : false)}
       >
         {primaryLabel}
       </Button>

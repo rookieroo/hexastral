@@ -47,10 +47,10 @@ export async function alertIfPhotosUnchanged(opts: {
   Alert.alert(
     s('照片未更新', '照片未更新', 'Photos unchanged', '写真は更新されていません'),
     s(
-      '本期本机照片与上次解读相同（按文件时间与大小比对）。请先替换左掌 / 右掌 / 面部至少一张，再发起新解读。',
-      '本期本機照片與上次解讀相同（按檔案時間與大小比對）。請先替換左掌 / 右掌 / 面部至少一張，再發起新解讀。',
-      'On-device photos match your last reading (file time + size). Replace at least one of left palm, right palm, or face before starting again.',
-      '端末の写真が前回のリーディングと同じです（ファイル時刻とサイズで比較）。左手・右手・顔のいずれかを更新してから再度お試しください。'
+      '本期本机照片与上次解读相同。请先更新面部照片（左右掌可沿用上次特征），再发起新解读。',
+      '本期本機照片與上次解讀相同。請先更新面部照片（左右掌可沿用上次特徵），再發起新解讀。',
+      'On-device photos match your last reading. Update the face photo (palms may reuse last extract) before starting again.',
+      '端末の写真が前回と同じです。顔を更新してから再度お試しください（手相は継承可）。'
     ),
     [
       { text: s('好', '好', 'OK', 'OK'), style: 'cancel' },

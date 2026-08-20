@@ -57,14 +57,21 @@ export async function clearReadingDraft(opts?: { wipePhotos?: boolean }): Promis
   } else {
     const photos = await periodPhotoMap()
     const prev = draft
+    const snap = await loadLastReadingPhotoSnapshot()
+    // Keep prior featureIds when a slot has no local JPEG (palms may carry across Face-only updates).
     draft = {
       palmLeftUri: photos.palm_l,
       palmRightUri: photos.palm_r,
       faceUri: photos.face,
-      // Preserve feature IDs until the corresponding photo is replaced.
-      faceFeatureId: photos.face ? prev.faceFeatureId : undefined,
-      palmLeftFeatureId: photos.palm_l ? prev.palmLeftFeatureId : undefined,
-      palmRightFeatureId: photos.palm_r ? prev.palmRightFeatureId : undefined,
+      faceFeatureId: photos.face
+        ? prev.faceFeatureId
+        : (snap?.faceFeatureId ?? prev.faceFeatureId),
+      palmLeftFeatureId: photos.palm_l
+        ? prev.palmLeftFeatureId
+        : (snap?.palmLeftFeatureId ?? prev.palmLeftFeatureId),
+      palmRightFeatureId: photos.palm_r
+        ? prev.palmRightFeatureId
+        : (snap?.palmRightFeatureId ?? prev.palmRightFeatureId),
       solarDate: prev.solarDate,
       timeIndex: prev.timeIndex,
       gender: prev.gender,
@@ -107,13 +114,17 @@ export async function hydrateReadingDraft(): Promise<ReadingDraft> {
     }
     return periodUri
   }
+  const snap = await loadLastReadingPhotoSnapshot()
   draft = {
     ...draft,
     palmLeftUri: await pickUri(draft.palmLeftUri, photos.palm_l),
     palmRightUri: await pickUri(draft.palmRightUri, photos.palm_r),
     faceUri: await pickUri(draft.faceUri, photos.face),
+    // Backfill featureIds from last seal when missing (Face-only update carries palms).
+    faceFeatureId: draft.faceFeatureId ?? snap?.faceFeatureId,
+    palmLeftFeatureId: draft.palmLeftFeatureId ?? snap?.palmLeftFeatureId,
+    palmRightFeatureId: draft.palmRightFeatureId ?? snap?.palmRightFeatureId,
   }
-  // Keep featureIds without local files — period_brief reuses last extract for empty slots.
   // Replacing a slot clears that featureId in patchPart; do not wipe here on hydrate.
 
   try {
@@ -269,13 +280,16 @@ export function draftHasThreePhotos(d: ReadingDraft = draft): boolean {
   return Boolean(d.palmLeftUri && d.palmRightUri && d.faceUri)
 }
 
+/** Palms covered by a new JPEG or a prior extract featureId. */
+export function draftHasPalmCoverage(d: ReadingDraft = draft): boolean {
+  return Boolean(
+    (d.palmLeftUri || d.palmLeftFeatureId) && (d.palmRightUri || d.palmRightFeatureId)
+  )
+}
+
 /** Each modality has either a new on-device photo or a prior featureId. */
 export function draftHasFeatureCoverage(d: ReadingDraft = draft): boolean {
-  return Boolean(
-    (d.palmLeftUri || d.palmLeftFeatureId) &&
-      (d.palmRightUri || d.palmRightFeatureId) &&
-      (d.faceUri || d.faceFeatureId)
-  )
+  return Boolean(d.faceUri || d.faceFeatureId) && draftHasPalmCoverage(d)
 }
 
 /** After first seal: period_brief / partial may submit with ≥1 new photo. */
@@ -287,13 +301,19 @@ export function draftHasBirthInfo(d: ReadingDraft = draft): boolean {
   return Boolean(d.solarDate) && d.timeIndex != null && Boolean(d.gender)
 }
 
+/**
+ * Photos ready to start a reading:
+ * - Face must be a fresh on-device upload (faceUri).
+ * - Palms may reuse prior featureIds without re-upload.
+ * First-time users still need palm JPEGs once to obtain featureIds.
+ */
+export function draftPhotoReadyForReading(d: ReadingDraft = draft): boolean {
+  return Boolean(d.faceUri) && draftHasPalmCoverage(d)
+}
+
 /** Ready to leave capture → paywall / enqueue. */
 export function draftReadyForPaywall(d: ReadingDraft = draft): boolean {
-  if (!draftHasBirthInfo(d)) return false
-  if (draftAllowsPartial(d)) {
-    return draftHasAnyPhoto(d) && draftHasFeatureCoverage(d)
-  }
-  return draftHasThreePhotos(d)
+  return draftHasBirthInfo(d) && draftPhotoReadyForReading(d)
 }
 
 export function draftUriForPart(part: CapturePart, d: ReadingDraft = draft): string | undefined {

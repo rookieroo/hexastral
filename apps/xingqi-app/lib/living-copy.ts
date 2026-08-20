@@ -277,13 +277,13 @@ export function draftPeriodCopy(
   }
   switch (locale) {
     case 'zh':
-      return { title: '新一期', excerpt: '至少更新一张' }
+      return { title: '新一期', excerpt: '须更新面部 · 掌纹可沿用' }
     case 'zh-Hant':
-      return { title: '新一期', excerpt: '至少更新一張' }
+      return { title: '新一期', excerpt: '須更新面部 · 掌紋可沿用' }
     case 'ja':
-      return { title: '新しい一期', excerpt: '1枚以上を更新' }
+      return { title: '新しい一期', excerpt: '顔を更新 · 手相は継承可' }
     default:
-      return { title: 'New period', excerpt: 'Update at least one photo' }
+      return { title: 'New period', excerpt: 'Update face · palms may carry' }
   }
 }
 
@@ -291,13 +291,13 @@ export function draftPeriodCopy(
 export function periodCarryHint(locale: Locale): string {
   switch (locale) {
     case 'zh':
-      return '至少更新一张 · 未拍的沿用上次特征'
+      return '须更新面部 · 左右掌可沿用上次特征'
     case 'zh-Hant':
-      return '至少更新一張 · 未拍的沿用上次特徵'
+      return '須更新面部 · 左右掌可沿用上次特徵'
     case 'ja':
-      return '1枚以上を更新 · 未撮影は前回の特徴を継承'
+      return '顔は必須 · 手相は前回の特徴を継承可'
     default:
-      return 'Update at least one · others reuse last extract'
+      return 'Face required · palms may reuse last extract'
   }
 }
 
