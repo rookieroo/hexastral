@@ -14,7 +14,7 @@ import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { type ReactNode, useEffect, useState } from 'react'
-import { Appearance, StyleSheet, useColorScheme, View } from 'react-native'
+import { Appearance, AppState, StyleSheet, useColorScheme, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
@@ -67,6 +67,22 @@ function NotificationDeepLinkMount(): null {
   return null
 }
 
+function IcloudPhotoSyncMount(): null {
+  useEffect(() => {
+    const run = () => {
+      void import('@/lib/icloud-sync')
+        .then(({ pullReadingPhotosFromICloudIfEnabled }) => pullReadingPhotosFromICloudIfEnabled())
+        .catch(() => {})
+    }
+    run()
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') run()
+    })
+    return () => sub.remove()
+  }, [])
+  return null
+}
+
 function ThemedRoot({ children }: { children: ReactNode }) {
   const { colors, isDark } = useTheme()
   return (
@@ -75,6 +91,7 @@ function ThemedRoot({ children }: { children: ReactNode }) {
       <SessionRepairMount />
       <IapMount />
       <NotificationDeepLinkMount />
+      <IcloudPhotoSyncMount />
       <StatusBar style={isDark ? 'light' : 'dark'} />
       {children}
     </View>

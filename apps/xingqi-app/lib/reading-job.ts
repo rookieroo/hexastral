@@ -5,7 +5,11 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { getPortfolioUserId, getPushPermissionStatus, requestPushPermission } from '@zhop/satellite-runtime'
+import {
+  getPortfolioUserId,
+  getPushPermissionStatus,
+  requestPushPermission,
+} from '@zhop/satellite-runtime'
 import { Alert, AppState, type AppStateStatus, Linking } from 'react-native'
 
 import {
@@ -17,10 +21,9 @@ import {
   pollFaceReadingJob,
   runFaceReading,
 } from './api'
-import { syncReadingPhotosToICloudIfEnabled } from './icloud-sync-preference'
+import { syncReadingPhotosToICloudIfEnabled } from './icloud-sync'
 import { pickUi } from './locale-zh'
 import { getXingqiPushPrefs, setXingqiPushPrefs } from './push-preference'
-import { consumeDeepNextReading } from './reading-preference'
 import { scheduleXingqiPush } from './push-schedule'
 import {
   draftAllowsPartial,
@@ -30,6 +33,7 @@ import {
 } from './reading-draft'
 import { saveLastReadingPhotoSnapshot } from './reading-photo-stamp'
 import { snapshotReadingPhotos } from './reading-photos'
+import { consumeDeepNextReading } from './reading-preference'
 import { registerXingqiServerPush } from './server-push'
 
 function zhCopy(locale: string, hans: string, hant: string, en: string, ja?: string): string {
@@ -391,11 +395,7 @@ function keepQueuedAfterDisconnect(notifyQueued?: () => void): void {
   setState({
     status: 'running',
     phase:
-      state.phase === 'uploading'
-        ? 'extracting'
-        : state.phase === 'idle'
-          ? 'queued'
-          : state.phase,
+      state.phase === 'uploading' ? 'extracting' : state.phase === 'idle' ? 'queued' : state.phase,
     error: null,
     progress: Math.max(state.progress, 50),
   })
@@ -671,7 +671,6 @@ export function startReadingJob(input: StartReadingJobInput): boolean {
   } else {
     patchReadingDraft({ outputKind: input.outputKind })
   }
-  const draft = getReadingDraft()
 
   setState({
     status: 'running',
@@ -707,6 +706,8 @@ export function startReadingJob(input: StartReadingJobInput): boolean {
           patchReadingDraft({ outputKind: 'oneshot' })
         }
       }
+      // Re-read after deep-next patch — frozen `draft` above still had period_brief.
+      const draftForJob = getReadingDraft()
 
       // Prefer attaching an existing cloud job over starting a duplicate.
       const active = await fetchActiveFaceReadingJob()
@@ -726,7 +727,7 @@ export function startReadingJob(input: StartReadingJobInput): boolean {
         })
       }
 
-      const res = await runFaceReading(draft, locale, {
+      const res = await runFaceReading(draftForJob, locale, {
         notifyOnComplete,
         regen: input.regen ?? false,
         onProgress: (p) => {

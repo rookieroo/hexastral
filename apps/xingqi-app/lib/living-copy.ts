@@ -621,12 +621,12 @@ export function deepNextReadingCopy(locale: Locale): {
     case 'zh':
       return {
         label: '下次深度解读',
-        hint: '默认短简；开启后下一期生成完整五章。首读不受此开关影响。',
+        hint: '默认短简；开启后下一期生成完整五章（会消耗一次开关）。首读不受此开关影响。',
       }
     case 'zh-Hant':
       return {
         label: '下次深度解讀',
-        hint: '預設短簡；開啟後下一期生成完整五章。首讀不受此開關影響。',
+        hint: '預設短簡；開啟後下一期生成完整五章（會消耗一次開關）。首讀不受此開關影響。',
       }
     case 'ja':
       return {

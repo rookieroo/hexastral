@@ -79,12 +79,14 @@ export function SettingsRow({
 
 export function SettingsToggleRow({
   label,
+  hint,
   value,
   onValueChange,
   badge,
   divider,
 }: {
   label: string
+  hint?: string
   value: boolean
   onValueChange: (next: boolean) => void
   badge?: string
@@ -104,10 +106,15 @@ export function SettingsToggleRow({
         borderBottomColor: colors.separator,
       }}
     >
-      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <Text style={{ color: colors.text, fontSize: 15, flex: 1 }}>{label}</Text>
-        {badge ? (
-          <Text style={{ color: colors.accent, fontSize: 9, fontWeight: '700' }}>{badge}</Text>
+      <View style={{ flex: 1, gap: hint ? 4 : 0 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={{ color: colors.text, fontSize: 15, flex: 1 }}>{label}</Text>
+          {badge ? (
+            <Text style={{ color: colors.accent, fontSize: 9, fontWeight: '700' }}>{badge}</Text>
+          ) : null}
+        </View>
+        {hint ? (
+          <Text style={{ color: colors.dim, fontSize: 12, lineHeight: 17 }}>{hint}</Text>
         ) : null}
       </View>
       <Toggle value={value} onValueChange={onValueChange} accent={colors.accent} />

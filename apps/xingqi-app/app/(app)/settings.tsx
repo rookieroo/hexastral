@@ -16,7 +16,7 @@ import {
 import * as Linking from 'expo-linking'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
-import { Alert, ScrollView, Text, View } from 'react-native'
+import { Alert, Platform, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
@@ -25,21 +25,28 @@ import {
   SettingsSection,
   SettingsToggleRow,
 } from '@/components/settings/SettingsSection'
+import { deleteSyelAccount } from '@/lib/account-delete'
 import { fetchBiometricConsent, revokeBiometricConsent } from '@/lib/api'
-import { setCachedBiometricConsent } from '@/lib/biometric-consent-cache'
 import { cycleDevEntitlementOverride, devEntitlementLabel } from '@/lib/dev-pro-toggle'
-import { setHomeCaptureHandoff } from '@/lib/home-capture-handoff'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
+import { setHomeCaptureHandoff } from '@/lib/home-capture-handoff'
 import { privacyPolicyUrl, resolveLocale } from '@/lib/i18n'
 import { restorePurchases } from '@/lib/iap'
-import { sealCaseCopy, deepNextReadingCopy } from '@/lib/living-copy'
+import {
+  getIcloudPhotoSyncEnabled,
+  isSyelIcloudBridgeAvailable,
+  pullReadingPhotosFromICloudIfEnabled,
+  syncReadingPhotosToICloudIfEnabled,
+} from '@/lib/icloud-sync'
+import { setIcloudPhotoSyncEnabled } from '@/lib/icloud-sync-preference'
+import { deepNextReadingCopy, sealCaseCopy } from '@/lib/living-copy'
 import { pickUi } from '@/lib/locale-zh'
 import { resetOnboarding } from '@/lib/onboarding'
 import { getXingqiPushPrefs, setXingqiPushPrefs, type XingqiPushPrefs } from '@/lib/push-preference'
 import { cancelXingqiPush, scheduleXingqiPush } from '@/lib/push-schedule'
-import { clearReadingDraft } from '@/lib/reading-draft'
 import { getDeepNextReading, setDeepNextReading } from '@/lib/reading-preference'
 import { registerXingqiServerPush, unregisterXingqiServerPush } from '@/lib/server-push'
+import { clearLocalPhotosOnly, wipeLocalSyelData } from '@/lib/wipe-local-data'
 
 export default function SettingsScreen() {
   const { colors, spacing } = useTheme()
@@ -61,8 +68,11 @@ export default function SettingsScreen() {
     __DEV__ ? getDevEntitlementOverride() : null
   )
   const [restoreBusy, setRestoreBusy] = useState(false)
+  const [deleteBusy, setDeleteBusy] = useState(false)
   const [readingCount, setReadingCount] = useState(0)
   const [deepNext, setDeepNext] = useState(false)
+  const [icloudOn, setIcloudOn] = useState(false)
+  const icloudBridge = Platform.OS === 'ios' && isSyelIcloudBridgeAvailable()
   const deepCopy = deepNextReadingCopy(locale)
 
   useFocusEffect(
@@ -77,8 +87,12 @@ export default function SettingsScreen() {
         .then((hist) => setReadingCount(hist.readings?.length ?? 0))
         .catch(() => setReadingCount(0))
       void getDeepNextReading().then(setDeepNext)
+      if (icloudBridge) {
+        void getIcloudPhotoSyncEnabled().then(setIcloudOn)
+        void pullReadingPhotosFromICloudIfEnabled()
+      }
       if (__DEV__) setDevPro(getDevEntitlementOverride())
-    }, [])
+    }, [icloudBridge])
   )
 
   const softGatePro = () => {
@@ -280,6 +294,17 @@ export default function SettingsScreen() {
         <SettingsSection title={s('购买', '購買', 'PURCHASES', '購入')}>
           <SettingsCard>
             <SettingsRow
+              label={s('管理订阅', '管理訂閱', 'Manage subscription', 'サブスクリプション管理')}
+              onPress={() => {
+                const url =
+                  Platform.OS === 'android'
+                    ? 'https://play.google.com/store/account/subscriptions'
+                    : 'https://apps.apple.com/account/subscriptions'
+                void Linking.openURL(url)
+              }}
+              divider
+            />
+            <SettingsRow
               label={
                 restoreBusy
                   ? s('恢复中…', '恢復中…', 'Restoring…', '復元中…')
@@ -303,7 +328,127 @@ export default function SettingsScreen() {
           </SettingsCard>
         </SettingsSection>
 
-        {/* iCloud photo sync is not implemented yet — hide the empty promise. */}
+        {icloudBridge ? (
+          <SettingsSection title={s('照片', '照片', 'PHOTOS', '写真')}>
+            <SettingsCard>
+              <SettingsToggleRow
+                label={s(
+                  'iCloud 同步封存照片',
+                  'iCloud 同步封存照片',
+                  'iCloud sealed photo sync',
+                  'iCloud で封存写真を同期'
+                )}
+                hint={s(
+                  '仅同步已封存的形气照片（时间线/场域）。拍摄草稿留在本机，不会上传到我们的服务器。',
+                  '僅同步已封存的形氣照片（時間線/場域）。拍攝草稿留在本機，不會上傳到我們的伺服器。',
+                  'Syncs sealed period photos for timeline/locus only. Capture drafts stay on this device; we never store them on our servers.',
+                  'タイムライン／場用の封存写真のみ同期。撮影下書きはこの端末に残り、当社サーバーには上がりません。'
+                )}
+                value={icloudOn}
+                onValueChange={(next) => {
+                  setIcloudOn(next)
+                  void (async () => {
+                    await setIcloudPhotoSyncEnabled(next)
+                    if (next) {
+                      await syncReadingPhotosToICloudIfEnabled()
+                      await pullReadingPhotosFromICloudIfEnabled()
+                    }
+                  })()
+                }}
+                divider
+              />
+              <SettingsRow
+                label={s('清除本机照片', '清除本機照片', 'Clear local photos', '端末の写真を削除')}
+                hint={s(
+                  '删除草稿与封存照片；账号与报告保留。',
+                  '刪除草稿與封存照片；帳號與報告保留。',
+                  'Removes drafts and sealed photos; account and reports stay.',
+                  '下書きと封存写真を削除。アカウントとレポートは残ります。'
+                )}
+                danger
+                onPress={() => {
+                  Alert.alert(
+                    s('清除本机照片', '清除本機照片', 'Clear local photos', '端末の写真を削除'),
+                    s(
+                      '将删除本机拍摄草稿与封存照片。报告与账号不受影响。若已开启 iCloud 同步，云端封存副本也会清除。',
+                      '將刪除本機拍攝草稿與封存照片。報告與帳號不受影響。若已開啟 iCloud 同步，雲端封存副本也會清除。',
+                      'Deletes on-device drafts and sealed photos. Reports and account stay. If iCloud sync is on, the cloud sealed copy is cleared too.',
+                      '端末の下書きと封存写真を削除します。レポートとアカウントは残ります。iCloud 同期がオンならクラウドの封存コピーも消えます。'
+                    ),
+                    [
+                      { text: s('取消', '取消', 'Cancel', 'キャンセル'), style: 'cancel' },
+                      {
+                        text: s('清除', '清除', 'Clear', '削除'),
+                        style: 'destructive',
+                        onPress: () => {
+                          void (async () => {
+                            try {
+                              await clearLocalPhotosOnly()
+                              Alert.alert(
+                                s('已清除', '已清除', 'Cleared', '削除しました'),
+                                undefined,
+                                [{ text: s('好', '好', 'OK', 'OK') }]
+                              )
+                            } catch {
+                              Alert.alert(s('失败', '失敗', 'Failed', '失敗しました'))
+                            }
+                          })()
+                        },
+                      },
+                    ]
+                  )
+                }}
+              />
+            </SettingsCard>
+          </SettingsSection>
+        ) : (
+          <SettingsSection title={s('照片', '照片', 'PHOTOS', '写真')}>
+            <SettingsCard>
+              <SettingsRow
+                label={s('清除本机照片', '清除本機照片', 'Clear local photos', '端末の写真を削除')}
+                hint={s(
+                  '删除草稿与封存照片；账号与报告保留。',
+                  '刪除草稿與封存照片；帳號與報告保留。',
+                  'Removes drafts and sealed photos; account and reports stay.',
+                  '下書きと封存写真を削除。アカウントとレポートは残ります。'
+                )}
+                danger
+                onPress={() => {
+                  Alert.alert(
+                    s('清除本机照片', '清除本機照片', 'Clear local photos', '端末の写真を削除'),
+                    s(
+                      '将删除本机拍摄草稿与封存照片。报告与账号不受影响。',
+                      '將刪除本機拍攝草稿與封存照片。報告與帳號不受影響。',
+                      'Deletes on-device drafts and sealed photos. Reports and account stay.',
+                      '端末の下書きと封存写真を削除します。レポートとアカウントは残ります。'
+                    ),
+                    [
+                      { text: s('取消', '取消', 'Cancel', 'キャンセル'), style: 'cancel' },
+                      {
+                        text: s('清除', '清除', 'Clear', '削除'),
+                        style: 'destructive',
+                        onPress: () => {
+                          void (async () => {
+                            try {
+                              await clearLocalPhotosOnly()
+                              Alert.alert(
+                                s('已清除', '已清除', 'Cleared', '削除しました'),
+                                undefined,
+                                [{ text: s('好', '好', 'OK', 'OK') }]
+                              )
+                            } catch {
+                              Alert.alert(s('失败', '失敗', 'Failed', '失敗しました'))
+                            }
+                          })()
+                        },
+                      },
+                    ]
+                  )
+                }}
+              />
+            </SettingsCard>
+          </SettingsSection>
+        )}
 
         <SettingsSection title={s('法律', '法律', 'LEGAL', '規約')}>
           <SettingsCard>
@@ -345,10 +490,10 @@ export default function SettingsScreen() {
                     Alert.alert(
                       s('撤回同意', '撤回同意', 'Withdraw consent', '同意を撤回'),
                       s(
-                        '撤回后需重新同意才能继续形气解读；本机照片草稿与待处理的短暂上传也会清除。',
-                        '撤回後需重新同意才能繼續形氣解讀；本機照片草稿與待處理的短暫上傳也會清除。',
-                        'You must consent again before a form-qi reading. On-device drafts and any pending short-lived uploads are cleared.',
-                        '撤回後は形気リーディングの前に再度同意が必要です。端末の下書きと保留中の短寿命アップロードも削除されます。'
+                        '撤回后需重新同意才能继续形气解读；本机照片草稿、封存照片与待处理的短暂上传也会清除。',
+                        '撤回後需重新同意才能繼續形氣解讀；本機照片草稿、封存照片與待處理的短暫上傳也會清除。',
+                        'You must consent again before a form-qi reading. On-device drafts, sealed photos, and any pending short-lived uploads are cleared.',
+                        '撤回後は形気リーディングの前に再度同意が必要です。端末の下書き・封存写真・保留中の短寿命アップロードも削除されます。'
                       ),
                       [
                         {
@@ -362,7 +507,8 @@ export default function SettingsScreen() {
                             void (async () => {
                               try {
                                 await revokeBiometricConsent()
-                                await clearReadingDraft({ wipePhotos: true })
+                                await wipeLocalSyelData({ clearIcloudPref: false })
+                                setIcloudOn(await getIcloudPhotoSyncEnabled())
                               } catch {
                                 Alert.alert(s('失败', '失敗', 'Failed', '失敗しました'))
                               }
@@ -387,15 +533,102 @@ export default function SettingsScreen() {
                           void (async () => {
                             await unregisterXingqiServerPush()
                             await cancelXingqiPush()
+                            await wipeLocalSyelData()
                             await clearPortfolioUserId()
-                            void setCachedBiometricConsent(false)
-                            void clearReadingDraft({ wipePhotos: true })
+                            setIcloudOn(false)
                             setUserId(null)
                             router.back()
                           })()
                         },
                       },
                     ])
+                  }}
+                  divider
+                />
+                <SettingsRow
+                  label={
+                    deleteBusy
+                      ? s('删除中…', '刪除中…', 'Deleting…', '削除中…')
+                      : s('删除账号', '刪除帳號', 'Delete account', 'アカウント削除')
+                  }
+                  danger
+                  onPress={() => {
+                    if (deleteBusy) return
+                    Alert.alert(
+                      s('删除账号', '刪除帳號', 'Delete account', 'アカウント削除'),
+                      s(
+                        '将永久删除服务器上的生辰、报告、形气特征与账号数据；本机照片与草稿也会清除。此操作无法撤销。App Store 订阅需另行在系统设置中取消。',
+                        '將永久刪除伺服器上的生辰、報告、形氣特徵與帳號資料；本機照片與草稿也會清除。此操作無法撤銷。App Store 訂閱需另行在系統設定中取消。',
+                        'Permanently deletes birth info, reports, form-qi features, and account data on our servers; on-device photos and drafts are cleared too. This cannot be undone. Cancel App Store subscriptions separately in system settings.',
+                        'サーバー上の生辰・レポート・形気特徴・アカウントデータを完全削除し、端末の写真と下書きも消します。取り消せません。App Store のサブスクリプションはシステム設定で別途解約してください。'
+                      ),
+                      [
+                        { text: s('取消', '取消', 'Cancel', 'キャンセル'), style: 'cancel' },
+                        {
+                          text: s('删除账号', '刪除帳號', 'Delete account', 'アカウント削除'),
+                          style: 'destructive',
+                          onPress: () => {
+                            Alert.alert(
+                              s(
+                                '确认删除？',
+                                '確認刪除？',
+                                'Confirm delete?',
+                                '本当に削除しますか？'
+                              ),
+                              s(
+                                '删除后无法恢复。',
+                                '刪除後無法恢復。',
+                                'This cannot be undone.',
+                                '削除後は復元できません。'
+                              ),
+                              [
+                                {
+                                  text: s('取消', '取消', 'Cancel', 'キャンセル'),
+                                  style: 'cancel',
+                                },
+                                {
+                                  text: s('永久删除', '永久刪除', 'Delete forever', '完全に削除'),
+                                  style: 'destructive',
+                                  onPress: () => {
+                                    void (async () => {
+                                      setDeleteBusy(true)
+                                      try {
+                                        const ok = await deleteSyelAccount()
+                                        if (!ok) {
+                                          Alert.alert(
+                                            s(
+                                              '删除失败',
+                                              '刪除失敗',
+                                              'Delete failed',
+                                              '削除に失敗しました'
+                                            )
+                                          )
+                                          return
+                                        }
+                                        setIcloudOn(false)
+                                        setUserId(null)
+                                        router.replace('/' as never)
+                                      } catch {
+                                        Alert.alert(
+                                          s(
+                                            '删除失败',
+                                            '刪除失敗',
+                                            'Delete failed',
+                                            '削除に失敗しました'
+                                          )
+                                        )
+                                      } finally {
+                                        setDeleteBusy(false)
+                                      }
+                                    })()
+                                  },
+                                },
+                              ]
+                            )
+                          },
+                        },
+                      ]
+                    )
                   }}
                 />
               </>
@@ -424,8 +657,7 @@ export default function SettingsScreen() {
                 onPress={() => {
                   void (async () => {
                     try {
-                      await setCachedBiometricConsent(false)
-                      await clearReadingDraft({ wipePhotos: true })
+                      await wipeLocalSyelData({ clearIcloudPref: false })
                       if (userId) {
                         try {
                           await revokeBiometricConsent()

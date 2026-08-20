@@ -151,5 +151,32 @@ export async function signInWithGoogle(): Promise<string | null> {
 }
 
 export async function signOut(): Promise<void> {
+  try {
+    const { unregisterXingqiServerPush } = await import('@/lib/server-push')
+    await unregisterXingqiServerPush()
+  } catch (err) {
+    console.warn('[syel.account] unregister push on sign-out failed', err)
+  }
+  try {
+    const { cancelXingqiPush } = await import('@/lib/push-schedule')
+    await cancelXingqiPush()
+  } catch (err) {
+    console.warn('[syel.account] cancel local push on sign-out failed', err)
+  }
+  try {
+    const { wipeLocalSyelData } = await import('@/lib/wipe-local-data')
+    await wipeLocalSyelData()
+  } catch (err) {
+    console.warn('[syel.account] local wipe on sign-out failed', err)
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Purchases = require('react-native-purchases').default as {
+      logOut: () => Promise<void>
+    }
+    await Purchases.logOut()
+  } catch (err) {
+    console.warn('[syel.account] RevenueCat logOut on sign-out failed', err)
+  }
   await invalidatePortfolioSession()
 }

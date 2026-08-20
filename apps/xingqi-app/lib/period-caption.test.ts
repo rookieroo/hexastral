@@ -37,12 +37,13 @@ describe('clampExcerpt', () => {
 })
 
 describe('formatChromeDate', () => {
-  it('formats with chrome locale, not generation locale', () => {
+  it('formats a compact rail date', () => {
     const zh = formatChromeDate('2026-08-12T12:00:00.000Z', 'zh')
     expect(zh.includes('2026')).toBe(true)
-    expect(zh.includes('8')).toBe(true)
+    expect(zh.includes('08') || zh.includes('8')).toBe(true)
     const en = formatChromeDate('2026-08-12T12:00:00.000Z', 'en')
-    expect(en.toLowerCase().includes('august') || en.includes('8')).toBe(true)
+    expect(en.includes('2026')).toBe(true)
+    expect(en.includes('.')).toBe(true)
   })
 
   it('returns empty for invalid dates', () => {
@@ -65,6 +66,6 @@ describe('periodCaption', () => {
     })
     const cap = periodCaption(item({ resultJson, locale: 'zh' }), 'en')
     expect(cap.excerpt.startsWith('金水相涵')).toBe(true)
-    expect(cap.title.toLowerCase().includes('august') || cap.title.includes('8')).toBe(true)
+    expect(cap.title.includes('2026')).toBe(true)
   })
 })

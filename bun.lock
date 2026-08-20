@@ -533,6 +533,7 @@
         "react-native-svg": "15.12.1",
         "react-native-view-shot": "^4.0.3",
         "react-native-worklets": "0.5.1",
+        "syel-icloud": "file:./modules/syel-icloud",
       },
       "devDependencies": {
         "@babel/core": "^7.29.0",
@@ -4926,6 +4927,8 @@
     "@zhop/hexastral-web/tailwindcss": ["tailwindcss@4.2.3", "", {}, "sha512-fA/NX5gMf0ooCLISgB0wScaWgaj6rjTN2SVAwleURjiya7ITNkV+VMmoHtKkldP6CIZoYCZyxb8zP/e2TWoEtQ=="],
 
     "@zhop/ui/tailwindcss": ["tailwindcss@4.2.3", "", {}, "sha512-fA/NX5gMf0ooCLISgB0wScaWgaj6rjTN2SVAwleURjiya7ITNkV+VMmoHtKkldP6CIZoYCZyxb8zP/e2TWoEtQ=="],
+
+    "@zhop/xingqi-app/syel-icloud": ["syel-icloud@file:apps/xingqi-app/modules/syel-icloud", { "devDependencies": { "typescript": "^5.9.3" }, "peerDependencies": { "expo": "*", "expo-modules-core": "*", "react": "*", "react-native": "*" } }],
 
     "accepts/mime-types": ["mime-types@2.1.35", "", { "dependencies": { "mime-db": "1.52.0" } }, "sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw=="],
 

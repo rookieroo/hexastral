@@ -1,5 +1,5 @@
 /**
- * Opt-in iCloud Documents sync for reading photo snapshots (Phase 2 hook).
+ * Opt-in iCloud Documents sync preference for sealed reading photo snapshots.
  * Default off — user must enable in settings before any ubiquity write.
  */
 
@@ -24,9 +24,8 @@ export async function setIcloudPhotoSyncEnabled(on: boolean): Promise<void> {
   }
 }
 
-/** No-op until iCloud Documents entitlement ships. Call sites stay wired. */
+/** @deprecated Prefer `@/lib/icloud-sync` — kept so older imports keep resolving. */
 export async function syncReadingPhotosToICloudIfEnabled(): Promise<void> {
-  const enabled = await getIcloudPhotoSyncEnabled()
-  if (!enabled) return
-  // Phase 2: push reading-photos-index + folders to ubiquity container.
+  const { syncReadingPhotosToICloudIfEnabled: sync } = await import('./icloud-sync')
+  await sync()
 }

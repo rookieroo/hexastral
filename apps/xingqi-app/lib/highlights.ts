@@ -30,3 +30,14 @@ export async function saveHighlights(readingId: string, quotes: string[]): Promi
     // Best-effort
   }
 }
+
+/** Remove all on-device highlight keys (account wipe / consent). */
+export async function clearAllHighlights(): Promise<void> {
+  try {
+    const keys = await AsyncStorage.getAllKeys()
+    const ours = keys.filter((k) => k.startsWith(PREFIX))
+    if (ours.length > 0) await AsyncStorage.multiRemove(ours)
+  } catch {
+    // Best-effort
+  }
+}

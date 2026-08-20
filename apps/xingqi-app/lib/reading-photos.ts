@@ -27,6 +27,10 @@ function readingsRoot(): string | null {
   return `${root}xingqi-readings/`
 }
 
+export function getReadingPhotosRoot(): string | null {
+  return readingsRoot()
+}
+
 function indexPath(): string | null {
   const root = readingsRoot()
   return root ? `${root}reading-photos-index.json` : null
@@ -75,6 +79,14 @@ async function writeIndex(index: ReadingPhotosIndex): Promise<void> {
   await FileSystem.writeAsStringAsync(path, JSON.stringify(index))
 }
 
+export async function getReadingPhotosIndex(): Promise<ReadingPhotosIndex> {
+  return readIndex()
+}
+
+export async function writeReadingPhotosIndex(index: ReadingPhotosIndex): Promise<void> {
+  await writeIndex(index)
+}
+
 /** Copy current period photos into a reading-scoped folder. */
 export async function snapshotReadingPhotos(readingId: string): Promise<void> {
   if (!readingId) return
@@ -113,8 +125,6 @@ export async function snapshotReadingPhotos(readingId: string): Promise<void> {
   for (const stale of filtered.slice(MAX_SNAPSHOT_READINGS)) {
     await deleteReadingPhotoFolder(stale.readingId)
   }
-
-  // Phase 2: mirror to iCloud Documents when user opts in (see icloud-sync-preference.ts).
 }
 
 export async function photoUriForReading(
@@ -148,6 +158,28 @@ export async function deleteReadingPhotoFolder(readingId: string): Promise<void>
   const next = index.entries.filter((e) => e.readingId !== readingId)
   if (next.length !== index.entries.length) {
     await writeIndex({ version: 1, entries: next })
+  }
+  try {
+    const { removeReadingPhotosFromICloudIfEnabled } = await import('./icloud-sync')
+    await removeReadingPhotosFromICloudIfEnabled(readingId)
+  } catch {
+    // Native bridge may be absent
+  }
+}
+
+/** Wipe all sealed reading photo folders + index (sign-out / consent / delete account). */
+export async function clearAllReadingPhotos(): Promise<void> {
+  const root = readingsRoot()
+  if (!root) return
+  try {
+    const info = await FileSystem.getInfoAsync(root)
+    if (info.exists) await FileSystem.deleteAsync(root, { idempotent: true })
+  } catch {
+    const index = await readIndex()
+    for (const e of index.entries) {
+      await deleteReadingPhotoFolder(e.readingId)
+    }
+    await writeIndex({ version: 1, entries: [] })
   }
 }
 

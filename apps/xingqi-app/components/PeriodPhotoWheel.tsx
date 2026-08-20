@@ -1,6 +1,6 @@
 /**
  * Home period wheel — vertical iOS-picker of local photo stacks.
- * Center fans open; neighbors stay stacked. Index 0 may be a capture draft.
+ * Left date rail scrolls with each row; center fans open at focus.
  */
 
 import { useTheme } from '@zhop/core-ui'
@@ -32,6 +32,8 @@ import {
 } from '@/lib/stack-layout'
 
 const PARTS: CapturePart[] = ['palm_l', 'palm_r', 'face']
+/** Left time-scale column; dates stay readable while stacks scroll. */
+const DATE_RAIL_W = 76
 
 export type WheelItem = {
   id: string
@@ -127,6 +129,7 @@ function WheelRow({
   const cardW = POLAROID_CARD_W
   const cardH = POLAROID_CARD_H
   const draft = Boolean(item.draft)
+  const fanW = Math.min(POLAROID_FAN_W, Math.max(200, boxW - DATE_RAIL_W - 12))
 
   useEffect(() => {
     let cancelled = false
@@ -134,7 +137,6 @@ function WheelRow({
       const next: Partial<Record<CapturePart, string>> = {}
       if (draft) {
         const map = await periodPhotoMap()
-        // Same path is overwritten on retake — bust so expo-image does not keep the last seal.
         const bust = `t=${revision}`
         if (map.palm_l) next.palm_l = `${map.palm_l}?${bust}`
         if (map.palm_r) next.palm_r = `${map.palm_r}?${bust}`
@@ -161,9 +163,20 @@ function WheelRow({
     }
   })
 
-  const metaStyle = useAnimatedStyle(() => ({
+  /** Date rail stays more opaque than the stack so the scale remains readable. */
+  const railStyle = useAnimatedStyle(() => {
+    const d = Math.abs(index - scroll.value)
+    return { opacity: Math.max(0.42, 1 - 0.22 * Math.min(2.2, d)) }
+  })
+
+  const excerptStyle = useAnimatedStyle(() => ({
     opacity: wheelSpread(index - scroll.value),
   }))
+
+  const open = () => {
+    if (draft) onPressDraft()
+    else onPressReading?.(item.id)
+  }
 
   return (
     <Animated.View
@@ -173,71 +186,68 @@ function WheelRow({
           position: 'absolute',
           left: 0,
           right: 0,
-          top: height / 2 - 134,
-          height: 268,
+          top: height / 2 - 120,
+          height: 240,
+          flexDirection: 'row',
           alignItems: 'center',
+          paddingLeft: 10,
+          paddingRight: 8,
         },
         rowStyle,
       ]}
     >
-      <Animated.View style={[{ maxWidth: 280, marginBottom: 10, alignItems: 'center' }, metaStyle]}>
-        <Pressable
-          onPress={() => {
-            if (draft) onPressDraft()
-            else onPressReading?.(item.id)
-          }}
-        >
+      <Animated.View style={[{ width: DATE_RAIL_W, paddingRight: 8 }, railStyle]}>
+        <Pressable onPress={open} accessibilityRole='button' accessibilityLabel={item.title}>
           <Text
+            numberOfLines={3}
             style={{
               color: colors.text,
-              fontSize: 15,
-              textAlign: 'center',
+              fontSize: 12,
+              lineHeight: 16,
               fontFamily: 'IBMPlexMono',
+              letterSpacing: 0.2,
             }}
           >
             {item.title}
           </Text>
-          {item.excerpt ? (
-            <Text
-              numberOfLines={2}
-              style={{
-                marginTop: 4,
-                color: colors.secondary,
-                fontSize: 12,
-                lineHeight: 17,
-                textAlign: 'center',
-              }}
-            >
-              {item.excerpt}
-            </Text>
-          ) : null}
         </Pressable>
       </Animated.View>
-      <View
-        pointerEvents='box-none'
-        style={{ width: Math.min(POLAROID_FAN_W, boxW), height: cardH + 40 }}
-      >
-        {PARTS.map((part) => (
-          <Polaroid
-            key={part}
-            part={part}
-            uri={uris[part]}
-            draft={draft}
-            index={index}
-            scroll={scroll}
-            boxW={Math.min(POLAROID_FAN_W, boxW)}
-            cardW={cardW}
-            cardH={cardH}
-            isDark={isDark}
-            onPress={() => {
-              if (draft) {
-                onPressDraft()
-                return
-              }
-              onPressReading?.(item.id)
-            }}
-          />
-        ))}
+
+      <View style={{ flex: 1, alignItems: 'center' }}>
+        <View pointerEvents='box-none' style={{ width: fanW, height: cardH + 28 }}>
+          {PARTS.map((part) => (
+            <Polaroid
+              key={part}
+              part={part}
+              uri={uris[part]}
+              draft={draft}
+              index={index}
+              scroll={scroll}
+              boxW={fanW}
+              cardW={cardW}
+              cardH={cardH}
+              isDark={isDark}
+              onPress={open}
+            />
+          ))}
+        </View>
+        {item.excerpt ? (
+          <Animated.View style={[{ maxWidth: fanW, marginTop: 6, paddingHorizontal: 4 }, excerptStyle]}>
+            <Pressable onPress={open}>
+              <Text
+                numberOfLines={2}
+                style={{
+                  color: colors.secondary,
+                  fontSize: 12,
+                  lineHeight: 16,
+                  textAlign: 'center',
+                }}
+              >
+                {item.excerpt}
+              </Text>
+            </Pressable>
+          </Animated.View>
+        ) : null}
       </View>
     </Animated.View>
   )
@@ -263,7 +273,6 @@ export function PeriodPhotoWheel({
   const start = useSharedValue(0)
   const max = Math.max(0, items.length - 1)
 
-  // Parent-driven index: snap (no spring). Pan end already springs to a detent.
   useEffect(() => {
     scroll.value = Math.max(0, Math.min(max, scrollIndex))
   }, [max, scrollIndex, scroll])

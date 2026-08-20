@@ -1,0 +1,20 @@
+{
+  "name": "syel-icloud",
+  "version": "0.1.0",
+  "private": true,
+  "description": "iCloud Documents ubiquity path bridge for Syel sealed reading photos",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "expo-modules-core": "*",
+    "react": "*",
+    "react-native": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
