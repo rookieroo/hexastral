@@ -302,18 +302,15 @@ export function draftHasBirthInfo(d: ReadingDraft = draft): boolean {
 }
 
 /**
- * Photos ready to start a reading:
- * - Face must be a fresh on-device upload (faceUri).
- * - Palms may reuse prior featureIds without re-upload.
- * First-time users still need palm JPEGs once to obtain featureIds.
+ * Capture CTA / funnel: face JPEG unlocks continue (palms optional).
  */
 export function draftPhotoReadyForReading(d: ReadingDraft = draft): boolean {
-  return Boolean(d.faceUri) && draftHasPalmCoverage(d)
+  return Boolean(d.faceUri)
 }
 
-/** Ready to leave capture → paywall / enqueue. */
+/** Ready to leave capture → paywall / enqueue (face + birth; palms optional). */
 export function draftReadyForPaywall(d: ReadingDraft = draft): boolean {
-  return draftHasBirthInfo(d) && draftPhotoReadyForReading(d)
+  return draftHasBirthInfo(d) && Boolean(d.faceUri)
 }
 
 export function draftUriForPart(part: CapturePart, d: ReadingDraft = draft): string | undefined {

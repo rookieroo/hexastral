@@ -180,7 +180,7 @@
     // KV 缓存版本 — 编辑 D1 命格预设文案后递增此值（v1→v2）使旧缓存立即失效
     "ARCHETYPE_CACHE_VERSION": "v1",
     // Dev paywall bypass — must stay "0" in production App Store builds
-    "ALLOW_DEV_PRO": "0"
+    "ALLOW_DEV_PRO": "1"
   },
   // Lantai (Flare for Notion) secrets — `bunx wrangler secret put` from this dir:
   //   NOTION_CLIENT_ID / NOTION_CLIENT_SECRET  (new public integration; do not reuse useone.online)

@@ -62,9 +62,8 @@ const createJobSchema = z
   .superRefine((body, ctx) => {
     const ek = body.ephemeralKeys
     const hasFace = Boolean(body.faceFeatureId || ek?.face)
-    const hasL = Boolean(body.palmLeftFeatureId || ek?.palm_l)
-    const hasR = Boolean(body.palmRightFeatureId || ek?.palm_r)
-    if (!hasFace || !hasL || !hasR) {
+    // Face required; palms optional (period may carry prior featureIds or skip).
+    if (!hasFace) {
       ctx.addIssue({
         code: 'custom',
         message: 'features_or_ephemeral_incomplete',
@@ -323,10 +322,15 @@ physiognomyJobsRoutes.post('/', async (c) => {
     accessVia = 'pro_report_regen'
     slotsCharged = 0
   } else if (isFacePro) {
+    // Charge by modalities actually present (face-only = 1), not a flat 3 on "full".
+    const modalityCount =
+      (body.faceFeatureId || ephemeralKeys?.face ? 1 : 0) +
+      (body.palmLeftFeatureId || ephemeralKeys?.palm_l ? 1 : 0) +
+      (body.palmRightFeatureId || ephemeralKeys?.palm_r ? 1 : 0)
     const slots =
       effectiveUpdateKind === 'partial' && effectivePartialParts
         ? Math.max(1, effectivePartialParts.length)
-        : 3
+        : Math.max(1, Math.min(3, modalityCount || 1))
     if (!devQuotaBypass) {
       const slot = await checkAndConsumeFaceoraclePhotoSlots(db, userId, slots)
       if (!slot.granted) {

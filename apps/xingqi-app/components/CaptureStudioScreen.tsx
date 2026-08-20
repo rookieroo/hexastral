@@ -17,6 +17,7 @@ import {
   type CapturePart,
   draftAllowsPartial,
   draftChangedParts,
+  draftHasAnyPhoto,
   draftHasBirthInfo,
   draftPhotoReadyForReading,
   draftReadyForPaywall,
@@ -275,57 +276,84 @@ export function CaptureStudioScreen({
   }, [dockOnly, embedded, onExit, settleThenExit])
 
   const continueFunnel = useCallback(async () => {
-    let draft = getReadingDraft()
-    const changed = await draftChangedParts(draft)
-    syncPartialMetaFromChanged(changed)
-    if (changed.length > 0 && changed.length < 3 && !draft.outputKind) {
-      patchReadingDraft({ outputKind: 'period_brief' })
-    }
-    draft = getReadingDraft()
-    if (!draftReadyForPaywall(draft)) {
+    try {
+      await hydrateReadingDraft()
+      let draft = getReadingDraft()
+      const changed = await draftChangedParts(draft)
+      syncPartialMetaFromChanged(changed)
+      if (changed.length > 0 && changed.length < 3 && !draft.outputKind) {
+        patchReadingDraft({ outputKind: 'period_brief' })
+      }
+      draft = getReadingDraft()
+      if (!draftPhotoReadyForReading(draft)) {
+        Alert.alert(
+          s('还差面部', '還差面部', 'Face photo needed', '顔写真が必要です'),
+          s(
+            '请先拍摄或选择面部照片。',
+            '請先拍攝或選擇面部照片。',
+            'Capture or choose a face photo first.',
+            '先に顔写真を撮影または選択してください。'
+          )
+        )
+        setActivePart('face')
+        return
+      }
       if (!draftHasBirthInfo(draft)) {
         if (embedded) setHomeCaptureHandoff()
         router.push('/birth')
+        return
       }
-      return
-    }
-    if (isPro) {
-      if (
-        await alertIfPhotosUnchanged({
-          draft: getReadingDraft(),
+      if (!draftReadyForPaywall(draft)) return
+      if (isPro) {
+        if (
+          await alertIfPhotosUnchanged({
+            draft: getReadingDraft(),
+            locale,
+            onUpdatePhotos: () => undefined,
+          })
+        ) {
+          return
+        }
+        const started = startReadingJob({
           locale,
-          onUpdatePhotos: () => undefined,
+          outputKind: getReadingDraft().outputKind ?? 'oneshot',
+          isPro: true,
+          draft: getReadingDraft(),
         })
-      ) {
+        if (started) {
+          // Keep period JPEGs on disk for extract — Close path wipes; handoff must not.
+          ;(onHandoff ?? onExit)?.()
+          if (!embedded) router.replace('/(app)' as never)
+          return
+        }
+        Alert.alert(
+          s('解读进行中', '解讀進行中', 'Reading in progress', '解読中'),
+          s(
+            '请等待当前解读完成。',
+            '請等待目前解讀完成。',
+            'Wait for the current reading to finish.',
+            '現在の解読が終わるまでお待ちください。'
+          )
+        )
         return
       }
-      const started = startReadingJob({
-        locale,
-        outputKind: getReadingDraft().outputKind ?? 'oneshot',
-        isPro: true,
-        draft: getReadingDraft(),
-      })
-      if (started) {
-        // Keep period JPEGs on disk for extract — Close path wipes; handoff must not.
-        ;(onHandoff ?? onExit)?.()
-        if (!embedded) router.replace('/(app)' as never)
-        return
-      }
+      // Free: leave capture with photos intact so timeline draft shows the unfinished set.
+      ;(onHandoff ?? onExit)?.()
+      router.push('/(commerce)/paywall' as never)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.warn('[xingqi.capture] continue_funnel_failed', msg)
       Alert.alert(
-        s('解读进行中', '解讀進行中', 'Reading in progress', '解読中'),
+        s('无法继续', '無法繼續', 'Could not continue', '続行できません'),
         s(
-          '请等待当前解读完成。',
-          '請等待目前解讀完成。',
-          'Wait for the current reading to finish.',
-          '現在の解読が終わるまでお待ちください。'
+          '请稍后重试。若持续失败，可先关闭再打开录入。',
+          '請稍後重試。若持續失敗，可先關閉再打開錄入。',
+          'Try again in a moment. If it keeps failing, close capture and reopen.',
+          'しばらくしてから再試してください。続く場合は撮影を閉じて開き直してください。'
         )
       )
-      return
     }
-    // Free: leave capture with photos intact so timeline draft shows the unfinished set.
-    ;(onHandoff ?? onExit)?.()
-    router.push('/(commerce)/paywall' as never)
-  }, [embedded, isPro, locale, onExit, onHandoff, s])
+  }, [embedded, isPro, locale, onExit, onHandoff, s, setActivePart])
 
   const applyUri = useCallback(
     async (sourceUri: string) => {
@@ -343,7 +371,7 @@ export function CaptureStudioScreen({
         syncPartialMetaFromChanged(changed)
         onPhotosChanged?.()
         if (slotMode) return
-        // Face + palm coverage (JPEG or prior featureId) → start; else next empty slot.
+        // Face unlocks the reading CTA; auto-advance only when birth is also ready.
         if (draftPhotoReadyForReading(getReadingDraft()) && draftHasBirthInfo(getReadingDraft())) {
           await continueFunnel()
           return
@@ -450,7 +478,7 @@ export function CaptureStudioScreen({
   const draftNow = getReadingDraft()
   const periodMode = draftAllowsPartial(draftNow)
   const canCarryPalms = Boolean(draftNow.palmLeftFeatureId && draftNow.palmRightFeatureId)
-  // Face JPEG required; palms may reuse prior featureIds.
+  // Face JPEG unlocks primary CTA (palms optional at this gate).
   const submitReady = draftPhotoReadyForReading(draftNow)
 
   const onPrimary = () => {
@@ -466,7 +494,7 @@ export function CaptureStudioScreen({
       void continueFunnel()
       return
     }
-    // First seal: jump to next empty slot (label is "下一张").
+    // No face yet: jump to next empty slot (label is "下一张").
     if (!periodMode) {
       const next = firstEmpty(urisFromDraft())
       setActivePart(next)
@@ -577,7 +605,7 @@ export function CaptureStudioScreen({
       <Button
         variant='primary'
         onPress={onPrimary}
-        disabled={busy || (slotMode ? !hasActive : periodMode || canCarryPalms ? !submitReady : false)}
+        disabled={busy || (slotMode ? !hasActive : !submitReady)}
       >
         {primaryLabel}
       </Button>

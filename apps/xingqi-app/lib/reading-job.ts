@@ -248,10 +248,22 @@ function mapJobError(msg: string, locale: string): string {
   } else if (msg === 'features_incomplete' || msg === 'birth_incomplete') {
     error = zhCopy(
       locale,
-      '请先完成三张照片与出生信息，再发起解读。',
-      '請先完成三張照片與出生資訊，再發起解讀。',
-      'Complete three photos and birth info before starting a reading.',
-      '三枚の写真と出生情報を入力してから、解読を開始してください。'
+      '请先完成面部照片与出生信息，再发起解读。',
+      '請先完成面部照片與出生資訊，再發起解讀。',
+      'Add a face photo and birth info before starting a reading.',
+      '顔写真と出生情報を入力してから、解読を開始してください。'
+    )
+  } else if (
+    msg === 'Validation error' ||
+    msg === 'validation_failed' ||
+    msg.includes('features_or_ephemeral')
+  ) {
+    error = zhCopy(
+      locale,
+      '提交参数有误。请确认已登录、已填生辰，并至少有一张面部照片。',
+      '提交參數有誤。請確認已登入、已填生辰，並至少有一張面部照片。',
+      'Invalid request. Sign in, add birth info, and at least a face photo.',
+      'リクエストが無効です。ログイン・生辰・顔写真を確認してください。'
     )
   } else if (
     msg === 'purchase_required' ||

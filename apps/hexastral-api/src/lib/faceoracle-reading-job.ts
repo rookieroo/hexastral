@@ -882,7 +882,7 @@ export async function runFaceoracleReadingJob(
 
   await setJobStage(db, jobId, 'interpreting', 35)
 
-  const [face, palmL, palmR, faceLm, palmLm, palmRm] = await Promise.all([
+  const [face, palmLRaw, palmRRaw, faceLm, palmLm, palmRm] = await Promise.all([
     loadFeatureJson(db, job.userId, job.faceFeatureId),
     loadFeatureJson(db, job.userId, job.palmLeftFeatureId),
     loadFeatureJson(db, job.userId, job.palmRightFeatureId),
@@ -890,9 +890,18 @@ export async function runFaceoracleReadingJob(
     loadLandmarksJson(db, job.userId, job.palmLeftFeatureId),
     loadLandmarksJson(db, job.userId, job.palmRightFeatureId),
   ])
-  if (!face || !palmL || !palmR) {
+  if (!face) {
     await failJob(db, job, 'features_missing', true, env)
     return
+  }
+  const palmL = palmLRaw ?? {}
+  const palmR = palmRRaw ?? {}
+  if (!palmLRaw || !palmRRaw) {
+    console.info('[faceoracle-job] palms_optional_missing', {
+      jobId,
+      hasPalmL: Boolean(palmLRaw),
+      hasPalmR: Boolean(palmRRaw),
+    })
   }
 
   await setJobStage(db, jobId, 'interpreting', 40)

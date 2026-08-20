@@ -339,40 +339,37 @@ function buildJobBody(
   }
   const keys = ephemeralKeys
     ? {
-        palm_l: ephemeralKeys.palm_l,
-        palm_r: ephemeralKeys.palm_r,
-        face: ephemeralKeys.face,
-        batchId: ephemeralKeys.batchId,
+        ...(ephemeralKeys.palm_l ? { palm_l: ephemeralKeys.palm_l } : {}),
+        ...(ephemeralKeys.palm_r ? { palm_r: ephemeralKeys.palm_r } : {}),
+        ...(ephemeralKeys.face ? { face: ephemeralKeys.face } : {}),
+        ...(ephemeralKeys.batchId ? { batchId: ephemeralKeys.batchId } : {}),
       }
     : undefined
-  const hasKeys = Boolean(keys?.palm_l || keys?.palm_r || keys?.face)
+  const hasKeys = Boolean(keys && (keys.palm_l || keys.palm_r || keys.face))
   const faceFeatureId = draft.faceFeatureId
   const palmLeftFeatureId = draft.palmLeftFeatureId
   const palmRightFeatureId = draft.palmRightFeatureId
-  if (!hasKeys && (!faceFeatureId || !palmLeftFeatureId || !palmRightFeatureId)) {
-    throw new Error('features_incomplete')
-  }
-  // Coverage: each modality needs featureId or ephemeral key.
+  // Face required; palms optional (JPEG ephemeral or prior featureId).
   const hasFace = Boolean(faceFeatureId || keys?.face)
-  const hasL = Boolean(palmLeftFeatureId || keys?.palm_l)
-  const hasR = Boolean(palmRightFeatureId || keys?.palm_r)
-  if (!hasFace || !hasL || !hasR) {
+  if (!hasFace) {
     throw new Error('features_incomplete')
   }
+  const partialParts =
+    draft.partialParts && draft.partialParts.length > 0 ? draft.partialParts : undefined
   return {
-    faceFeatureId: faceFeatureId || undefined,
-    palmLeftFeatureId: palmLeftFeatureId || undefined,
-    palmRightFeatureId: palmRightFeatureId || undefined,
-    ephemeralKeys: hasKeys ? keys : undefined,
+    ...(faceFeatureId ? { faceFeatureId } : {}),
+    ...(palmLeftFeatureId ? { palmLeftFeatureId } : {}),
+    ...(palmRightFeatureId ? { palmRightFeatureId } : {}),
+    ...(hasKeys ? { ephemeralKeys: keys } : {}),
     solarDate: draft.solarDate,
     timeIndex: draft.timeIndex,
     gender: draft.gender,
-    city: draft.city,
+    ...(draft.city ? { city: draft.city } : {}),
     locale,
     outputKind: draft.outputKind ?? 'oneshot',
-    horizonMonths: draft.horizonMonths ?? 3,
+    horizonMonths: draft.horizonMonths === 6 ? 6 : 3,
     updateKind: draft.updateKind ?? 'full',
-    partialParts: draft.partialParts,
+    ...(partialParts ? { partialParts } : {}),
     notifyOnComplete,
     regen,
   }
@@ -625,7 +622,7 @@ export async function runFaceReading(
     ephemeralKeys = await uploadEphemeralPhotos(uploadParts, {
       onProgress: (progress) => opts?.onProgress?.({ phase: 'uploading', progress }),
     })
-  } else if (!draft.faceFeatureId || !draft.palmLeftFeatureId || !draft.palmRightFeatureId) {
+  } else if (!draft.faceFeatureId) {
     throw new Error('features_incomplete')
   }
 
