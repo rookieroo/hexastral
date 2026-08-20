@@ -24,7 +24,7 @@ export const physiognomyRoutes = new Hono<AppEnv>()
  *
  * 输入: base64 图片
  * 输出: { features, landmarks, model }（不含原图）
- * Cascade: CF Kimi K2.6 → Gemini Flash → Llama 3.2 vision
+ * Cascade: CF Kimi K2.6 → Gemini Flash → Qwen 3.8 27B
  */
 physiognomyRoutes.post('/extract-features', async (c) => {
   const input = await c.req.json<{

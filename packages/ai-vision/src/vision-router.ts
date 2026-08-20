@@ -1,8 +1,9 @@
 /**
  * Vision router — structured image → JSON cascade for physiognomy extract.
  *
- * Primary: CF Kimi K2.6 (vision + Chinese). Fallbacks: Gemini Flash, Llama 3.2 vision.
+ * Primary: CF Kimi K2.6 (vision + Chinese). Fallbacks: Gemini Flash, Qwen 3.8 27B.
  * Keeps ADR-0028: pixels → feature JSON only; reading LLM stays text-only.
+ * Landmark (x,y) pointing stays on Moondream, not this cascade.
  */
 
 import {
@@ -17,13 +18,13 @@ import { type WorkersAiBinding } from './router'
 export const VLM_MODELS = {
   KIMI: '@cf/moonshotai/kimi-k2.6',
   GEMINI_FLASH: 'gemini-3-flash-preview',
-  LLAMA_VISION: '@cf/meta/llama-3.2-11b-vision-instruct',
+  QWEN_VISION: '@cf/qwen/qwen3.8-27b',
   /** Purpose-built pointing/detection VLM — used for landmark coordinates only. */
   MOONDREAM: '@cf/moondream/moondream3.1-9B-A2B',
 } as const
 
 /** Cascade label mixed into content-hash (not the concrete winning model). */
-export const VLM_CASCADE_ID = 'vlm-cascade-v1'
+export const VLM_CASCADE_ID = 'vlm-cascade-v2'
 
 export interface VisionRouterEnv {
   AI: WorkersAiBinding
@@ -50,7 +51,8 @@ export interface VisionStructuredResult<T> {
 
 const KIMI_TIMEOUT_MS = 40_000
 const GEMINI_TIMEOUT_MS = 45_000
-const LLAMA_TIMEOUT_MS = 60_000
+const QWEN_TIMEOUT_MS = 60_000
+const KIMI_RETRY_DELAY_MS = 600
 
 function withTimeout<T>(work: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -66,6 +68,10 @@ function withTimeout<T>(work: Promise<T>, ms: number, label: string): Promise<T>
       }
     )
   })
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 function extractAiText(result: unknown): string {
@@ -97,33 +103,20 @@ function emitMetric(payload: {
   console.log('[vlm-router.metric]', JSON.stringify(payload))
 }
 
-/** One-shot Meta license accept for Llama 3.2 vision (CF error 5016). */
-let llamaLicenseAgreed = false
+/** Moonshot/CF transient failures worth one immediate retry before falling through. */
+function isTransientKimiError(msg: string): boolean {
+  return /8004|3040|out of capacity|internal server error|\b429\b|rate.?limit/i.test(msg)
+}
 
-async function ensureLlamaVisionLicense(ai: WorkersAiBinding): Promise<void> {
-  if (llamaLicenseAgreed) return
-  try {
-    await withTimeout(
-      ai.run(VLM_MODELS.LLAMA_VISION, { prompt: 'agree' }),
-      15_000,
-      'llama-license-agree'
-    )
-    llamaLicenseAgreed = true
-    console.info('[vlm-router] llama license agree ok')
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    // CF often returns 5016 with "Thank you for agreeing…" after a successful accept.
-    if (/thank you for agreeing|you may now use/i.test(msg)) {
-      llamaLicenseAgreed = true
-      console.info('[vlm-router] llama license agree ok (via 5016 ack)')
-      return
-    }
-    console.warn('[vlm-router] llama license agree:', msg.slice(0, 200))
-    // Still try the real call unless CF insists we must submit agree again.
-    if (!/must submit the prompt ['"]agree['"]/i.test(msg)) {
-      llamaLicenseAgreed = true
-    }
+function thinkingKwargs(model: string): Record<string, unknown> | undefined {
+  if (model.includes('moonshotai/kimi') || model.includes('/kimi-k2')) {
+    return { chat_template_kwargs: { thinking: false } }
   }
+  // Qwen3 family — suppress reasoning tokens for dense feature JSON.
+  if (model.includes('qwen')) {
+    return { chat_template_kwargs: { enable_thinking: false } }
+  }
+  return undefined
 }
 
 async function callCfVisionJson(
@@ -153,7 +146,8 @@ async function callCfVisionJson(
     temperature: opts.temperature,
   }
   if (opts.thinkingOff) {
-    inputs.chat_template_kwargs = { thinking: false }
+    const kwargs = thinkingKwargs(model)
+    if (kwargs) Object.assign(inputs, kwargs)
   }
 
   const result = await withTimeout(ai.run(model, inputs), opts.timeoutMs, model)
@@ -163,7 +157,7 @@ async function callCfVisionJson(
 }
 
 /**
- * Structured vision cascade: Kimi (CF) → Gemini Flash → Llama 3.2 vision (CF).
+ * Structured vision cascade: Kimi (CF, 8004×1 retry) → Gemini Flash → Qwen 3.8 27B (CF).
  */
 export async function callVisionStructuredWithFallback<T extends object>(
   env: VisionRouterEnv,
@@ -174,34 +168,46 @@ export async function callVisionStructuredWithFallback<T extends object>(
   const temperature = opts.temperature ?? 0.2
   const errors: string[] = []
 
-  // Tier 1 — Kimi
-  try {
-    const raw = await callCfVisionJson(
-      env.AI,
-      VLM_MODELS.KIMI,
-      opts.systemPrompt,
-      opts.userPrompt,
-      opts.images,
-      opts.responseSchema,
-      {
-        maxTokens,
-        temperature,
-        timeoutMs: KIMI_TIMEOUT_MS,
-        thinkingOff: true,
+  // Tier 1 — Kimi (one transient retry on 8004 / capacity)
+  {
+    let kimiErr = ''
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const raw = await callCfVisionJson(
+          env.AI,
+          VLM_MODELS.KIMI,
+          opts.systemPrompt,
+          opts.userPrompt,
+          opts.images,
+          opts.responseSchema,
+          {
+            maxTokens,
+            temperature,
+            timeoutMs: KIMI_TIMEOUT_MS,
+            thinkingOff: true,
+          }
+        )
+        const data = parseModelJsonObject<T>(raw)
+        emitMetric({
+          model: VLM_MODELS.KIMI,
+          fallbackDepth: 0,
+          latencyMs: Date.now() - startedAt,
+          metricLabel: opts.metricLabel,
+        })
+        return { data, model: VLM_MODELS.KIMI, fallbackDepth: 0 }
+      } catch (err) {
+        kimiErr = err instanceof Error ? err.message : String(err)
+        const retryable = attempt === 0 && isTransientKimiError(kimiErr)
+        if (retryable) {
+          console.warn('[vlm-router] kimi transient — retry once', kimiErr.slice(0, 120))
+          await sleep(KIMI_RETRY_DELAY_MS)
+          continue
+        }
+        break
       }
-    )
-    const data = parseModelJsonObject<T>(raw)
-    emitMetric({
-      model: VLM_MODELS.KIMI,
-      fallbackDepth: 0,
-      latencyMs: Date.now() - startedAt,
-      metricLabel: opts.metricLabel,
-    })
-    return { data, model: VLM_MODELS.KIMI, fallbackDepth: 0 }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    errors.push(`kimi:${msg}`)
-    console.error('[vlm-router] kimi failed:', msg.slice(0, 300))
+    }
+    errors.push(`kimi:${kimiErr}`)
+    console.error('[vlm-router] kimi failed:', kimiErr.slice(0, 300))
   }
 
   // Tier 2 — Gemini Flash (retry once with more tokens if JSON was truncated)
@@ -246,12 +252,11 @@ export async function callVisionStructuredWithFallback<T extends object>(
     errors.push('gemini:skipped_no_key')
   }
 
-  // Tier 3 — Llama 3.2 vision (requires one-time Meta license agree on CF)
+  // Tier 3 — Qwen 3.8 27B (CF vision + Chinese)
   try {
-    await ensureLlamaVisionLicense(env.AI)
     const raw = await callCfVisionJson(
       env.AI,
-      VLM_MODELS.LLAMA_VISION,
+      VLM_MODELS.QWEN_VISION,
       opts.systemPrompt,
       opts.userPrompt,
       opts.images,
@@ -259,21 +264,22 @@ export async function callVisionStructuredWithFallback<T extends object>(
       {
         maxTokens,
         temperature,
-        timeoutMs: LLAMA_TIMEOUT_MS,
+        timeoutMs: QWEN_TIMEOUT_MS,
+        thinkingOff: true,
       }
     )
     const data = parseModelJsonObject<T>(raw)
     emitMetric({
-      model: VLM_MODELS.LLAMA_VISION,
+      model: VLM_MODELS.QWEN_VISION,
       fallbackDepth: 2,
       latencyMs: Date.now() - startedAt,
       metricLabel: opts.metricLabel,
     })
-    return { data, model: VLM_MODELS.LLAMA_VISION, fallbackDepth: 2 }
+    return { data, model: VLM_MODELS.QWEN_VISION, fallbackDepth: 2 }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    errors.push(`llama:${msg}`)
-    console.error('[vlm-router] llama failed:', msg.slice(0, 300))
+    errors.push(`qwen:${msg}`)
+    console.error('[vlm-router] qwen failed:', msg.slice(0, 300))
   }
 
   throw new Error(`[vlm-router] All vision tiers failed. ${errors.join(' | ')}`)

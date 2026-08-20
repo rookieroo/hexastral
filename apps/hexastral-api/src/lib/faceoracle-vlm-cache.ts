@@ -4,12 +4,12 @@
  * when the feature JSON contract or extraction prompt changes.
  *
  * Hash uses the cascade id (not the concrete winning model) so Gemini / Kimi /
- * Llama wins for the same pixels share one cache row. The row still records
+ * Qwen wins for the same pixels share one cache row. The row still records
  * `extractionModel` = which tier actually produced the JSON.
  */
 
 /** Cascade contract id mixed into content-hash (see @zhop/ai-vision VLM_CASCADE_ID). */
-export const FACEORACLE_VLM_MODEL = 'vlm-cascade-v1'
+export const FACEORACLE_VLM_MODEL = 'vlm-cascade-v2'
 // v6: Moondream face point. v7: palm mounts/marks prose. v8: palm landmarks
 // dropped (client canonical). v9: palm per-mount + Moondream. v10: palm phrase
 // tighten + outlier sanitize + contain-aligned client plotting.

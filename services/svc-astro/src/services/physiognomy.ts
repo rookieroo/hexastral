@@ -1,7 +1,7 @@
 /**
  * 面相/手相 Physiognomy Service — structured VLM feature extraction (ADR-0028).
  *
- * Face: Kimi/Gemini/Llama feature text + Moondream `point` coordinates.
+ * Face: Kimi/Gemini/Qwen feature text + Moondream `point` coordinates.
  * Palm: per-line/mount feature text + VLM midpoints, Moondream `point` wins
  * (same pointing path as face). Clustered midpoints are dropped before merge.
  */

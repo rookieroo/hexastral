@@ -128,7 +128,7 @@ See [lantai/demand.md](../lantai/demand.md).
 | Path | Tier / model |
 |---|---|
 | Reading text | CF Workers AI **flagship** two-pass (`faceoracle_loci` then `faceoracle_chapters`) via `@zhop/ai-vision` |
-| VLM extract (features) | CF **Kimi K2.6** vision primary → Gemini Flash → Llama 3.2 vision (`vlm-cascade-v1`) |
+| VLM extract (features) | CF **Kimi K2.6** (8004×1 retry) → Gemini Flash → Qwen 3.8 27B (`vlm-cascade-v2`) |
 | VLM extract (coords) | Face + palm: CF **Moondream 3.1** `point` (+ feature-VLM midpoint fallback; palm cluster drop) |
 | Yuun explain / Yuel chapters | Same router, usually **`standard`** (parallel call shape) |
 
