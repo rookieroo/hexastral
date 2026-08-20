@@ -3,11 +3,12 @@
  *
  * 职责边界:
  *   hexastral-api (本文件):  D1 存储 / 用户状态更新 / VLM content-hash 缓存
- *   svc-astro:               Gemini Vision 结构化特征提取
+ *   svc-astro:               Vision 结构化特征提取
  *
- * 流程:
+ * 流程 (legacy sync):
  *   iOS 直传 base64 → hash lookup → (miss) svc-astro VLM → D1 存储特征 JSON
- *   原图仅存于请求内存，提取完成后自动回收，不经 R2
+ * Preferred Syel path: ephemeral R2 upload → queue extract (FACE_EPHEMERAL_BUCKET)
+ * then delete — see ephemeral-photos + faceoracle-extract-from-bytes.
  */
 
 import { and, eq } from 'drizzle-orm'
@@ -39,7 +40,7 @@ const fromBase64Schema = z.object({
   userId: z.string().min(1),
   imageBase64: z.string().min(1).max(20_000_000),
   mimeType: z.enum(['image/jpeg', 'image/png', 'image/heic', 'image/webp']).default('image/jpeg'),
-  privacyConsentVersion: z.string().default('v1'),
+  privacyConsentVersion: z.string().default('v2'),
   type: featureTypeSchema.default('face'),
 })
 

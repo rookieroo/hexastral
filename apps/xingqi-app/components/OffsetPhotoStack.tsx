@@ -24,12 +24,14 @@ import {
   POLAROID_FAN_MS,
   POLAROID_FAN_W,
   POLAROID_RITUAL_MS,
+  POLAROID_SELECT_MS,
   POLAROID_STACK_H,
   polaroidPoses,
 } from '@/lib/stack-layout'
 
 const PARTS: CapturePart[] = ['palm_l', 'palm_r', 'face']
-const FAN_EASE = Easing.inOut(Easing.cubic)
+/** Ease-in-out — fan, ritual, and selection share one curve. */
+const STACK_EASE = Easing.inOut(Easing.cubic)
 
 function StackCard({
   part,
@@ -46,6 +48,7 @@ function StackCard({
   interactive,
   inkEnabled,
   showLabels,
+  photoCache,
   onPressPart,
 }: {
   part: CapturePart
@@ -62,20 +65,33 @@ function StackCard({
   interactive: boolean
   inkEnabled: boolean
   showLabels: boolean
+  photoCache: 'memory-disk' | 'none'
   onPressPart?: (part: CapturePart, hasPhoto: boolean) => void
 }) {
   const lift = useSharedValue(0)
+  // Always start unselected so auto-focus (Face) and tap both ease in — never snap.
+  const selected = useSharedValue(0)
+
+  useEffect(() => {
+    selected.value = withTiming(active ? 1 : 0, {
+      duration: POLAROID_SELECT_MS,
+      easing: STACK_EASE,
+    })
+  }, [active, selected])
+
   const posStyle = useAnimatedStyle(() => {
     const pose = polaroidPoses(spread.value, fanW, cardW, ritual.value)[part]
     const k = lift.value
+    const sel = selected.value
+    const baseScale = pose.scale * (0.95 + sel * 0.14)
     return {
       left: pose.left,
-      top: pose.top,
-      zIndex: active ? 6 : pose.z,
+      top: pose.top - sel * 18,
+      zIndex: Math.round(pose.z + sel * 5),
       transform: [
-        { translateY: k * -10 },
-        { rotate: `${pose.rotateDeg}deg` },
-        { scale: pose.scale + k * 0.04 },
+        { translateY: k * -10 - sel * 6 },
+        { rotate: `${pose.rotateDeg * (1 - sel * 0.12)}deg` },
+        { scale: baseScale + k * 0.04 },
       ],
     }
   })
@@ -91,7 +107,7 @@ function StackCard({
           position: 'absolute',
           width: cardW,
           height: cardH,
-          ...polaroidLift(isDark, poseLayer(part)),
+          ...polaroidLift(isDark, poseLayer(part) + (active ? 2 : 0)),
         },
         posStyle,
       ]}
@@ -110,7 +126,7 @@ function StackCard({
         }}
       >
         {uri ? (
-          <LocalPhoto uri={uri} style={{ width: '100%', height: '100%' }} />
+          <LocalPhoto uri={uri} style={{ width: '100%', height: '100%' }} cache={photoCache} />
         ) : (
           <PolaroidGhost />
         )}
@@ -148,6 +164,7 @@ export function OffsetPhotoStack({
   inkEnabled = false,
   instantPose = false,
   interactive,
+  photoCache = 'memory-disk',
   onPressPart,
 }: {
   readingId?: string
@@ -161,13 +178,15 @@ export function OffsetPhotoStack({
   inkEnabled?: boolean
   instantPose?: boolean
   interactive?: boolean
+  /** Period sandbox reuses paths — pass `none` with a busted URI. */
+  photoCache?: 'memory-disk' | 'none'
   onPressPart?: (part: CapturePart, hasPhoto: boolean) => void
 }) {
   const { isDark, colors } = useTheme()
   const [boxW, setBoxW] = useState(POLAROID_FAN_W)
   const [loaded, setLoaded] = useState<Partial<Record<CapturePart, string>>>({})
   const fanW = compact ? POLAROID_FAN_W : boxW
-  const cardW = compact ? POLAROID_CARD_W : Math.min(136, Math.round(boxW * 0.38))
+  const cardW = compact ? POLAROID_CARD_W : Math.min(124, Math.round(boxW * 0.34))
   const cardH = compact ? POLAROID_CARD_H : Math.round(cardW * (POLAROID_CARD_H / POLAROID_CARD_W))
   const uris = urisProp ?? loaded
   const spreadSv = useSharedValue(spread)
@@ -178,7 +197,7 @@ export function OffsetPhotoStack({
       spreadSv.value = spread
       return
     }
-    spreadSv.value = withTiming(spread, { duration: POLAROID_FAN_MS, easing: FAN_EASE })
+    spreadSv.value = withTiming(spread, { duration: POLAROID_FAN_MS, easing: STACK_EASE })
   }, [instantPose, spread, spreadSv])
 
   useEffect(() => {
@@ -188,7 +207,7 @@ export function OffsetPhotoStack({
     }
     ritualSv.value = withTiming(ritual, {
       duration: POLAROID_RITUAL_MS,
-      easing: Easing.inOut(Easing.cubic),
+      easing: STACK_EASE,
     })
   }, [instantPose, ritual, ritualSv])
 
@@ -242,6 +261,7 @@ export function OffsetPhotoStack({
           interactive={canPress}
           inkEnabled={inkEnabled}
           showLabels={compact}
+          photoCache={photoCache}
           onPressPart={onPressPart}
         />
       ))}

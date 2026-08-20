@@ -4,9 +4,13 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as FileSystem from 'expo-file-system/legacy'
 
 import { clearAllPeriodPhotos, periodPhotoMap } from './period-photos'
-import { clearLastReadingPhotoSnapshot } from './reading-photo-stamp'
+import {
+  clearLastReadingPhotoSnapshot,
+  loadLastReadingPhotoSnapshot,
+} from './reading-photo-stamp'
 
 const KEY = 'xingqi_reading_draft_v1'
 
@@ -91,16 +95,26 @@ export async function hydrateReadingDraft(): Promise<ReadingDraft> {
   }
 
   const photos = await periodPhotoMap()
+  const pickUri = async (draftUri: string | undefined, periodUri: string | undefined) => {
+    const clean = draftUri?.split('?')[0]
+    if (clean) {
+      try {
+        const info = await FileSystem.getInfoAsync(clean)
+        if (info.exists) return clean
+      } catch {
+        // fall through
+      }
+    }
+    return periodUri
+  }
   draft = {
     ...draft,
-    palmLeftUri: photos.palm_l,
-    palmRightUri: photos.palm_r,
-    faceUri: photos.face,
+    palmLeftUri: await pickUri(draft.palmLeftUri, photos.palm_l),
+    palmRightUri: await pickUri(draft.palmRightUri, photos.palm_r),
+    faceUri: await pickUri(draft.faceUri, photos.face),
   }
-  // Drop stale feature ids when the file is gone
-  if (!photos.palm_l) draft.palmLeftFeatureId = undefined
-  if (!photos.palm_r) draft.palmRightFeatureId = undefined
-  if (!photos.face) draft.faceFeatureId = undefined
+  // Keep featureIds without local files — period_brief reuses last extract for empty slots.
+  // Replacing a slot clears that featureId in patchPart; do not wipe here on hydrate.
 
   try {
     await AsyncStorage.setItem(KEY, JSON.stringify(draft))
@@ -110,16 +124,176 @@ export async function hydrateReadingDraft(): Promise<ReadingDraft> {
   return getReadingDraft()
 }
 
+/**
+ * Prepare New period capture: empty slots + last featureIds (partial).
+ * Resumes only when on-disk shots differ from the last sealed stamp (failed extract / mid-edit).
+ * Leftovers from the last successful reading are wiped — otherwise processing shows old photos.
+ */
+export async function prepareNewPeriodCapture(opts?: {
+  force?: boolean
+}): Promise<ReadingDraft> {
+  const snap = await loadLastReadingPhotoSnapshot()
+
+  const resetEmpty = async (): Promise<ReadingDraft> => {
+    await clearAllPeriodPhotos()
+    const prev = draft
+    draft = {
+      solarDate: prev.solarDate,
+      timeIndex: prev.timeIndex,
+      gender: prev.gender,
+      city: prev.city,
+      horizonMonths: prev.horizonMonths,
+      outputKind: 'period_brief',
+      updateKind: 'partial',
+      partialParts: [],
+      faceFeatureId: snap?.faceFeatureId,
+      palmLeftFeatureId: snap?.palmLeftFeatureId,
+      palmRightFeatureId: snap?.palmRightFeatureId,
+    }
+    try {
+      await AsyncStorage.setItem(KEY, JSON.stringify(draft))
+    } catch {
+      // ignore
+    }
+    return getReadingDraft()
+  }
+
+  if (opts?.force) return resetEmpty()
+
+  const onDisk = await periodPhotoMap()
+  const hasShots = Boolean(onDisk.palm_l || onDisk.palm_r || onDisk.face)
+  if (!hasShots) return resetEmpty()
+
+  // Bind disk → draft to compare against last seal.
+  draft = {
+    ...draft,
+    palmLeftUri: onDisk.palm_l,
+    palmRightUri: onDisk.palm_r,
+    faceUri: onDisk.face,
+    outputKind: 'period_brief',
+    updateKind: 'partial',
+    faceFeatureId: onDisk.face ? draft.faceFeatureId : (snap?.faceFeatureId ?? draft.faceFeatureId),
+    palmLeftFeatureId: onDisk.palm_l
+      ? draft.palmLeftFeatureId
+      : (snap?.palmLeftFeatureId ?? draft.palmLeftFeatureId),
+    palmRightFeatureId: onDisk.palm_r
+      ? draft.palmRightFeatureId
+      : (snap?.palmRightFeatureId ?? draft.palmRightFeatureId),
+  }
+  const changed = await draftChangedParts(getReadingDraft())
+  if (changed.length === 0) {
+    // Same files as last seal — not an in-progress edit.
+    return resetEmpty()
+  }
+
+  // Edited slots must re-extract; drop stale featureIds bound to the previous seal.
+  if (changed.includes('palm_l')) draft.palmLeftFeatureId = undefined
+  if (changed.includes('palm_r')) draft.palmRightFeatureId = undefined
+  if (changed.includes('face')) draft.faceFeatureId = undefined
+
+  try {
+    await AsyncStorage.setItem(KEY, JSON.stringify(draft))
+  } catch {
+    // ignore
+  }
+  syncPartialMetaFromChanged(changed)
+  return getReadingDraft()
+}
+
+/** Parts whose on-device file differs from the last successful reading stamp. */
+export async function draftChangedParts(d: ReadingDraft = draft): Promise<CapturePart[]> {
+  const { loadLastReadingPhotoSnapshot, stampMapForDraft, stampsEqual } = await import(
+    './reading-photo-stamp'
+  )
+  const snap = await loadLastReadingPhotoSnapshot()
+  if (!snap) {
+    const parts: CapturePart[] = []
+    if (d.palmLeftUri) parts.push('palm_l')
+    if (d.palmRightUri) parts.push('palm_r')
+    if (d.faceUri) parts.push('face')
+    return parts
+  }
+  const stamps = await stampMapForDraft(d)
+  const changed: CapturePart[] = []
+  const check = (
+    part: CapturePart,
+    stampKey: 'palm_l' | 'palm_r' | 'face',
+    featureId: string | undefined,
+    snapFeatureId: string | undefined
+  ) => {
+    const cur = stamps[part]
+    if (!cur) return
+    const prev = snap[stampKey]
+    const stampSame = Boolean(prev && stampsEqual(cur, prev))
+    const idSame = Boolean(featureId && featureId === snapFeatureId)
+    // New JPEG or unbound extract counts as an edit. Matching stamp+id = leftover seal.
+    if (!stampSame || !idSame) changed.push(part)
+  }
+  check('palm_l', 'palm_l', d.palmLeftFeatureId, snap.palmLeftFeatureId)
+  check('palm_r', 'palm_r', d.palmRightFeatureId, snap.palmRightFeatureId)
+  check('face', 'face', d.faceFeatureId, snap.faceFeatureId)
+  return changed
+}
+
+/** True when period sandbox has shots that differ from the last sealed reading. */
+export async function draftHasInProgressPhotos(d: ReadingDraft = draft): Promise<boolean> {
+  const onDisk = await periodPhotoMap()
+  if (!onDisk.palm_l && !onDisk.palm_r && !onDisk.face) return false
+  const bound: ReadingDraft = {
+    ...d,
+    palmLeftUri: onDisk.palm_l ?? d.palmLeftUri,
+    palmRightUri: onDisk.palm_r ?? d.palmRightUri,
+    faceUri: onDisk.face ?? d.faceUri,
+  }
+  const changed = await draftChangedParts(bound)
+  return changed.length > 0
+}
+
+export function syncPartialMetaFromChanged(changed: CapturePart[]): void {
+  if (changed.length === 0) {
+    patchReadingDraft({ updateKind: 'partial', partialParts: [] })
+    return
+  }
+  if (changed.length >= 3) {
+    patchReadingDraft({ updateKind: 'full', partialParts: undefined })
+    return
+  }
+  patchReadingDraft({ updateKind: 'partial', partialParts: changed })
+}
+
+export function draftHasAnyPhoto(d: ReadingDraft = draft): boolean {
+  return Boolean(d.palmLeftUri || d.palmRightUri || d.faceUri)
+}
+
 export function draftHasThreePhotos(d: ReadingDraft = draft): boolean {
   return Boolean(d.palmLeftUri && d.palmRightUri && d.faceUri)
+}
+
+/** Each modality has either a new on-device photo or a prior featureId. */
+export function draftHasFeatureCoverage(d: ReadingDraft = draft): boolean {
+  return Boolean(
+    (d.palmLeftUri || d.palmLeftFeatureId) &&
+      (d.palmRightUri || d.palmRightFeatureId) &&
+      (d.faceUri || d.faceFeatureId)
+  )
+}
+
+/** After first seal: period_brief / partial may submit with ≥1 new photo. */
+export function draftAllowsPartial(d: ReadingDraft = draft): boolean {
+  return d.outputKind === 'period_brief' || d.updateKind === 'partial'
 }
 
 export function draftHasBirthInfo(d: ReadingDraft = draft): boolean {
   return Boolean(d.solarDate) && d.timeIndex != null && Boolean(d.gender)
 }
 
+/** Ready to leave capture → paywall / enqueue. */
 export function draftReadyForPaywall(d: ReadingDraft = draft): boolean {
-  return draftHasThreePhotos(d) && Boolean(d.solarDate) && d.timeIndex != null && Boolean(d.gender)
+  if (!draftHasBirthInfo(d)) return false
+  if (draftAllowsPartial(d)) {
+    return draftHasAnyPhoto(d) && draftHasFeatureCoverage(d)
+  }
+  return draftHasThreePhotos(d)
 }
 
 export function draftUriForPart(part: CapturePart, d: ReadingDraft = draft): string | undefined {

@@ -34,10 +34,19 @@ function loadExpoImage(): ExpoImageComponent | null {
 
 const ExpoImage = loadExpoImage()
 
-export function LocalPhoto({ uri, style }: { uri: string; style?: StyleProp<ImageStyle> }) {
+export function LocalPhoto({
+  uri,
+  style,
+  cache = 'memory-disk',
+}: {
+  uri: string
+  style?: StyleProp<ImageStyle>
+  /** Draft period slots overwrite the same file path — use `none` when URI is busted per revision. */
+  cache?: 'memory-disk' | 'none'
+}) {
   if (ExpoImage) {
     return (
-      <ExpoImage source={{ uri }} style={style} contentFit='cover' cachePolicy='memory-disk' />
+      <ExpoImage source={{ uri }} style={style} contentFit='cover' cachePolicy={cache} />
     )
   }
   return <RNImage source={{ uri }} style={style} resizeMode='cover' />

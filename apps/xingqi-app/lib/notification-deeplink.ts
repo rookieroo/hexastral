@@ -7,6 +7,8 @@ import { useRouter } from 'expo-router'
 import { useEffect } from 'react'
 
 import { PORTFOLIO_TARGET_APP } from './growth-config'
+import { setHomeCaptureHandoff } from './home-capture-handoff'
+import { openReadingScreen } from './open-reading'
 import { markReadingOpened, wasReadingOpenedRecently } from './reading-job'
 
 type Kind = 'recapture' | 'event' | 'reading_ready' | 'reading_failed' | string
@@ -76,30 +78,20 @@ export function useXingqiNotificationDeepLink(): void {
             const detail = await fetchReadingById(PORTFOLIO_TARGET_APP, readingId)
             const resultJson = detail.reading?.resultJson
             markReadingOpened(readingId)
-            if (resultJson) {
-              router.replace({
-                pathname: '/result',
-                params: {
-                  readingId,
-                  payload: encodeURIComponent(resultJson),
-                },
-              } as never)
-              return
-            }
+            openReadingScreen({ readingId, resultJson, replace: true })
+            return
           } catch {
             // fall through to readingId-only navigation
           }
           markReadingOpened(readingId)
-          router.replace({
-            pathname: '/result',
-            params: { readingId },
-          } as never)
+          openReadingScreen({ readingId, replace: true })
         })()
         return
       }
 
       if (kind === 'recapture') {
-        router.push('/capture' as never)
+        setHomeCaptureHandoff()
+        router.replace('/(app)' as never)
         return
       }
 

@@ -24,10 +24,10 @@ export default function FacePrivacyAppendixScreen() {
       </Text>
       <Text style={{ color: colors.secondary, lineHeight: 22 }}>
         {s(
-          '左掌、右掌与面部原图仅保存在本机，供查看与替换；上传仅用于提取结构化特征，服务器处理完不保留原图。',
-          '左掌、右掌與面部原圖僅保存在本機，供查看與替換；上傳僅用於提取結構化特徵，伺服器處理完不保留原圖。',
-          'Palm and face originals stay on this device for view/replace. Uploads are only for feature extraction; servers discard source images after processing.',
-          '左掌・右掌・顔の原画像はこの端末にのみ保存され、閲覧・差し替えに使います。アップロードは構造化特徴の抽出のみ。サーバーは処理後に原画像を保持しません。'
+          '本机保留可查看的左掌、右掌与面部草稿。为提取特征会短暂上传到服务器（短生命周期存储），提取结束后删除原图，不永久保留。上传完成后即可离开，云端继续提取与解读。长期只存结构化特征与报告。',
+          '本機保留可查看的左掌、右掌與面部草稿。為提取特徵會短暫上傳到伺服器（短生命週期儲存），提取結束後刪除原圖，不永久保留。上傳完成後即可離開，雲端繼續提取與解讀。長期只存結構化特徵與報告。',
+          'Drafts of left palm, right palm, and face stay viewable on this device. For extraction we briefly upload to our servers (short-lived storage), then delete the originals — not kept permanently. After upload you may leave while the cloud continues. Long-term we store only structured features and reports.',
+          '端末には左掌・右掌・顔の確認用下書きを残します。抽出のため短時間サーバー（短寿命ストレージ）へアップロードし、抽出後に原画像を削除します（恒久保存しません）。アップロード後は閉じてもクラウドで抽出と解読が続きます。長期保存は構造化特徴とレポートのみです。'
         )}
       </Text>
       <Text style={{ color: colors.secondary, lineHeight: 22 }}>

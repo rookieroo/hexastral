@@ -20,6 +20,7 @@ import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
 import { formReadingListTitle, homeArchiveCopy, readingLocaleBadge } from '@/lib/living-copy'
 import { pickUi } from '@/lib/locale-zh'
+import { openReadingScreen } from '@/lib/open-reading'
 import { clearLastReadingPhotoSnapshot } from '@/lib/reading-photo-stamp'
 import { deleteReadingPhotoFolder } from '@/lib/reading-photos'
 
@@ -157,10 +158,7 @@ export default function ArchiveScreen() {
               title={title}
               meta={meta}
               onPress={() =>
-                router.push({
-                  pathname: '/result',
-                  params: { readingId: item.id },
-                } as never)
+                openReadingScreen({ readingId: item.id, resultJson: item.resultJson })
               }
               onDelete={() => confirmDelete(item)}
               colors={{

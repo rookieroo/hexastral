@@ -200,7 +200,7 @@ export async function extractFaceFeatures(
       images: [{ base64: imageBase64, mimeType }],
       responseSchema: FACE_FEATURES_SCHEMA as Record<string, unknown>,
       temperature: 0.2,
-      maxOutputTokens: 1536,
+      maxOutputTokens: 4096,
       geminiThinkingLevel: 'MINIMAL',
       metricLabel: 'physiognomy_face_extract',
     }
@@ -457,7 +457,7 @@ export async function extractPalmFeatures(
       images: [{ base64: imageBase64, mimeType }],
       responseSchema: PALM_FEATURES_SCHEMA as Record<string, unknown>,
       temperature: 0.2,
-      maxOutputTokens: 2048,
+      maxOutputTokens: 4096,
       geminiThinkingLevel: 'MINIMAL',
       metricLabel: 'physiognomy_palm_extract',
     }

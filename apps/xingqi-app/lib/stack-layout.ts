@@ -30,11 +30,23 @@ function smoothstep(t: number): number {
 }
 
 export const POLAROID_FAN_W = 320
-export const POLAROID_CARD_W = 122
-export const POLAROID_CARD_H = 154
-export const POLAROID_STACK_H = 236
-export const POLAROID_FAN_MS = 720
-export const POLAROID_RITUAL_MS = 980
+/** SSOT: home-ui-mock.html polaroid ~108×136; slightly larger for touch. */
+export const POLAROID_CARD_W = 110
+export const POLAROID_CARD_H = 138
+export const POLAROID_STACK_H = 218
+/** Fan spread — ease-in-out cubic in OffsetPhotoStack. */
+export const POLAROID_FAN_MS = 520
+/** Ritual lift — overlaps fan tail for rhythm. */
+export const POLAROID_RITUAL_MS = 680
+/** Start ritual while fan is still easing (overlap, not serial wait). */
+export const POLAROID_RITUAL_OVERLAP_MS = 240
+/** Home → embedded capture: fan done + ritual ~mid-flight. */
+export const POLAROID_CAPTURE_ENTER_MS =
+  POLAROID_FAN_MS + Math.round(POLAROID_RITUAL_MS * 0.42)
+/** Brief settle after capture mount, then Face selection animates. */
+export const POLAROID_FACE_FOCUS_MS = 320
+/** Active slot scale / lift — matches stack ease. */
+export const POLAROID_SELECT_MS = 300
 
 export function polaroidPoses(
   spread: number,
@@ -48,26 +60,29 @@ export function polaroidPoses(
   const cx = (boxW - cardW) / 2
   const fanLeft = 6
   const fanRight = Math.max(6, boxW - cardW - 6)
+  const fanTop = lerp(14, 26, e)
+  const ritualLift = r * -14
+  const fanScale = lerp(0.98, 1, e) + r * 0.02
   return {
     palm_l: {
       left: lerp(cx - 7, fanLeft, e) + r * -12,
-      top: lerp(16, 28, e) + r * -18,
+      top: lerp(18, fanTop, e) + ritualLift,
       rotateDeg: lerp(-5.5, -6.5, e) * (1 - r * 0.45),
-      scale: lerp(0.97, 1, e) + r * 0.03,
+      scale: lerp(0.97, fanScale, e),
       z: 1,
     },
     palm_r: {
       left: lerp(cx + 8, fanRight, e) + r * 12,
-      top: lerp(12, 32, e) + r * -16,
+      top: lerp(14, fanTop, e) + ritualLift,
       rotateDeg: lerp(4.8, 6.2, e) * (1 - r * 0.45),
-      scale: lerp(0.985, 1, e) + r * 0.03,
+      scale: lerp(0.985, fanScale, e),
       z: 2,
     },
     face: {
       left: lerp(cx, cx, e),
-      top: lerp(4, 10, e) + r * -22,
+      top: lerp(6, fanTop, e) + ritualLift,
       rotateDeg: lerp(-1.2, -1.4, e) * (1 - r * 0.5),
-      scale: lerp(1, 1, e) + r * 0.04,
+      scale: lerp(1, fanScale, e),
       z: 3,
     },
   }

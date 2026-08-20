@@ -1,51 +1,32 @@
 /**
- * Full-screen sign-in (Kanyu/Yuel pattern) — NOT a sheet stacked on modals.
- * Uses Apple's official AppleAuthenticationButton for entitlement compliance.
+ * Full-screen Apple / Google sign-in — same providers as Yuun (iOS keeps both).
  */
 
 import { useTheme } from '@zhop/core-ui'
-import {
-  emitPortfolioAppleLinkedGrowth,
-  exchangeAppleCredentialForPortfolio,
-  exchangeGoogleCredentialForPortfolio,
-  resolvePortfolioApiUrl,
-} from '@zhop/satellite-runtime'
+import { emitPortfolioAppleLinkedGrowth, resolvePortfolioApiUrl } from '@zhop/satellite-runtime'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import Constants from 'expo-constants'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { XingqiLoader } from '@/components/XingqiLoader'
 import { XingqiMark } from '@/components/XingqiMark'
+import {
+  isAppleSignInAvailable,
+  isGoogleSignInAvailable,
+  signInWithApple,
+  signInWithGoogle,
+} from '@/lib/account'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
-import { loginFaceIap } from '@/lib/iap'
 import { pickUi } from '@/lib/locale-zh'
-
-interface GoogleSigninModule {
-  GoogleSignin: {
-    configure(config: { iosClientId?: string; webClientId?: string; offlineAccess?: boolean }): void
-    hasPlayServices(opts?: { showPlayServicesUpdateDialog?: boolean }): Promise<boolean>
-    signIn(): Promise<{
-      type?: string
-      data?: { idToken?: string | null } | null
-      idToken?: string | null
-    }>
-  }
-}
 
 function isExpoGo(): boolean {
   if (Constants.executionEnvironment === 'storeClient') return true
   if (Constants.appOwnership === 'expo') return true
   return false
-}
-
-function isAppleCancel(err: unknown): boolean {
-  if (!err || typeof err !== 'object') return false
-  const code = (err as { code?: string }).code
-  return code === 'ERR_REQUEST_CANCELED' || code === 'ERR_CANCELED'
 }
 
 export default function SignInScreen() {
@@ -58,8 +39,7 @@ export default function SignInScreen() {
   const s = (hans: string, hant: string, en: string, ja?: string) =>
     pickUi(locale, hans, hant, en, ja)
   const [appleAvailable, setAppleAvailable] = useState(false)
-  const [googlePhase, setGooglePhase] = useState<'loading' | 'ready' | 'unavailable'>('loading')
-  const googleModuleRef = useRef<GoogleSigninModule | null>(null)
+  const [googleAvailable, setGoogleAvailable] = useState(false)
   const [busy, setBusy] = useState<'apple' | 'google' | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -68,38 +48,15 @@ export default function SignInScreen() {
       setAppleAvailable(false)
       return
     }
-    AppleAuthentication.isAvailableAsync()
-      .then(setAppleAvailable)
-      .catch(() => setAppleAvailable(false))
+    void isAppleSignInAvailable().then(setAppleAvailable)
   }, [])
 
   useEffect(() => {
-    const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? ''
-    const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? ''
-    if (!iosClientId && !webClientId) {
-      setGooglePhase('unavailable')
-      return
-    }
     if (isExpoGo()) {
-      setGooglePhase('unavailable')
+      setGoogleAvailable(false)
       return
     }
-    void (async () => {
-      try {
-        const mod = (await import(
-          '@react-native-google-signin/google-signin'
-        )) as GoogleSigninModule
-        mod.GoogleSignin.configure({
-          iosClientId: iosClientId || undefined,
-          webClientId: webClientId || undefined,
-          offlineAccess: false,
-        })
-        googleModuleRef.current = mod
-        setGooglePhase('ready')
-      } catch {
-        setGooglePhase('unavailable')
-      }
-    })()
+    void isGoogleSignInAvailable().then(setGoogleAvailable)
   }, [])
 
   const finishSignIn = () => {
@@ -116,20 +73,8 @@ export default function SignInScreen() {
     setBusy('apple')
     setError(null)
     try {
-      const cred = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      })
-      if (!cred.identityToken) throw new Error('no_identity_token')
-      const { userId } = await exchangeAppleCredentialForPortfolio({
-        identityToken: cred.identityToken,
-        authorizationCode: cred.authorizationCode,
-        targetApp: PORTFOLIO_TARGET_APP,
-        storagePrefix: PORTFOLIO_STORAGE_PREFIX,
-      })
-      await loginFaceIap(userId)
+      const userId = await signInWithApple()
+      if (!userId) return
       void emitPortfolioAppleLinkedGrowth({
         apiBase: resolvePortfolioApiUrl(),
         storagePrefix: PORTFOLIO_STORAGE_PREFIX,
@@ -139,7 +84,6 @@ export default function SignInScreen() {
       })
       finishSignIn()
     } catch (err) {
-      if (isAppleCancel(err)) return
       if (__DEV__) console.error('[Xingqi] Apple sign-in failed', err)
       const msg = err instanceof Error ? err.message : ''
       setError(
@@ -163,33 +107,30 @@ export default function SignInScreen() {
   }
 
   const onGoogle = async () => {
-    if (busy || !googleModuleRef.current) return
+    if (busy) return
     setBusy('google')
     setError(null)
     try {
-      const mod = googleModuleRef.current
-      if (Platform.OS === 'android') {
-        await mod.GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true })
-      }
-      const result = await mod.GoogleSignin.signIn()
-      const idToken = result.data?.idToken ?? result.idToken ?? null
-      if (!idToken) throw new Error('no_token')
-      const { userId } = await exchangeGoogleCredentialForPortfolio({
-        idToken,
-        targetApp: PORTFOLIO_TARGET_APP,
-        storagePrefix: PORTFOLIO_STORAGE_PREFIX,
-      })
-      await loginFaceIap(userId)
+      const userId = await signInWithGoogle()
+      if (!userId) return
       finishSignIn()
     } catch (err) {
       if (__DEV__) console.error('[Xingqi] Google sign-in failed', err)
+      const msg = err instanceof Error ? err.message : ''
       setError(
-        s(
-          'Google 登录失败',
-          'Google 登入失敗',
-          'Google sign-in failed',
-          'Google ログインに失敗しました'
-        )
+        msg.includes('GOOGLE_WEB_CLIENT')
+          ? s(
+              '缺少 Google Web Client ID，无法拿到 idToken。',
+              '缺少 Google Web Client ID，無法拿到 idToken。',
+              'Missing Google Web Client ID (required for idToken).',
+              'Google Web Client ID が未設定です。'
+            )
+          : s(
+              'Google 登录失败',
+              'Google 登入失敗',
+              'Google sign-in failed',
+              'Google ログインに失敗しました'
+            )
       )
     } finally {
       setBusy(null)
@@ -257,7 +198,7 @@ export default function SignInScreen() {
         </Text>
       )}
 
-      {googlePhase === 'ready' ? (
+      {googleAvailable ? (
         <Pressable
           onPress={() => void onGoogle()}
           disabled={busy != null}

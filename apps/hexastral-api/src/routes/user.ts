@@ -1255,7 +1255,14 @@ export const userRoutes = new Hono<AppEnv>()
   .delete('/:userId/biometric-consent', async (c) => {
     const userId = requireUserId(c)
     if (userId !== c.req.param('userId')) throw new HTTPException(403, { message: 'Forbidden' })
-    await revokeBiometricConsent(c.get('db'), userId)
+    const db = c.get('db')
+    try {
+      const { purgeUserEphemeralFacePhotos } = await import('../lib/faceoracle-purge-ephemeral')
+      await purgeUserEphemeralFacePhotos(c.env, db, userId)
+    } catch (err) {
+      console.warn('[biometric-consent] ephemeral_purge_failed', err)
+    }
+    await revokeBiometricConsent(db, userId)
     return c.json({ data: { consented: false } })
   })
 

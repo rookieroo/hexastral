@@ -25,21 +25,57 @@ Ban only **census 铁口** (已婚/未婚、有N个孩子、家人性格档案).
 
 ## Funnel
 
-1. Biometric consent  
+1. Biometric consent (**v2** — brief server-side storage then delete; quit after upload OK)  
 2. Three-photo capture (one stacked-slot screen: left palm, right palm, face)  
 3. Birth Form (`BirthForm`, `fieldPrefix='self'`)  
 4. Paywall (single ≥ $9.99 **or** Pro)  
-5. Reading
+5. Reading — **quit-safe** after ephemeral photo upload + job `202` (cloud extract + LLM); push / timeline for completion
+
+On-device period sandbox remains for viewing drafts; VLM extract runs in the queue after short-lived R2, not as a foreground client loop.
+
+## Seal vs period brief
+
+| Mode | Input | Output | Billing |
+|---|---|---|---|
+| **Seal / oneshot** (first complete read) | Three fresh photos | Dense **5-chapter** report + loci | 1 credit / purchase, or Pro photo slots ×3 |
+| **Period brief** (New period / Pro refresh) | ≥1 **new** photo; missing slots reuse last **featureIds** (no visual carry) | Short **`brief`** schema + shorter loci | Pro photo slots = **number of new parts** (1–3) |
+| **Regen** | Zero new photos | Same photos, new body/locale | Report regen (not photo slots) |
+
+**New period:** Same fan → capture UX as first seal (empty slots, no photo carry). After the first oneshot, **≥1 new photo** is enough — empty slots reuse the previous reading’s featureIds. Continue enables once one slot is filled.
+
+**Deep next (settings):** Toggle *下次深度解读* — visible once you have at least one reading (PRO badge if not subscribed). When on, the **next** period enqueue uses `oneshot` (five chapters) while photo billing stays partial. Default off; consumed once at job start. **First seal is always deep.**
+
+**`brief` schema** (`outputKind: period_brief`, stored on `resultJson`):
+
+```ts
+brief: {
+  title: string       // ≤24
+  excerpt: string     // ≤42, home-wheel hook
+  summary: string     // 120–220, form × BaZi
+  suggestion: string  // 1–3 practical steps
+  axis?: 'career' | 'love' | 'health'
+}
+```
+
+**IA:** Home wheel = chrome date (small) + `brief.excerpt` (fallback goldenLine). Tap opens **Brief card** only when `resultJson.brief` is complete; otherwise the five-chapter pager. Brief CTA → locus map. Optional “full chapters” from Brief when `chapters[]` exists.
+
+**Output switch (API, not a hidden client whim):** enqueue `outputKind` on `POST /api/physiognomy/jobs`.
+
+| `outputKind` | When Syel sends it | Pass 2 |
+|---|---|---|
+| `oneshot` | First seal (no prior reading), oneshot SKU, or missing `outputKind` | Five chapters + loci |
+| `period_brief` | New period / Pro refresh after a prior reading | Short `brief` + shorter loci |
+| `deep` | Reserved | Same as dense path if used |
 
 ## Tracks
 
 | | One-shot | Pro (`faceoracle_pro`) |
 |---|---|---|
 | SKU | `faceoracle_reading` | `faceoracle_pro_*` |
-| Result | Dense 5-chapter report (career · love · health) once | Same + period refresh |
+| Result | Dense 5-chapter seal once | Seal + **period briefs** (short schema) |
 | Living layer | **No** Timeline / What-if / Chat / Living FAB | Yes |
 | History / 档案 | Current reading only | Snapshots + period briefs |
-| Quota | 1 credit / purchase | **Photos:** 6 slots / UTC month (3 per new photo reading). **Report regen:** 3 / UTC month (same photos, new locale/body; `regen: true`) |
+| Quota | 1 credit / purchase | **Photos:** 6 slots / UTC month (**1 slot per new photo** on partial period). **Report regen:** 3 / UTC month (same photos, new locale/body; `regen: true`) |
 | Events | Written once | Refreshed each reading; drives push + period / 形气窗口 strip |
 | Life axis | — | Yuun-parity git-graph (`/timeline`) via `/api/physiognomy/cycle/*` |
 | What-if | — | Yuun-parity forks (`/makeif`) via same facade |
@@ -66,7 +102,7 @@ See [lantai/demand.md](../lantai/demand.md).
 - **Health + TCM lexicon:** 中医是词典与隐喻层，不是诊断引擎. Health may borrow classical imagery (气色 ↔ 脏腑/气血之**象**) for 警示 and pacing — cultural对照 / self-observation, not diagnosis, not prescription, not a substitute for clinicians.
 - **Forbidden health UI:** organ dashboards, health scores, “you have X disease”, medication / herbal dosing, acupoint treatment plans.
 - **Field data ownership (anti cross-chapter copy):** the 本流年 sentence lives in `horizon.reef` only; 全人生 大运带 risk → `natal.reef`; 形/气色 risk → `face.reef`; 先天/后天掌张力 → `palms.reef`; action steps → `horizon.remedy`. **Prefer null over repeat**.
-- **Reading job (Pass 0 → 1 → 2):** **Pass 0** (code) ranks clear VLM keys into **`SuggestedLoci` top ~20** (unclear excluded; mount tension / island-or-cross text / dayun↔mount / palm-side weights). **Pass 1** writes **16–20** deep `loci[]` from that shortlist (hard floors: face≥5, each palm≥5, CAUTION≥2 + one retry; prefer omit over fabricate). **Pass 2** = five chapters + soft events weaving FixedLoci. Soft observations for secondary gaps remain log-only.
+- **Reading job (Pass 0 → 1 → 2):** **Pass 0** (code) ranks clear VLM keys into **`SuggestedLoci`**. **Pass 1** writes `loci[]`. **Pass 2** is selected by job `outputKind`: `oneshot`/`deep` → five chapters; `period_brief` → `brief` schema. Soft events weave FixedLoci. Soft observations for secondary gaps remain log-only.
 - **Client display safety net:** `adaptReadingChapters` nulls out `reef`/`remedy`/`counterpoint` that merely repeat an earlier chapter (keeps first).
 - **描点 → 章节打通 (loci-first):** `loci[]` = `{featureKey, part, locus, reading}` SSOT. Sheet note = `loci[].reading`. **Never** paste raw VLM feature text.
 - **Landmarks:** **face + palm** coords from Moondream 3.1 `point` (+ VLM midpoint fallback; clustered / fingertip palm points dropped). Client prefers `landmarksJson`; missing keys interpolate relative to detected mounts when coverage is thin — avoid absolute canonical mix that misaligns with the photo (`FACEORACLE_VLM_SCHEMA_VERSION=xingqi-vlm-v9`).

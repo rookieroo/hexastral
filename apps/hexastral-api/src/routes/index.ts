@@ -55,6 +55,8 @@ export { pairPreviewRoutes } from './pair/preview'
 export { physiognomyCycleRoutes } from './physiognomy/cycle'
 // Physiognomy VLM feature extraction (R2 + Gemini Vision)
 export { faceFeaturesRoutes } from './physiognomy/face-features'
+// FaceOracle / Xingqi ephemeral photo upload (early-quit R2)
+export { physiognomyEphemeralPhotosRoutes } from './physiognomy/ephemeral-photos'
 // FaceOracle / Xingqi async reading jobs
 export { physiognomyJobsRoutes } from './physiognomy/jobs'
 // FaceOracle / Xingqi Pro push register + cron targets

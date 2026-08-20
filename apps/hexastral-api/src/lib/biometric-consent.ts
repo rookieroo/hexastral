@@ -19,7 +19,7 @@ import { users } from '../db/schema'
 import type { AppDb } from '../infra-types'
 
 /** Current biometric-disclosure version. Bump on any material change to re-prompt. */
-export const BIOMETRIC_CONSENT_VERSION = 'v1'
+export const BIOMETRIC_CONSENT_VERSION = 'v2'
 
 /**
  * True iff the user has an active biometric opt-in matching the current disclosure

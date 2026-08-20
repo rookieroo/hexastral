@@ -769,9 +769,9 @@ const zhHans: Strings = {
   proUnavailable: '暂时无法加载订阅方案，请稍后重试。',
   proAutoRenewDisclaimer:
     '订阅将自动续订，除非在当前周期结束前至少 24 小时取消。可在 Apple ID 设置中管理。',
-  proComingSoon: '即将推出',
+  proComingSoon: 'Yuun Pro',
   proComingSoonBody:
-    'Yuun Pro 订阅即将上线。当前可继续使用免费黄历与「对你而言」摘要；深化解读上线后即可订阅。',
+    'Yuun Pro 订阅将在后续版本开放购买。当前可继续使用免费黄历与「对你而言」摘要；深化解读开放后即可订阅。',
   legalDisclaimerShort:
     '基于传统历法与命理文化，仅供娱乐、文化探索与个人省思，不构成医疗、法律、财务或人生决策建议。',
   signInToSubscribe: '订阅前请先登录',
@@ -1282,7 +1282,7 @@ const zhHant: Strings = {
     '訂閱將自動續訂，除非在目前週期結束前至少 24 小時取消。可在 Apple ID 設定中管理。',
   proComingSoon: '即將推出',
   proComingSoonBody:
-    'Yuun Pro 訂閱即將上線。目前可繼續使用免費黃曆與「對你而言」摘要；深化解讀上線後即可訂閱。',
+    'Yuun Pro 訂閱將在後續版本開放購買。目前可繼續使用免費黃曆與「對你而言」摘要；深化解讀開放後即可訂閱。',
   legalDisclaimerShort:
     '基於傳統曆法與命理文化，僅供娛樂、文化探索與個人省思，不構成醫療、法律、財務或人生決策建議。',
   signInToSubscribe: '訂閱前請先登入',
@@ -1802,9 +1802,9 @@ const ja: Strings = {
   proUnavailable: 'プランを読み込めません。しばらくしてから再試行してください。',
   proAutoRenewDisclaimer:
     '期間終了の24時間前までにキャンセルしない限り、自動更新されます。Apple ID 設定で管理できます。',
-  proComingSoon: '近日公開',
+  proComingSoon: 'Yuun Pro',
   proComingSoonBody:
-    'Yuun Pro のサブスクは近日公開予定です。今は無料の黄暦と「あなたへ」要約をご利用ください。深い読みは公開後に購読できます。',
+    'Yuun Pro のサブスクは今後のバージョンで購入できるようになります。今は無料の黄暦と「あなたへ」要約をご利用ください。深い読みは公開後に購読できます。',
   legalDisclaimerShort:
     '伝統暦法・命理文化に基づく娯楽・文化探索・個人的省思用。医療・法律・財務・人生判断の助言ではありません。',
   signInToSubscribe: 'ご登録の前にサインイン',
@@ -2323,9 +2323,9 @@ const en: Strings = {
   proUnavailable: 'Subscriptions unavailable. Please try again later.',
   proAutoRenewDisclaimer:
     'Subscription renews automatically unless canceled at least 24 hours before the end of the current period. Manage in Apple ID settings.',
-  proComingSoon: 'Coming soon',
+  proComingSoon: 'Yuun Pro',
   proComingSoonBody:
-    'Yuun Pro subscriptions are coming soon. Keep using the free almanac and For you summary; deeper reads will open for purchase when ready.',
+    'Yuun Pro subscriptions will open for purchase in a future update. Keep using the free almanac and For you summary; deeper reads will be available for purchase when they launch.',
   legalDisclaimerShort:
     'Based on traditional almanac and chart culture — for entertainment, cultural exploration, and personal reflection only. Not medical, legal, financial, or life advice.',
   signInToSubscribe: 'Sign in to subscribe',

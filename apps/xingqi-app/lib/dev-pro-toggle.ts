@@ -22,9 +22,24 @@ export async function cycleDevEntitlementOverride(): Promise<DevEntitlementOverr
   const next: DevEntitlementOverride = current === null ? 'pro' : current === 'pro' ? 'free' : null
   setDevEntitlementOverride(next)
   if (next === 'pro') {
-    const ok = await devSetServerPro(true)
-    if (!ok) {
-      Alert.alert('DEV Pro', 'Server grant failed — sign in first.')
+    const result = await devSetServerPro(true)
+    if (!result.ok) {
+      if (result.reason === 'no_session' || result.reason === 'hmac') {
+        Alert.alert(
+          'DEV Pro',
+          'HMAC session incomplete — sign in again with Apple or Google (Yuun-style). Client override is on; server still treats you as free until the session signs.'
+        )
+      } else if (result.reason === 'blocked') {
+        Alert.alert(
+          'DEV Pro',
+          'Client override is on. Production API blocks /api/dev (404). Deploy API with the set-subscription exemption, or point EXPO_PUBLIC_API_URL at a non-prod worker, for the server to see Pro.'
+        )
+      } else {
+        Alert.alert(
+          'DEV Pro',
+          'Server grant failed (HTTP). Client override is on; readings may still 402 until the API grants faceoracle_pro / universe_pro.'
+        )
+      }
     }
   } else if (next === 'free') {
     void devSetServerPro(false)

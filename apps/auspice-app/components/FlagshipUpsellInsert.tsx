@@ -4,10 +4,11 @@
  * fallback for unverified installs.
  *
  * When the flagship has not shipped yet (`FLAGSHIP_LIVE[key] === false`) the card
- * renders a "coming soon" state linking to that app's live brand LP instead of
+ * renders a pre-launch state linking to that app's live brand LP instead of
  * returning null — the Discover section always has honest content and never a
- * placeholder 404. Flip `FLAGSHIP_LIVE[key]` when that app goes live to switch the
- * card to the deep-link funnel.
+ * placeholder 404. Copy must NOT read "coming soon" (App Review 2.1.0 rejects
+ * placeholder content). Flip `FLAGSHIP_LIVE[key]` when that app goes live to
+ * switch the card to the deep-link funnel.
  *
  * TODO: wire `emitCrossAppDiscoveryTap` for `cross_app_discovery_tap` telemetry.
  */
@@ -33,28 +34,28 @@ const COPY: Record<Flagship, Record<Locale, Copy>> = {
       title: '为这桩喜事合个八字？',
       body: 'Yuel · 双人合婚与关系分析',
       cta: '打开 Yuel',
-      comingSoonTitle: '双人合婚与关系解读 · 即将推出',
+      comingSoonTitle: '双人合婚与关系解读 · Yuel',
       comingSoonCta: '了解 Yuel',
     },
     'zh-Hant': {
       title: '為這樁喜事合個八字？',
       body: 'Yuel · 雙人合婚與關係分析',
       cta: '開啟 Yuel',
-      comingSoonTitle: '雙人合婚與關係解讀 · 即將推出',
+      comingSoonTitle: '雙人合婚與關係解讀 · Yuel',
       comingSoonCta: '了解 Yuel',
     },
     ja: {
       title: 'この慶事、相性も占う？',
       body: 'Yuel 縁 · 相性と関係の鑑定',
       cta: 'Yuel を開く',
-      comingSoonTitle: '相性と関係の鑑定 · まもなく登場',
+      comingSoonTitle: '相性と関係の鑑定 · Yuel',
       comingSoonCta: 'Yuel について',
     },
     en: {
       title: 'Pair two charts for the big day?',
       body: 'Yuel · compatibility & relationships',
       cta: 'Open Yuel',
-      comingSoonTitle: 'Compatibility & relationship readings · coming soon',
+      comingSoonTitle: 'Yuel · compatibility & relationship readings',
       comingSoonCta: 'Learn about Yuel',
     },
   },
@@ -63,28 +64,28 @@ const COPY: Record<Flagship, Record<Locale, Copy>> = {
       title: '挑个好方位再动工？',
       body: 'Kanyu · 风水择址与布局',
       cta: '打开 Kanyu',
-      comingSoonTitle: '风水择址与布局 · 即将推出',
+      comingSoonTitle: '风水择址与布局 · Kanyu',
       comingSoonCta: '了解 Kanyu',
     },
     'zh-Hant': {
       title: '挑個好方位再動工？',
       body: 'Kanyu · 風水擇址與佈局',
       cta: '開啟 Kanyu',
-      comingSoonTitle: '風水擇址與佈局 · 即將推出',
+      comingSoonTitle: '風水擇址與佈局 · Kanyu',
       comingSoonCta: '了解 Kanyu',
     },
     ja: {
       title: '良い方位を選んでから？',
       body: 'Kanyu 風 · 風水の立地と配置',
       cta: 'Kanyu を開く',
-      comingSoonTitle: '風水の立地と配置 · まもなく登場',
+      comingSoonTitle: '風水の立地と配置 · Kanyu',
       comingSoonCta: 'Kanyu について',
     },
     en: {
       title: 'Pick an auspicious site first?',
       body: 'Kanyu · feng-shui siting & layout',
       cta: 'Open Kanyu',
-      comingSoonTitle: 'Feng-shui siting & layout · coming soon',
+      comingSoonTitle: 'Kanyu · feng-shui siting & layout',
       comingSoonCta: 'Learn about Kanyu',
     },
   },

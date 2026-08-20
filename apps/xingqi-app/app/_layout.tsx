@@ -6,6 +6,7 @@
 import { CoreUIProvider, useTheme } from '@zhop/core-ui'
 import {
   getPortfolioUserId,
+  repairPortfolioCredentialMismatch,
   usePortfolioSatelliteBootstrap,
   usePurchases,
 } from '@zhop/satellite-runtime'
@@ -42,10 +43,18 @@ function SatelliteGrowthMount() {
   return null
 }
 
+function SessionRepairMount(): null {
+  useEffect(() => {
+    void repairPortfolioCredentialMismatch()
+  }, [])
+  return null
+}
+
 function IapMount(): null {
   useEffect(() => {
     initializeFaceIap()
     void (async () => {
+      await repairPortfolioCredentialMismatch()
       const userId = await getPortfolioUserId()
       if (userId) await loginFaceIap(userId)
     })()
@@ -63,6 +72,7 @@ function ThemedRoot({ children }: { children: ReactNode }) {
   return (
     <View style={[styles.root, { backgroundColor: colors.bg }]}>
       <SatelliteGrowthMount />
+      <SessionRepairMount />
       <IapMount />
       <NotificationDeepLinkMount />
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -90,6 +100,14 @@ function AppStack() {
       <Stack.Screen name='consent' />
       <Stack.Screen name='capture' options={{ animation: 'none' }} />
       <Stack.Screen name='birth' options={{ headerShown: false }} />
+      <Stack.Screen
+        name='brief'
+        options={{
+          headerShown: false,
+          gestureEnabled: true,
+          fullScreenGestureEnabled: false,
+        }}
+      />
       <Stack.Screen
         name='result'
         options={{

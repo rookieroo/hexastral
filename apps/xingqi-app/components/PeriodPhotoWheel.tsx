@@ -17,6 +17,7 @@ import Animated, {
 import { LocalPhoto } from '@/components/LocalPhoto'
 import { PolaroidChrome, polaroidLift } from '@/components/PolaroidChrome'
 import { PolaroidGhost } from '@/components/PolaroidGhost'
+import { periodPhotoMap } from '@/lib/period-photos'
 import type { CapturePart } from '@/lib/reading-draft'
 import { resolveReadingPhotoUri } from '@/lib/reading-photos'
 import {
@@ -85,8 +86,12 @@ function Polaroid({
       ]}
     >
       <PolaroidChrome onPress={onPress}>
-        {uri && !draft ? (
-          <LocalPhoto uri={uri} style={{ width: '100%', height: '100%' }} />
+        {uri ? (
+          <LocalPhoto
+            uri={uri}
+            style={{ width: '100%', height: '100%' }}
+            cache={draft ? 'none' : 'memory-disk'}
+          />
         ) : (
           <PolaroidGhost />
         )}
@@ -104,8 +109,7 @@ function WheelRow({
   revision,
   colors,
   isDark,
-  onPressPart,
-  onPressLabel,
+  onPressReading,
   onPressDraft,
 }: {
   item: WheelItem
@@ -116,8 +120,7 @@ function WheelRow({
   revision: number
   colors: { card: string; separator: string; dim: string; text: string; secondary: string }
   isDark: boolean
-  onPressPart: (readingId: string, part: CapturePart, hasPhoto: boolean) => void
-  onPressLabel?: (readingId: string) => void
+  onPressReading?: (readingId: string) => void
   onPressDraft: () => void
 }) {
   const [uris, setUris] = useState<Partial<Record<CapturePart, string>>>({})
@@ -126,23 +129,28 @@ function WheelRow({
   const draft = Boolean(item.draft)
 
   useEffect(() => {
-    if (draft) {
-      setUris({})
-      return
-    }
     let cancelled = false
     void (async () => {
       const next: Partial<Record<CapturePart, string>> = {}
-      for (const part of PARTS) {
-        const uri = await resolveReadingPhotoUri(item.id, part, { fallbackLive: false })
-        if (uri) next[part] = uri
+      if (draft) {
+        const map = await periodPhotoMap()
+        // Same path is overwritten on retake — bust so expo-image does not keep the last seal.
+        const bust = `t=${revision}`
+        if (map.palm_l) next.palm_l = `${map.palm_l}?${bust}`
+        if (map.palm_r) next.palm_r = `${map.palm_r}?${bust}`
+        if (map.face) next.face = `${map.face}?${bust}`
+      } else {
+        for (const part of PARTS) {
+          const uri = await resolveReadingPhotoUri(item.id, part, { fallbackLive: false })
+          if (uri) next[part] = uri
+        }
       }
       if (!cancelled) setUris(next)
     })()
     return () => {
       cancelled = true
     }
-  }, [item.id, revision, draft])
+  }, [draft, item.id, revision])
 
   const rowStyle = useAnimatedStyle(() => {
     const d = index - scroll.value
@@ -176,7 +184,7 @@ function WheelRow({
         <Pressable
           onPress={() => {
             if (draft) onPressDraft()
-            else onPressLabel?.(item.id)
+            else onPressReading?.(item.id)
           }}
         >
           <Text
@@ -226,7 +234,7 @@ function WheelRow({
                 onPressDraft()
                 return
               }
-              onPressPart(item.id, part, Boolean(uris[part]))
+              onPressReading?.(item.id)
             }}
           />
         ))}
@@ -238,29 +246,27 @@ function WheelRow({
 export function PeriodPhotoWheel({
   items,
   revision,
-  initialIndex = 0,
-  onPressPart,
-  onPressLabel,
+  scrollIndex = 0,
+  onPressReading,
   onPressDraft,
 }: {
   items: WheelItem[]
   revision: number
-  initialIndex?: number
-  onPressPart: (readingId: string, part: CapturePart, hasPhoto: boolean) => void
-  onPressLabel?: (readingId: string) => void
+  scrollIndex?: number
+  onPressReading?: (readingId: string) => void
   onPressDraft: () => void
 }) {
   const { colors, isDark } = useTheme()
   const [boxW, setBoxW] = useState(320)
   const [height, setHeight] = useState(420)
-  const scroll = useSharedValue(initialIndex)
+  const scroll = useSharedValue(scrollIndex)
   const start = useSharedValue(0)
   const max = Math.max(0, items.length - 1)
 
+  // Parent-driven index: snap (no spring). Pan end already springs to a detent.
   useEffect(() => {
-    const next = Math.max(0, Math.min(max, initialIndex))
-    scroll.value = next
-  }, [initialIndex, max, items.length, scroll])
+    scroll.value = Math.max(0, Math.min(max, scrollIndex))
+  }, [max, scrollIndex, scroll])
 
   const pan = Gesture.Pan()
     .activeOffsetY([-8, 8])
@@ -282,8 +288,9 @@ export function PeriodPhotoWheel({
     <GestureDetector gesture={pan}>
       <View
         onLayout={(e) => {
-          setBoxW(e.nativeEvent.layout.width)
-          setHeight(e.nativeEvent.layout.height)
+          const { width, height: h } = e.nativeEvent.layout
+          setBoxW((w) => (Math.abs(w - width) < 2 ? w : width))
+          setHeight((prev) => (Math.abs(prev - h) < 2 ? prev : h))
         }}
         style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
         accessibilityRole='adjustable'
@@ -305,8 +312,7 @@ export function PeriodPhotoWheel({
               secondary: colors.secondary,
             }}
             isDark={isDark}
-            onPressPart={onPressPart}
-            onPressLabel={onPressLabel}
+            onPressReading={onPressReading}
             onPressDraft={onPressDraft}
           />
         ))}

@@ -1,6 +1,7 @@
 import type { PortfolioReadingItem } from '@zhop/portfolio-client'
 
 import type { Locale } from '@/lib/i18n'
+import { parseReadingBrief } from '@/lib/reading-brief'
 import { verdictFromReading } from '@/lib/verdict'
 
 export const EXCERPT_MAX_CHARS = 42
@@ -32,11 +33,25 @@ export function formatChromeDate(iso: string, chromeLocale: Locale): string {
   })
 }
 
+function excerptFromResultJson(resultJson: string | undefined): string {
+  if (!resultJson?.trim()) return ''
+  try {
+    const output = JSON.parse(resultJson) as Record<string, unknown>
+    const brief = parseReadingBrief(output)
+    if (brief?.excerpt) return clampExcerpt(brief.excerpt)
+  } catch {
+    // fall through
+  }
+  return ''
+}
+
 export function periodCaption(
   item: PortfolioReadingItem,
   chromeLocale: Locale
 ): { title: string; excerpt: string } {
   const title = formatChromeDate(item.createdAt, chromeLocale)
+  const fromBrief = excerptFromResultJson(item.resultJson)
+  if (fromBrief) return { title, excerpt: fromBrief }
   const verdict = verdictFromReading(item, localeFromTag(item.locale))
   return { title, excerpt: verdict ? clampExcerpt(verdict.goldenLine) : '' }
 }

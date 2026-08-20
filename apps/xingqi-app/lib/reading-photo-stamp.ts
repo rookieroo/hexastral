@@ -27,6 +27,8 @@ export type ReadingPhotoSnapshot = {
   at: string
 }
 
+let cachedSnap: ReadingPhotoSnapshot | null | undefined
+
 async function stampForUri(uri: string | undefined): Promise<PhotoStamp | null> {
   if (!uri) return null
   try {
@@ -51,14 +53,29 @@ function stampsEqual(a: PhotoStamp, b: PhotoStamp): boolean {
   return a.size > 0 && a.size === b.size
 }
 
+export { stampsEqual }
+
+export function peekLastReadingPhotoSnapshot(): ReadingPhotoSnapshot | null {
+  return cachedSnap ?? null
+}
+
 export async function loadLastReadingPhotoSnapshot(): Promise<ReadingPhotoSnapshot | null> {
+  if (cachedSnap !== undefined) return cachedSnap
   try {
     const raw = await AsyncStorage.getItem(SNAP_KEY)
-    if (!raw) return null
+    if (!raw) {
+      cachedSnap = null
+      return null
+    }
     const parsed: unknown = JSON.parse(raw)
-    if (!parsed || typeof parsed !== 'object') return null
-    return parsed as ReadingPhotoSnapshot
+    if (!parsed || typeof parsed !== 'object') {
+      cachedSnap = null
+      return null
+    }
+    cachedSnap = parsed as ReadingPhotoSnapshot
+    return cachedSnap
   } catch {
+    cachedSnap = null
     return null
   }
 }
@@ -84,6 +101,7 @@ export async function saveLastReadingPhotoSnapshot(opts: {
     readingId: opts.readingId,
     at: new Date().toISOString(),
   }
+  cachedSnap = snap
   try {
     await AsyncStorage.setItem(SNAP_KEY, JSON.stringify(snap))
   } catch {
@@ -92,6 +110,7 @@ export async function saveLastReadingPhotoSnapshot(opts: {
 }
 
 export async function clearLastReadingPhotoSnapshot(): Promise<void> {
+  cachedSnap = null
   try {
     await AsyncStorage.removeItem(SNAP_KEY)
   } catch {

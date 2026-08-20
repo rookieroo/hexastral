@@ -12,6 +12,7 @@
 - [ ] 缺 `@react-native-google-signin/google-signin` 直接依赖（`app/sign-in.tsx:88` 引用，typecheck 失败）
 - [ ] RevenueCat：entitlement `faceoracle_pro` + offering（见 [revenuecat-entitlements.md](../../setup/revenuecat-entitlements.md)）
 - [ ] ASC 建 App 记录（类别、12+、四语 ASO、隐私标签）——参照 [launch-checklist.md](../../publish/launch-checklist.md)（Yuun/Yuel 两列之外同样走一遍）
+- [ ] **App Privacy nutrition labels**：Photos / sensitive info must cover **brief server processing** (not “photos never leave device”). Side-by-side gate before submit: consent v2 · in-app privacy · web appendix · ASO privacy blurb · ADR-0028 §5 all match
 - [ ] 截图 + 真机回归（[regression-checklist.md](./regression-checklist.md)）
 
 ## 提审顺序

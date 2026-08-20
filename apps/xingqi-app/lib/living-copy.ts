@@ -259,16 +259,108 @@ export function sealCaseCopy(locale: Locale): {
   }
 }
 
-export function draftPeriodCopy(locale: Locale): { title: string; excerpt: string } {
+export function draftPeriodCopy(
+  locale: Locale,
+  opts?: { incomplete?: boolean }
+): { title: string; excerpt: string } {
+  if (opts?.incomplete) {
+    switch (locale) {
+      case 'zh':
+        return { title: '未完成', excerpt: '点按继续解读' }
+      case 'zh-Hant':
+        return { title: '未完成', excerpt: '點按繼續解讀' }
+      case 'ja':
+        return { title: '未完了', excerpt: 'タップして続行' }
+      default:
+        return { title: 'Unfinished', excerpt: 'Tap to continue reading' }
+    }
+  }
   switch (locale) {
     case 'zh':
-      return { title: '新一期', excerpt: '点此录入' }
+      return { title: '新一期', excerpt: '至少更新一张' }
     case 'zh-Hant':
-      return { title: '新一期', excerpt: '點此錄入' }
+      return { title: '新一期', excerpt: '至少更新一張' }
     case 'ja':
-      return { title: '新しい一期', excerpt: 'タップして撮影' }
+      return { title: '新しい一期', excerpt: '1枚以上を更新' }
     default:
-      return { title: 'New period', excerpt: 'Tap to capture' }
+      return { title: 'New period', excerpt: 'Update at least one photo' }
+  }
+}
+
+/** Capture dock hint when a prior reading can supply missing features. */
+export function periodCarryHint(locale: Locale): string {
+  switch (locale) {
+    case 'zh':
+      return '至少更新一张 · 未拍的沿用上次特征'
+    case 'zh-Hant':
+      return '至少更新一張 · 未拍的沿用上次特徵'
+    case 'ja':
+      return '1枚以上を更新 · 未撮影は前回の特徴を継承'
+    default:
+      return 'Update at least one · others reuse last extract'
+  }
+}
+
+export function slotCarryLabel(locale: Locale, kind: 'new' | 'carried'): string {
+  if (kind === 'new') {
+    switch (locale) {
+      case 'zh':
+        return '新'
+      case 'zh-Hant':
+        return '新'
+      case 'ja':
+        return '新'
+      default:
+        return 'New'
+    }
+  }
+  switch (locale) {
+    case 'zh':
+      return '沿用'
+    case 'zh-Hant':
+      return '沿用'
+    case 'ja':
+      return '継承'
+    default:
+      return 'Carried'
+  }
+}
+
+export function readingBriefCopy(locale: Locale): {
+  lociCta: string
+  chaptersCta: string
+  suggestionLabel: string
+  summaryLabel: string
+} {
+  switch (locale) {
+    case 'zh':
+      return {
+        lociCta: '照片标注',
+        chaptersCta: '完整五章',
+        suggestionLabel: '宜留意',
+        summaryLabel: '摘要',
+      }
+    case 'zh-Hant':
+      return {
+        lociCta: '照片標註',
+        chaptersCta: '完整五章',
+        suggestionLabel: '宜留意',
+        summaryLabel: '摘要',
+      }
+    case 'ja':
+      return {
+        lociCta: '写真で見る',
+        chaptersCta: '五章を開く',
+        suggestionLabel: '留意',
+        summaryLabel: '要約',
+      }
+    default:
+      return {
+        lociCta: 'On your photo',
+        chaptersCta: 'Full five chapters',
+        suggestionLabel: 'Suggestion',
+        summaryLabel: 'Summary',
+      }
   }
 }
 
@@ -442,66 +534,285 @@ export function captureStudioCopy(locale: Locale): {
   library: string
   replaceLibrary: string
   done: string
+  close: string
+  selectSlot: string
   continueBirth: string
   continueUnlock: string
+  continueReading: string
   nextSlot: string
 } {
   switch (locale) {
     case 'zh':
       return {
         quality: '高清、完整、光线均匀。模糊或裁切会让报告变浅。',
-        empty: '点选槽位 · 拍照或相册 · 仅存本机',
-        privacy: '原图仅存本机；分析时上传，服务器处理完不保留。',
+        empty: '点选槽位 · 拍照或相册 · 本机可查看草稿',
+        privacy: '本机保留可查看草稿；提取时短暂上传，处理后删除原图。',
         camera: '拍照',
         retake: '重拍',
         library: '相册',
         replaceLibrary: '从相册替换',
         done: '完成',
+        close: '关闭',
+        selectSlot: '点选一张再更新',
         continueBirth: '继续填写生辰',
         continueUnlock: '继续到解锁',
+        continueReading: '开始解读',
         nextSlot: '下一张',
       }
     case 'zh-Hant':
       return {
         quality: '高清、完整、光線均勻。模糊或裁切會讓報告變淺。',
-        empty: '點選槽位 · 拍照或相簿 · 僅存本機',
-        privacy: '原圖僅存本機；分析時上傳，伺服器處理完不保留。',
+        empty: '點選槽位 · 拍照或相簿 · 本機可查看草稿',
+        privacy: '本機保留可查看草稿；提取時短暫上傳，處理後刪除原圖。',
         camera: '拍照',
         retake: '重拍',
         library: '相簿',
         replaceLibrary: '從相簿替換',
         done: '完成',
+        close: '關閉',
+        selectSlot: '點選一張再更新',
         continueBirth: '繼續填寫生辰',
         continueUnlock: '繼續到解鎖',
+        continueReading: '開始解讀',
         nextSlot: '下一張',
       }
     case 'ja':
       return {
         quality: '鮮明・全体・均一な光。ぼやけやトリミングはリーディングが薄くなります。',
-        empty: '枠を選ぶ · カメラまたはアルバム · この端末のみ',
-        privacy: '写真は端末に保存。抽出のためだけにアップロードし、サーバーでは破棄します。',
+        empty: '枠を選ぶ · カメラまたはアルバム · 端末で下書き確認',
+        privacy: '端末に下書きを保持。抽出のため短時間アップロードし、処理後に原画像を削除します。',
         camera: 'カメラ',
         retake: '撮り直す',
         library: 'アルバム',
         replaceLibrary: 'アルバムから差し替え',
         done: '完了',
+        close: '閉じる',
+        selectSlot: '枠を選んでから更新',
         continueBirth: '生辰情報へ',
         continueUnlock: '購入手続きへ',
+        continueReading: '解読を開始',
         nextSlot: '次へ',
       }
     default:
       return {
         quality: 'Sharp, complete, even light. Blur or crop makes a thin reading.',
-        empty: 'Tap a slot · camera or library · on this device only',
-        privacy: 'Photos stay on device; uploaded only for extraction, then discarded server-side.',
+        empty: 'Tap a slot · camera or library · draft stays viewable on device',
+        privacy: 'Drafts stay on device for viewing; briefly uploaded for extract, then deleted.',
         camera: 'Camera',
         retake: 'Retake',
         library: 'Library',
         replaceLibrary: 'Replace from library',
         done: 'Done',
+        close: 'Close',
+        selectSlot: 'Select a slot to update',
         continueBirth: 'Continue to birth info',
         continueUnlock: 'Continue to unlock',
+        continueReading: 'Start reading',
         nextSlot: 'Next',
       }
+  }
+}
+
+export function deepNextReadingCopy(locale: Locale): {
+  label: string
+  hint: string
+} {
+  switch (locale) {
+    case 'zh':
+      return {
+        label: '下次深度解读',
+        hint: '默认短简；开启后下一期生成完整五章。首读不受此开关影响。',
+      }
+    case 'zh-Hant':
+      return {
+        label: '下次深度解讀',
+        hint: '預設短簡；開啟後下一期生成完整五章。首讀不受此開關影響。',
+      }
+    case 'ja':
+      return {
+        label: '次回は深度解読',
+        hint: '通常は短簡。オンにすると次の一期は五章。初回は対象外。',
+      }
+    default:
+      return {
+        label: 'Deep reading next time',
+        hint: 'Default is the short brief. When on, your next period uses five chapters. First seal is always deep.',
+      }
+  }
+}
+
+type ProcessingPhase =
+  | 'uploading'
+  | 'extracting'
+  | 'queued'
+  | 'interpreting'
+  | 'idle'
+  | 'done'
+  | 'failed'
+
+export function readingProcessingCopy(
+  locale: Locale,
+  phase: ProcessingPhase
+): { title: string; hint: string; leave: string } {
+  const key =
+    phase === 'uploading'
+      ? 'upload'
+      : phase === 'extracting'
+        ? 'extract'
+        : phase === 'queued'
+          ? 'queue'
+          : phase === 'interpreting'
+            ? 'interpret'
+            : 'default'
+
+  const pack = {
+    upload: {
+      zh: {
+        title: '上传照片',
+        hint: '正在安全传送左掌、右掌与面部…',
+        leave: '请保持打开直至上传完成。上传后即可离开，云端会继续提取与解读。',
+      },
+      hant: {
+        title: '上傳照片',
+        hint: '正在安全傳送左掌、右掌與面部…',
+        leave: '請保持打開直至上傳完成。上傳後即可離開，雲端會繼續提取與解讀。',
+      },
+      ja: {
+        title: '写真を送信中',
+        hint: '左掌・右掌・顔を安全に送信しています…',
+        leave: '送信完了までアプリを開いたままに。送信後は閉じてもクラウドで抽出・解読が続きます。',
+      },
+      en: {
+        title: 'Uploading photos',
+        hint: 'Securely sending left palm, right palm, and face…',
+        leave: 'Keep the app open until upload finishes. After that you can leave — the cloud continues.',
+      },
+    },
+    extract: {
+      zh: {
+        title: '提取形气特征',
+        hint: '云端正在结构化左掌、右掌与面部…',
+        leave: '已上传，可离开。回首页可查看进度，完成后会通知你。',
+      },
+      hant: {
+        title: '提取形氣特徵',
+        hint: '雲端正在結構化左掌、右掌與面部…',
+        leave: '已上傳，可離開。回首頁可查看進度，完成後會通知你。',
+      },
+      ja: {
+        title: '形気の特徴を抽出中',
+        hint: 'クラウドが左掌・右掌・顔を構造化しています…',
+        leave: '送信済み。アプリを閉じても大丈夫。ホームで進捗を確認できます。',
+      },
+      en: {
+        title: 'Extracting form features',
+        hint: 'Cloud is structuring left palm, right palm, and face…',
+        leave: 'Uploaded — you can leave. Check progress on home; we notify when ready.',
+      },
+    },
+    queue: {
+      zh: {
+        title: '排队解读',
+        hint: '特征已就绪，等待云端席位…',
+        leave: '已入队，可离开。回首页可查看进度，完成后会通知你。',
+      },
+      hant: {
+        title: '排隊解讀',
+        hint: '特徵已就緒，等待雲端席位…',
+        leave: '已入隊，可離開。回首頁可查看進度，完成後會通知你。',
+      },
+      ja: {
+        title: '解読待ち',
+        hint: '特徴は準備完了。クラウドの順番待ち…',
+        leave: 'キュー済み。アプリを閉じても大丈夫。ホームで進捗を確認できます。',
+      },
+      en: {
+        title: 'Queued for reading',
+        hint: 'Features ready — waiting for a cloud slot…',
+        leave: 'Queued — you can leave. Check progress on home; we notify you when ready.',
+      },
+    },
+    interpret: {
+      zh: {
+        title: '撰写形气简报',
+        hint: '五章简报正在密封成稿…',
+        leave: '云端撰写中，可离开。回首页可查看进度。',
+      },
+      hant: {
+        title: '撰寫形氣簡報',
+        hint: '五章簡報正在密封成稿…',
+        leave: '雲端撰寫中，可離開。回首頁可查看進度。',
+      },
+      ja: {
+        title: '形気ブリーフを執筆中',
+        hint: '五章のブリーフを密封しています…',
+        leave: 'クラウド執筆中。閉じても大丈夫。ホームで進捗を確認できます。',
+      },
+      en: {
+        title: 'Writing your brief',
+        hint: 'Sealing the five-chapter form brief…',
+        leave: 'Writing in the cloud — you can leave. Check progress on home.',
+      },
+    },
+    default: {
+      zh: {
+        title: '形气解读进行中',
+        hint: '完整流程通常需要几分钟。',
+        leave: '可离开应用，完成后会通知你。',
+      },
+      hant: {
+        title: '形氣解讀進行中',
+        hint: '完整流程通常需要幾分鐘。',
+        leave: '可離開應用，完成後會通知你。',
+      },
+      ja: {
+        title: '形気リーディング中',
+        hint: '全体で数分かかることがあります。',
+        leave: 'アプリを閉じても大丈夫です。完了したらお知らせします。',
+      },
+      en: {
+        title: 'Reading in progress',
+        hint: 'This usually takes a few minutes.',
+        leave: 'You can leave — we will notify you when ready.',
+      },
+    },
+  } as const
+
+  const row = pack[key]
+  switch (locale) {
+    case 'zh':
+      return row.zh
+    case 'zh-Hant':
+      return row.hant
+    case 'ja':
+      return row.ja
+    default:
+      return row.en
+  }
+}
+
+/** Timeline draft row while a cloud job is queued / interpreting. */
+export function runningJobDraftCopy(
+  locale: Locale,
+  opts: { phase: ProcessingPhase; progress: number }
+): { title: string; excerpt: string } {
+  const pct = Math.max(0, Math.min(100, Math.round(opts.progress)))
+  const phaseLabel =
+    opts.phase === 'uploading'
+      ? ({ zh: '上传中', hant: '上傳中', ja: '送信中', en: 'Uploading' } as const)
+      : opts.phase === 'extracting'
+        ? ({ zh: '提取中', hant: '提取中', ja: '抽出中', en: 'Extracting' } as const)
+        : opts.phase === 'interpreting'
+          ? ({ zh: '撰写中', hant: '撰寫中', ja: '執筆中', en: 'Writing' } as const)
+          : ({ zh: '排队中', hant: '排隊中', ja: '待機中', en: 'Queued' } as const)
+  switch (locale) {
+    case 'zh':
+      return { title: '解读中', excerpt: `${phaseLabel.zh} · ${pct}% · 点按查看` }
+    case 'zh-Hant':
+      return { title: '解讀中', excerpt: `${phaseLabel.hant} · ${pct}% · 點按查看` }
+    case 'ja':
+      return { title: '解読中', excerpt: `${phaseLabel.ja} · ${pct}% · タップで詳細` }
+    default:
+      return { title: 'In progress', excerpt: `${phaseLabel.en} · ${pct}% · Tap for progress` }
   }
 }

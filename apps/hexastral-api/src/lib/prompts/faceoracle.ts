@@ -165,6 +165,51 @@ export function buildFaceOracleChaptersPrompt(
   return lines.join('\n')
 }
 
+/** Pass 2 (period_brief): short card schema — not five chapters. */
+export function buildFaceOracleBriefPrompt(
+  params: FaceOraclePromptParams,
+  lociJson: string
+): string {
+  const lines = [
+    'Role: Folk East-Asian 算命 interpreter — period brief card (Syel Pass 2 short).',
+    'Write a SHORT sealed card: form loci × BaZi timing. No five-chapter essay.',
+    'Voice: 警示/预告 — visible form + chart cue; no 铁口 census claims; no medical diagnosis.',
+    `OutputKind: period_brief`,
+    `HorizonMonths: ${params.horizonMonths}`,
+    ...sharedInputBlocks(params),
+    '',
+    `FixedLoci (cite lightly in summary; do not dump raw VLM): ${lociJson}`,
+    '',
+    'Return STRICT JSON only:',
+    '{',
+    '  "brief": {',
+    '    "title": string,',
+    '    "excerpt": string,',
+    '    "summary": string,',
+    '    "suggestion": string,',
+    '    "axis": "career"|"love"|"health"|null',
+    '  },',
+    '  "events": Array<{',
+    '    "startMonth": "YYYY-MM",',
+    '    "endMonth": "YYYY-MM"|null,',
+    '    "theme": string,',
+    '    "note": string,',
+    '    "axis": "career"|"love"|"health",',
+    '    "sources": Array<"face"|"palm_l"|"palm_r"|"bazi">',
+    '  }>',
+    '}',
+    'Constraints: title ≤24 chars; excerpt ≤42 (home-list hook); summary 120–220 chars; suggestion 1–3 practical steps (newlines ok).',
+    'events: 0–3 soft optional. Prefer null axis over inventing.',
+    'Honesty over flattery. Crutch phrases BANNED.',
+  ]
+  if (params.partialUpdate?.length) {
+    lines.push(
+      `PartialUpdateParts: ${params.partialUpdate.join(',')} — emphasize what changed this period; carried palms may be quieter.`
+    )
+  }
+  return lines.join('\n')
+}
+
 /**
  * Combined prompt (tests / legacy). Production job uses Pass1+Pass2 separately.
  */

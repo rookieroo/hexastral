@@ -1,5 +1,5 @@
 /**
- * Empty well — corner brackets + inner frame guide the capture locus.
+ * Empty well — minimal corner brackets only (no inner rect = no double frame).
  */
 
 import { useTheme } from '@zhop/core-ui'
@@ -31,14 +31,14 @@ function Corner({
         left,
         right,
         bottom,
-        width: 14,
-        height: 14,
+        width: 11,
+        height: 11,
         borderColor: color,
-        borderTopWidth: flipY ? 0 : 1.5,
-        borderBottomWidth: flipY ? 1.5 : 0,
-        borderLeftWidth: flipX ? 0 : 1.5,
+        borderTopWidth: flipY ? 0 : 1,
+        borderBottomWidth: flipY ? 1 : 0,
+        borderLeftWidth: flipX ? 0 : 1,
         borderRightWidth: flipX ? 1.5 : 0,
-        opacity: 0.52,
+        opacity: 0.3,
       }}
     />
   )
@@ -46,26 +46,12 @@ function Corner({
 
 export function PolaroidGhost() {
   const { colors } = useTheme()
-  const guide = colors.secondary
   return (
-    <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-      <View
-        pointerEvents='none'
-        style={{
-          position: 'absolute',
-          top: 10,
-          right: 10,
-          bottom: 10,
-          left: 10,
-          borderWidth: 0.5,
-          borderColor: colors.separator,
-          opacity: 0.85,
-        }}
-      />
-      <Corner color={guide} top={6} left={6} />
-      <Corner color={guide} top={6} right={6} flipX />
-      <Corner color={guide} bottom={6} left={6} flipY />
-      <Corner color={guide} bottom={6} right={6} flipX flipY />
+    <View style={{ flex: 1 }}>
+      <Corner color={colors.separator} top={8} left={8} />
+      <Corner color={colors.separator} top={8} right={8} flipX />
+      <Corner color={colors.separator} bottom={8} left={8} flipY />
+      <Corner color={colors.separator} bottom={8} right={8} flipX flipY />
     </View>
   )
 }

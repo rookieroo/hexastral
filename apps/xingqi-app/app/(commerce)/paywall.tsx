@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { XingqiLoader } from '@/components/XingqiLoader'
 import { ONESHOT_PRICE_FLOOR_USD, REVENUECAT_PRODUCT_IDS } from '@/lib/growth-config'
+import { setHomeCaptureHandoff } from '@/lib/home-capture-handoff'
 import { resolveLocale } from '@/lib/i18n'
 import { purchaseProduct, restorePurchases } from '@/lib/iap'
 import { pickUi } from '@/lib/locale-zh'
@@ -24,6 +25,7 @@ import {
   subscribeReadingJob,
 } from '@/lib/reading-job'
 import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
+import { openReadingScreen } from '@/lib/open-reading'
 import { readingHasReportBody } from '@/lib/report-chapters'
 
 type Phase = 'choose' | 'handoff' | 'purchasing'
@@ -48,10 +50,11 @@ export default function XingqiPaywallScreen() {
         const claimed = consumeReadingJobDone()
         if (!claimed) return
         let hasBody = false
+        let resultJson = ''
         try {
-          hasBody = readingHasReportBody(
-            JSON.parse(decodeURIComponent(claimed.resultPayload)) as Record<string, unknown>
-          )
+          const raw = JSON.parse(decodeURIComponent(claimed.resultPayload)) as Record<string, unknown>
+          hasBody = readingHasReportBody(raw) || Boolean(raw.brief)
+          resultJson = JSON.stringify(raw)
         } catch {
           hasBody = false
         }
@@ -59,10 +62,11 @@ export default function XingqiPaywallScreen() {
           router.replace('/(app)' as never)
           return
         }
-        router.replace({
-          pathname: '/result',
-          params: { readingId: claimed.readingId },
-        } as never)
+        openReadingScreen({
+          readingId: claimed.readingId,
+          resultJson,
+          replace: true,
+        })
         return
       }
       if (job.status === 'error' && job.error) {
@@ -102,14 +106,17 @@ export default function XingqiPaywallScreen() {
         await alertIfPhotosUnchanged({
           draft,
           locale,
-          onUpdatePhotos: () => router.replace('/capture'),
+          onUpdatePhotos: () => {
+            setHomeCaptureHandoff()
+            router.replace('/(app)' as never)
+          },
         })
       ) {
         return
       }
       const started = startReadingJob({
         locale,
-        outputKind: 'period_brief',
+        outputKind: draft.outputKind === 'period_brief' ? 'period_brief' : 'oneshot',
         isPro: true,
         draft,
         onQueued: () => setPhase('handoff'),
@@ -135,13 +142,22 @@ export default function XingqiPaywallScreen() {
     if (!draftReadyForPaywall(draft)) {
       setError(
         s(
-          '请先完成三张照片与生辰',
-          '請先完成三張照片與生辰',
-          'Complete three photos and birth info first',
-          '三枚の写真と生辰情報を先に入力してください'
+          draft.outputKind === 'period_brief' || draft.updateKind === 'partial'
+            ? '请至少更新一张照片并确认生辰'
+            : '请先完成三张照片与生辰',
+          draft.outputKind === 'period_brief' || draft.updateKind === 'partial'
+            ? '請至少更新一張照片並確認生辰'
+            : '請先完成三張照片與生辰',
+          draft.outputKind === 'period_brief' || draft.updateKind === 'partial'
+            ? 'Update at least one photo and confirm birth info'
+            : 'Complete three photos and birth info first',
+          draft.outputKind === 'period_brief' || draft.updateKind === 'partial'
+            ? '写真を1枚以上更新し、生辰情報を確認してください'
+            : '三枚の写真と生辰情報を先に入力してください'
         )
       )
-      router.replace('/capture')
+      setHomeCaptureHandoff()
+      router.replace('/(app)' as never)
       return
     }
     void (async () => {
@@ -149,7 +165,10 @@ export default function XingqiPaywallScreen() {
         await alertIfPhotosUnchanged({
           draft,
           locale,
-          onUpdatePhotos: () => router.replace('/capture'),
+          onUpdatePhotos: () => {
+            setHomeCaptureHandoff()
+            router.replace('/(app)' as never)
+          },
         })
       ) {
         return

@@ -1,18 +1,30 @@
 /**
- * DEV-only: grant/expire real `universe_pro` via /api/dev/set-subscription
- * so the API accepts Pro-gated faceoracle readings (client-only override is not enough).
+ * DEV-only: grant/expire `universe_pro` + `faceoracle_pro` via /api/dev/set-subscription
+ * so the API accepts Pro-gated Syel readings (client-only override is not enough).
  */
 
-import { getPortfolioUserId, resolvePortfolioApiUrl, signRequest } from '@zhop/satellite-runtime'
+import {
+  getDeviceSecret,
+  getPortfolioUserId,
+  repairPortfolioCredentialMismatch,
+  resolvePortfolioApiUrl,
+  signRequest,
+} from '@zhop/satellite-runtime'
 
-export async function devSetServerPro(pro: boolean): Promise<boolean> {
+export type DevServerProResult =
+  | { ok: true }
+  | { ok: false; reason: 'no_session' | 'hmac' | 'blocked' | 'http' }
+
+export async function devSetServerPro(pro: boolean): Promise<DevServerProResult> {
+  await repairPortfolioCredentialMismatch()
   const userId = await getPortfolioUserId()
-  if (!userId) return false
+  const secret = await getDeviceSecret()
+  if (!userId || !secret) return { ok: false, reason: 'no_session' }
   const path = '/api/dev/set-subscription'
   const body = JSON.stringify({ status: pro ? 'pro' : 'free' })
   try {
     const signed = await signRequest({ body, userId, method: 'POST', path })
-    if (!signed) return false
+    if (!signed) return { ok: false, reason: 'hmac' }
     const res = await fetch(`${resolvePortfolioApiUrl()}${path}`, {
       method: 'POST',
       headers: {
@@ -22,8 +34,10 @@ export async function devSetServerPro(pro: boolean): Promise<boolean> {
       },
       body,
     })
-    return res.ok
+    if (res.ok) return { ok: true }
+    if (res.status === 404) return { ok: false, reason: 'blocked' }
+    return { ok: false, reason: 'http' }
   } catch {
-    return false
+    return { ok: false, reason: 'http' }
   }
 }

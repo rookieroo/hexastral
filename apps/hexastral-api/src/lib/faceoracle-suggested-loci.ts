@@ -286,8 +286,10 @@ export type LociCoverageResult = {
 }
 
 export function assessLociCoverage(
-  loci: Array<{ part?: string; reading?: string }>
+  loci: Array<{ part?: string; reading?: string }>,
+  floors?: { face: number; palm_l: number; palm_r: number; caution: number }
 ): LociCoverageResult {
+  const need = floors ?? { face: 5, palm_l: 5, palm_r: 5, caution: 2 }
   let face = 0
   let palm_l = 0
   let palm_r = 0
@@ -300,7 +302,8 @@ export function assessLociCoverage(
     else if (part === 'palm_r') palm_r += 1
     if (CAUTION_RE.test(reading)) caution += 1
   }
-  const ok = face >= 5 && palm_l >= 5 && palm_r >= 5 && caution >= 2
+  const ok =
+    face >= need.face && palm_l >= need.palm_l && palm_r >= need.palm_r && caution >= need.caution
   const detail = `face=${face} palm_l=${palm_l} palm_r=${palm_r} caution=${caution}`
   return { ok, face, palm_l, palm_r, caution, detail }
 }

@@ -8,6 +8,7 @@ import {
   clearPortfolioUserId,
   type DevEntitlementOverride,
   getDevEntitlementOverride,
+  getDeviceSecret,
   getPortfolioUserId,
   hasEntitlement,
   useEntitlements,
@@ -27,15 +28,17 @@ import {
 import { fetchBiometricConsent, revokeBiometricConsent } from '@/lib/api'
 import { setCachedBiometricConsent } from '@/lib/biometric-consent-cache'
 import { cycleDevEntitlementOverride, devEntitlementLabel } from '@/lib/dev-pro-toggle'
+import { setHomeCaptureHandoff } from '@/lib/home-capture-handoff'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { privacyPolicyUrl, resolveLocale } from '@/lib/i18n'
 import { restorePurchases } from '@/lib/iap'
-import { sealCaseCopy } from '@/lib/living-copy'
+import { sealCaseCopy, deepNextReadingCopy } from '@/lib/living-copy'
 import { pickUi } from '@/lib/locale-zh'
 import { resetOnboarding } from '@/lib/onboarding'
 import { getXingqiPushPrefs, setXingqiPushPrefs, type XingqiPushPrefs } from '@/lib/push-preference'
 import { cancelXingqiPush, scheduleXingqiPush } from '@/lib/push-schedule'
 import { clearReadingDraft } from '@/lib/reading-draft'
+import { getDeepNextReading, setDeepNextReading } from '@/lib/reading-preference'
 import { registerXingqiServerPush, unregisterXingqiServerPush } from '@/lib/server-push'
 
 export default function SettingsScreen() {
@@ -59,14 +62,21 @@ export default function SettingsScreen() {
   )
   const [restoreBusy, setRestoreBusy] = useState(false)
   const [readingCount, setReadingCount] = useState(0)
+  const [deepNext, setDeepNext] = useState(false)
+  const deepCopy = deepNextReadingCopy(locale)
 
   useFocusEffect(
     useCallback(() => {
-      void getPortfolioUserId().then(setUserId)
+      void (async () => {
+        const id = await getPortfolioUserId()
+        const secret = await getDeviceSecret()
+        setUserId(id && secret ? id : null)
+      })()
       void getXingqiPushPrefs().then(setPrefs)
       void fetchReadings(PORTFOLIO_TARGET_APP)
         .then((hist) => setReadingCount(hist.readings?.length ?? 0))
         .catch(() => setReadingCount(0))
+      void getDeepNextReading().then(setDeepNext)
       if (__DEV__) setDevPro(getDevEntitlementOverride())
     }, [])
   )
@@ -155,12 +165,44 @@ export default function SettingsScreen() {
                     router.push('/consent')
                     return
                   }
-                  router.push('/capture' as never)
+                  setHomeCaptureHandoff()
+                  router.replace('/(app)' as never)
                 })()
               }}
             />
           </SettingsCard>
         </SettingsSection>
+
+        {readingCount > 0 ? (
+          <SettingsSection title={s('解读', '解讀', 'READINGS', '解読')}>
+            <SettingsCard>
+              <SettingsToggleRow
+                label={deepCopy.label}
+                value={deepNext && isPro}
+                onValueChange={(v) => {
+                  if (!isPro) {
+                    softGatePro()
+                    return
+                  }
+                  setDeepNext(v)
+                  void setDeepNextReading(v)
+                }}
+                badge={isPro ? undefined : 'PRO'}
+              />
+            </SettingsCard>
+            <Text
+              style={{
+                color: colors.dim,
+                fontSize: 12,
+                lineHeight: 17,
+                marginTop: 8,
+                paddingHorizontal: 4,
+              }}
+            >
+              {deepCopy.hint}
+            </Text>
+          </SettingsSection>
+        ) : null}
 
         {!userId ? (
           <SettingsSection>
@@ -303,10 +345,10 @@ export default function SettingsScreen() {
                     Alert.alert(
                       s('撤回同意', '撤回同意', 'Withdraw consent', '同意を撤回'),
                       s(
-                        '撤回后需重新同意才能继续形气解读；本机照片草稿也会清除。',
-                        '撤回後需重新同意才能繼續形氣解讀；本機照片草稿也會清除。',
-                        'You must consent again before a form-qi reading. On-device photo drafts are cleared.',
-                        '撤回後は形気リーディングの前に再度同意が必要です。端末内の写真下書きも削除されます。'
+                        '撤回后需重新同意才能继续形气解读；本机照片草稿与待处理的短暂上传也会清除。',
+                        '撤回後需重新同意才能繼續形氣解讀；本機照片草稿與待處理的短暫上傳也會清除。',
+                        'You must consent again before a form-qi reading. On-device drafts and any pending short-lived uploads are cleared.',
+                        '撤回後は形気リーディングの前に再度同意が必要です。端末の下書きと保留中の短寿命アップロードも削除されます。'
                       ),
                       [
                         {

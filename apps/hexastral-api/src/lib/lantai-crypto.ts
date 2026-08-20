@@ -11,7 +11,14 @@ function bytesToB64(bytes: Uint8Array): string {
   return btoa(binary)
 }
 
-function b64ToBytes(b64: string): Uint8Array {
+/** Copy into a fresh ArrayBuffer-backed view — satisfies DOM `BufferSource` (TS 5.7+). */
+function asBufferSource(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
+  const out = new Uint8Array(bytes.byteLength)
+  out.set(bytes)
+  return out
+}
+
+function b64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
   const binary = atob(b64)
   const out = new Uint8Array(binary.length)
   for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i)
@@ -28,8 +35,8 @@ export async function encryptAesGcm(
   secret: string
 ): Promise<{ ciphertext: string; nonce: string }> {
   const key = await deriveAesKey(secret)
-  const nonce = crypto.getRandomValues(new Uint8Array(12))
-  const encoded = new TextEncoder().encode(plaintext)
+  const nonce = asBufferSource(crypto.getRandomValues(new Uint8Array(12)))
+  const encoded = asBufferSource(new TextEncoder().encode(plaintext))
   const sealed = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, key, encoded)
   return { ciphertext: bytesToB64(new Uint8Array(sealed)), nonce: bytesToB64(nonce) }
 }

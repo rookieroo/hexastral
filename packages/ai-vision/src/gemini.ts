@@ -13,6 +13,7 @@
  */
 
 import { GoogleGenAI, ThinkingLevel } from '@google/genai'
+import { parseModelJsonObject } from './json-parse'
 import { withGeminiTiming } from './log'
 
 export type GeminiThinkingLevel = 'HIGH' | 'MEDIUM' | 'LOW' | 'MINIMAL'
@@ -149,17 +150,7 @@ export async function callGeminiVisionStructured<T>(
       if (!text) {
         throw new Error('gemini_empty_response')
       }
-      try {
-        return JSON.parse(text) as T
-      } catch {
-        // Model sometimes wraps JSON despite responseMimeType.
-        const start = text.indexOf('{')
-        const end = text.lastIndexOf('}')
-        if (start >= 0 && end > start) {
-          return JSON.parse(text.slice(start, end + 1)) as T
-        }
-        throw new Error(`gemini_invalid_json:${text.slice(0, 120)}`)
-      }
+      return parseModelJsonObject<T>(text)
     }
   )
 }

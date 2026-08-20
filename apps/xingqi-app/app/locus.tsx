@@ -41,6 +41,8 @@ import {
   palmPointDebugSources,
   starsForPart,
 } from '@/lib/locus-data'
+import { openReadingScreen } from '@/lib/open-reading'
+import { shouldOpenBriefCard } from '@/lib/reading-brief'
 import { resolveReadingPhotoUri } from '@/lib/reading-photos'
 
 const MIN_SCALE = 1
@@ -83,6 +85,7 @@ export default function LocusViewerScreen() {
   const initialPart: LocusPart = isLocusPart(params.part) ? params.part : 'face'
 
   const [data, setData] = useState<LocusExplorerData | null>(null)
+  const [resultJson, setResultJson] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [part, setPart] = useState<LocusPart>(initialPart)
   const [photoUri, setPhotoUri] = useState<string | undefined>()
@@ -121,9 +124,13 @@ export default function LocusViewerScreen() {
       try {
         const detail = await fetchReadingById(PORTFOLIO_TARGET_APP, readingId)
         if (cancelled) return
+        setResultJson(detail.reading.resultJson ?? null)
         setData(locusExplorerFromResultJson(detail.reading))
       } catch {
-        if (!cancelled) setData(null)
+        if (!cancelled) {
+          setData(null)
+          setResultJson(null)
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -238,6 +245,18 @@ export default function LocusViewerScreen() {
 
   const openChapter = () => {
     if (!readingId) return
+    let useBrief = false
+    if (resultJson?.trim()) {
+      try {
+        useBrief = shouldOpenBriefCard(JSON.parse(resultJson) as Record<string, unknown>)
+      } catch {
+        useBrief = false
+      }
+    }
+    if (useBrief) {
+      openReadingScreen({ readingId, resultJson, replace: true })
+      return
+    }
     router.replace({
       pathname: '/result',
       params: { readingId, chapter: part === 'face' ? 'face' : 'palms' },

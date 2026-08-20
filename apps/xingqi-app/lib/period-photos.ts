@@ -1,7 +1,7 @@
 /**
  * Current-period photo workspace — device sandbox only (documentDirectory).
- * Never uploaded to R2. Privacy appendix: source images are request-ephemeral
- * on the server; this store is on-device so the user can view / replace slots.
+ * Used for view/replace and as the source of ephemeral R2 uploads.
+ * Server deletes originals after extract; this store is on-device for drafts.
  *
  * Replace deletes the previous file for that part. App Store builds must use
  * documentDirectory (survives updates) — not ImagePicker temp URIs.
@@ -51,6 +51,20 @@ async function deletePartFiles(part: CapturePart): Promise<void> {
 }
 
 /**
+ * Copy an already-JPEG (or any) file into the period sandbox without re-encode.
+ * Used for New-period carry from reading snapshots (already sized JPEGs).
+ */
+export async function persistPeriodPhotoCopy(part: CapturePart, sourceUri: string): Promise<string> {
+  await ensureDir()
+  const dest = destPath(part, 'jpg')
+  if (!dest) throw new Error('storage_unavailable')
+  await deletePartFiles(part)
+  const from = sourceUri.split('?')[0] ?? sourceUri
+  await FileSystem.copyAsync({ from, to: dest })
+  return dest
+}
+
+/**
  * Copy a picker/camera URI into the period sandbox as JPEG and return the durable file URI.
  * Overwrites any previous file for this part.
  *
@@ -84,7 +98,14 @@ export async function persistPeriodPhoto(part: CapturePart, sourceUri: string): 
     await FileSystem.copyAsync({ from: resized.uri, to: staging })
   } catch (err) {
     console.warn('[xingqi.period] jpeg_persist_failed', err)
-    throw new Error('photo_encode_failed')
+    // Camera JPEG often already works — keep a durable copy rather than dropping the shot.
+    try {
+      const from = sourceUri.split('?')[0] ?? sourceUri
+      await FileSystem.copyAsync({ from, to: staging })
+    } catch (copyErr) {
+      console.warn('[xingqi.period] jpeg_copy_failed', copyErr)
+      throw new Error('photo_encode_failed')
+    }
   }
 
   await FileSystem.moveAsync({ from: staging, to: dest })

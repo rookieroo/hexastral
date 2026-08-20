@@ -62,7 +62,7 @@ export async function processFaceoracleReadingQueueBatch(
       const maxAttempts = 3
       if (msg.attempts >= maxAttempts) {
         try {
-          await markFaceoracleJobFailed(db, jobId, message)
+          await markFaceoracleJobFailed(db, jobId, message, env)
         } catch (markErr) {
           console.error('[faceoracle-queue] markFailed', markErr)
         }

@@ -46,6 +46,11 @@ export interface CloudflareBindings {
   AD_CONVERT_QUEUE?: Queue<import('./lib/ad-convert-queue').AdConvertMessage>
   /** R2 桶 — 用户持久化媒体（头像、手相照片、风水平面图） */
   MEDIA_BUCKET: R2Bucket
+  /**
+   * R2 — Syel ephemeral face/palm JPEGs for async VLM extract.
+   * App deletes after extract; bucket lifecycle ≤60m is the hard ceiling.
+   */
+  FACE_EPHEMERAL_BUCKET: R2Bucket
   ENVIRONMENT: string
   REVENUECAT_WEBHOOK_SECRET?: string
   /** RevenueCat **secret** REST API key (sk_…) — for the entitlement reconciliation

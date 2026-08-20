@@ -1,5 +1,5 @@
 import { Button, useTheme } from '@zhop/core-ui'
-import { getPortfolioUserId } from '@zhop/satellite-runtime'
+import { invalidatePortfolioSession } from '@zhop/satellite-runtime'
 import { router, Stack } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import {
@@ -12,16 +12,26 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { XingqiLoader } from '@/components/XingqiLoader'
-import { fetchBiometricConsent, recordBiometricConsent, revokeBiometricConsent } from '@/lib/api'
-import { setCachedBiometricConsent } from '@/lib/biometric-consent-cache'
+import { hasSignedInSession } from '@/lib/account'
+import { fetchBiometricConsent, recordBiometricConsent } from '@/lib/api'
 import { estimateConsentReadMs } from '@/lib/consent-read'
+import { setHomeCaptureHandoff } from '@/lib/home-capture-handoff'
 import { resolveLocale } from '@/lib/i18n'
 import { pickUi } from '@/lib/locale-zh'
-import { draftHasBirthInfo, hydrateReadingDraft, clearReadingDraft } from '@/lib/reading-draft'
+import { draftHasBirthInfo, hydrateReadingDraft } from '@/lib/reading-draft'
 
-async function routeAfterConsent(): Promise<'birth' | 'capture'> {
+async function routeAfterConsent(): Promise<'birth' | 'home'> {
   const draft = await hydrateReadingDraft()
-  return draftHasBirthInfo(draft) ? 'capture' : 'birth'
+  return draftHasBirthInfo(draft) ? 'home' : 'birth'
+}
+
+function goAfterConsent(next: 'birth' | 'home') {
+  if (next === 'birth') {
+    router.replace('/birth')
+    return
+  }
+  setHomeCaptureHandoff()
+  router.replace('/(app)' as never)
 }
 
 export default function BiometricConsentScreen() {
@@ -40,10 +50,10 @@ export default function BiometricConsentScreen() {
   const paragraphs = useMemo(
     () => [
       s(
-        '我们将在设备上选择左掌、右掌与面部高清照片，提取结构化特征，并结合你的生辰计算八字大运流年，生成密封的五章形气简报。原图仅在特征分析时上传，服务器处理完成后不会保存原图。',
-        '我們將在裝置上選擇左掌、右掌與面部高清照片，提取結構化特徵，並結合你的生辰計算八字大運流年，生成密封的五章形氣簡報。原圖僅在特徵分析時上傳，伺服器處理完成後不會保存原圖。',
-        'You will capture sharp left palm, right palm, and face photos. We extract structured features, compute BaZi DaYun/LiuNian from your birth data, and produce a sealed five-chapter form brief. Source images are uploaded only for extraction and are not kept after processing.',
-        '左手・右手・顔の鮮明な写真を撮り、構造化した特徴を抽出し、生年月日から八字の大運・流年を計算して、密封の五章形気ブリーフを作ります。原画像は抽出のためだけにアップロードし、処理後は保存しません。'
+        '我们将在设备上选择左掌、右掌与面部高清照片，提取结构化特征，并结合你的生辰计算八字大运流年，生成密封的五章形气简报。本机保留可查看的照片草稿；为提取特征会短暂上传到我们的服务器（短生命周期对象存储），提取结束后删除原图，不永久保留。上传完成后即可离开，云端继续提取与解读。长期只存结构化特征与报告。',
+        '我們將在裝置上選擇左掌、右掌與面部高清照片，提取結構化特徵，並結合你的生辰計算八字大運流年，生成密封的五章形氣簡報。本機保留可查看的照片草稿；為提取特徵會短暫上傳到我們的伺服器（短生命週期物件儲存），提取結束後刪除原圖，不永久保留。上傳完成後即可離開，雲端繼續提取與解讀。長期只存結構化特徵與報告。',
+        'You will capture sharp left palm, right palm, and face photos. We extract structured features, compute BaZi DaYun/LiuNian from your birth data, and produce a sealed five-chapter form brief. Drafts stay viewable on device; for extraction we briefly upload to our servers (short-lived object storage), then delete the originals — we do not keep them permanently. After upload you may leave while the cloud continues extract and reading. Long-term we store only structured features and report JSON.',
+        '左手・右手・顔の鮮明な写真を撮り、構造化した特徴を抽出し、生年月日から八字の大運・流年を計算して、密封の五章形気ブリーフを作ります。端末には確認用の下書きを残し、抽出のため短時間サーバー（短寿命オブジェクト）へアップロードし、抽出後に原画像を削除します（恒久保存しません）。アップロード後はアプリを閉じてもクラウドで抽出と解読が続きます。長期保存は構造化特徴とレポートのみです。'
       ),
       s(
         '这是文化研习简报（位点依据 · 三轴窗口 · 气机对照），不是聊天式看图说话，也不构成命运断语、医疗诊断或专业建议。请勿把它当作处方或疾病判断。',
@@ -52,10 +62,10 @@ export default function BiometricConsentScreen() {
         '文化学習用のブリーフ（部位の根拠 · 三軸の窓 · 気の対照）です。雑談的な写真読みでも、運命の断定でも、医療診断でも、専門的助言でもありません。処方や病名判断として使わないでください。'
       ),
       s(
-        '你可随时在印匣中撤回同意。撤回后，本机照片草稿与同意记录会被清除，需重新阅读并明确点选同意，才能继续拍照。',
-        '你可隨時在印匣中撤回同意。撤回後，本機照片草稿與同意記錄會被清除，需重新閱讀並明確點選同意，才能繼續拍照。',
-        'You can withdraw consent anytime in Case. That clears on-device photo drafts and the consent record. You must read this again and tap agree before capturing photos.',
-        '文箱からいつでも同意を撤回できます。撤回すると端末の写真下書きと同意記録が消え、再び読んで同意をタップするまで撮影できません。'
+        '你可随时在印匣中撤回同意。撤回后，本机照片草稿、待处理的短暂上传对象与同意记录会被清除，需重新阅读并明确点选同意，才能继续拍照。',
+        '你可隨時在印匣中撤回同意。撤回後，本機照片草稿、待處理的短暫上傳物件與同意記錄會被清除，需重新閱讀並明確點選同意，才能繼續拍照。',
+        'You can withdraw consent anytime in Case. That clears on-device photo drafts, any pending short-lived uploads, and the consent record. You must read this again and tap agree before capturing photos.',
+        '文箱からいつでも同意を撤回できます。撤回すると端末の写真下書き、保留中の短寿命アップロード、同意記録が消え、再び読んで同意をタップするまで撮影できません。'
       ),
       s(
         '左掌取纹路与丘位，右掌取对照，面部取形气。三张都要清晰、光线均匀、不要被手指挡住关键位点。',
@@ -98,8 +108,7 @@ export default function BiometricConsentScreen() {
   useEffect(() => {
     let cancelled = false
     void (async () => {
-      const userId = await getPortfolioUserId()
-      if (!userId) {
+      if (!(await hasSignedInSession())) {
         if (!cancelled) {
           router.replace({ pathname: '/sign-in', params: { next: 'consent' } } as never)
         }
@@ -110,7 +119,7 @@ export default function BiometricConsentScreen() {
         if (cancelled) return
         if (ok) {
           const next = await routeAfterConsent()
-          router.replace(next === 'birth' ? '/birth' : '/capture')
+          goAfterConsent(next)
           return
         }
       } catch {
@@ -124,20 +133,52 @@ export default function BiometricConsentScreen() {
     }
   }, [])
 
+  const redirectSignIn = () => {
+    router.replace({ pathname: '/sign-in', params: { next: 'consent' } } as never)
+  }
+
   const onAgree = async () => {
     if (busy || !readToEnd) return
+    if (!(await hasSignedInSession())) {
+      redirectSignIn()
+      return
+    }
     setBusy(true)
     setError(null)
     try {
       await recordBiometricConsent()
       const next = await routeAfterConsent()
-      router.replace(next === 'birth' ? '/birth' : '/capture')
+      goAfterConsent(next)
     } catch (err) {
       const msg = err instanceof Error ? err.message : ''
-      if (msg === 'signin_required') {
-        router.replace({ pathname: '/sign-in', params: { next: 'consent' } } as never)
+      if (msg === 'signin_required' || msg === 'session_expired') {
+        await invalidatePortfolioSession()
+        redirectSignIn()
         return
       }
+      if (msg === 'network_error' || msg === 'request_timeout') {
+        setError(
+          s(
+            '网络异常，请检查后重试',
+            '網路異常，請檢查後重試',
+            'Network error. Check connection and try again.',
+            'ネットワークエラー。接続を確認して再試行してください。'
+          )
+        )
+        return
+      }
+      if (msg === 'server_error') {
+        setError(
+          s(
+            '服务器繁忙，请稍后重试',
+            '伺服器繁忙，請稍後重試',
+            'Server busy. Try again in a moment.',
+            'サーバーが混み合っています。しばらくしてからお試しください。'
+          )
+        )
+        return
+      }
+      if (__DEV__) console.warn('[xingqi.consent] record failed', msg)
       setError(
         s(
           '同意记录失败，请重试',
@@ -230,24 +271,6 @@ export default function BiometricConsentScreen() {
         <Button variant='ghost' onPress={() => router.back()}>
           {s('取消', '取消', 'Cancel', 'キャンセル')}
         </Button>
-        {__DEV__ ? (
-          <Button
-            variant='ghost'
-            onPress={() => {
-              void (async () => {
-                await setCachedBiometricConsent(false)
-                await clearReadingDraft({ wipePhotos: true })
-                try {
-                  await revokeBiometricConsent()
-                } catch {
-                  // local reset is enough for dev loop
-                }
-              })()
-            }}
-          >
-            DEV: Clear consent
-          </Button>
-        ) : null}
       </View>
     </View>
   )

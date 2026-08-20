@@ -2073,7 +2073,8 @@ export const faceoraclePushQueue = sqliteTable(
 
 /**
  * Async FaceOracle / Xingqi reading jobs (interpretation queue).
- * Client extracts feature IDs first; consumer runs LLM + persists reading.
+ * Client may enqueue with feature IDs (legacy) or ephemeral R2 keys (early-quit).
+ * Consumer: extract from R2 if needed → LLM → persist reading.
  */
 export const faceoracleJobs = sqliteTable(
   'faceoracle_jobs',
@@ -2083,7 +2084,7 @@ export const faceoracleJobs = sqliteTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     stage: text('stage', {
-      enum: ['queued', 'interpreting', 'done', 'failed'],
+      enum: ['extracting', 'queued', 'interpreting', 'done', 'failed'],
     })
       .notNull()
       .default('queued'),
@@ -2091,9 +2092,15 @@ export const faceoracleJobs = sqliteTable(
     locale: text('locale').notNull().default('zh'),
     outputKind: text('output_kind').notNull().default('oneshot'),
     horizonMonths: integer('horizon_months').notNull().default(3),
-    faceFeatureId: text('face_feature_id').notNull(),
-    palmLeftFeatureId: text('palm_left_feature_id').notNull(),
-    palmRightFeatureId: text('palm_right_feature_id').notNull(),
+    /** Set after extract (or at enqueue for legacy featureId path). */
+    faceFeatureId: text('face_feature_id'),
+    palmLeftFeatureId: text('palm_left_feature_id'),
+    palmRightFeatureId: text('palm_right_feature_id'),
+    /**
+     * Ephemeral R2 keys for early-quit upload path.
+     * JSON: { palm_l?: string, palm_r?: string, face?: string, batchId?: string }
+     */
+    ephemeralKeysJson: text('ephemeral_keys_json'),
     solarDate: text('solar_date').notNull(),
     timeIndex: integer('time_index').notNull(),
     gender: text('gender').notNull(),

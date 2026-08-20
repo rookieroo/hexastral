@@ -11,7 +11,8 @@ import {
   normalizeImageBase64,
   type VisionImage,
 } from './gemini'
-import { stripThinking, type WorkersAiBinding } from './router'
+import { parseModelJsonObject } from './json-parse'
+import { type WorkersAiBinding } from './router'
 
 export const VLM_MODELS = {
   KIMI: '@cf/moonshotai/kimi-k2.6',
@@ -48,8 +49,8 @@ export interface VisionStructuredResult<T> {
 }
 
 const KIMI_TIMEOUT_MS = 40_000
-const GEMINI_TIMEOUT_MS = 25_000
-const LLAMA_TIMEOUT_MS = 25_000
+const GEMINI_TIMEOUT_MS = 45_000
+const LLAMA_TIMEOUT_MS = 60_000
 
 function withTimeout<T>(work: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -77,20 +78,6 @@ function extractAiText(result: unknown): string {
   return typeof r?.response === 'string' ? r.response : ''
 }
 
-function parseJsonObject<T>(raw: string): T {
-  const text = stripThinking(raw)
-  try {
-    return JSON.parse(text) as T
-  } catch {
-    const start = text.indexOf('{')
-    const end = text.lastIndexOf('}')
-    if (start >= 0 && end > start) {
-      return JSON.parse(text.slice(start, end + 1)) as T
-    }
-    throw new Error(`vlm_invalid_json:${text.slice(0, 120)}`)
-  }
-}
-
 function schemaInstruction(schema: Record<string, unknown>): string {
   return `\n\nYou must output ONLY valid JSON matching this schema:\n${JSON.stringify(schema, null, 2)}\nNo explanations, no markdown code blocks, just the JSON object.`
 }
@@ -110,6 +97,35 @@ function emitMetric(payload: {
   console.log('[vlm-router.metric]', JSON.stringify(payload))
 }
 
+/** One-shot Meta license accept for Llama 3.2 vision (CF error 5016). */
+let llamaLicenseAgreed = false
+
+async function ensureLlamaVisionLicense(ai: WorkersAiBinding): Promise<void> {
+  if (llamaLicenseAgreed) return
+  try {
+    await withTimeout(
+      ai.run(VLM_MODELS.LLAMA_VISION, { prompt: 'agree' }),
+      15_000,
+      'llama-license-agree'
+    )
+    llamaLicenseAgreed = true
+    console.info('[vlm-router] llama license agree ok')
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    // CF often returns 5016 with "Thank you for agreeing…" after a successful accept.
+    if (/thank you for agreeing|you may now use/i.test(msg)) {
+      llamaLicenseAgreed = true
+      console.info('[vlm-router] llama license agree ok (via 5016 ack)')
+      return
+    }
+    console.warn('[vlm-router] llama license agree:', msg.slice(0, 200))
+    // Still try the real call unless CF insists we must submit agree again.
+    if (!/must submit the prompt ['"]agree['"]/i.test(msg)) {
+      llamaLicenseAgreed = true
+    }
+  }
+}
+
 async function callCfVisionJson(
   ai: WorkersAiBinding,
   model: string,
@@ -120,9 +136,10 @@ async function callCfVisionJson(
   opts: { maxTokens: number; temperature: number; timeoutMs: number; thinkingOff?: boolean }
 ): Promise<string> {
   const finalSystem = systemPrompt + schemaInstruction(responseSchema)
-  const content: Array<
-    { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }
-  > = [{ type: 'text', text: userPrompt }]
+  type ContentPart =
+    | { type: 'text'; text: string }
+    | { type: 'image_url'; image_url: { url: string } }
+  const content: ContentPart[] = [{ type: 'text', text: userPrompt }]
   for (const img of images) {
     content.push({ type: 'image_url', image_url: { url: toDataUri(img) } })
   }
@@ -153,7 +170,7 @@ export async function callVisionStructuredWithFallback<T extends object>(
   opts: VisionStructuredOptions
 ): Promise<VisionStructuredResult<T>> {
   const startedAt = Date.now()
-  const maxTokens = opts.maxOutputTokens ?? 1024
+  const maxTokens = Math.max(opts.maxOutputTokens ?? 1024, 2048)
   const temperature = opts.temperature ?? 0.2
   const errors: string[] = []
 
@@ -173,7 +190,7 @@ export async function callVisionStructuredWithFallback<T extends object>(
         thinkingOff: true,
       }
     )
-    const data = parseJsonObject<T>(raw)
+    const data = parseModelJsonObject<T>(raw)
     emitMetric({
       model: VLM_MODELS.KIMI,
       fallbackDepth: 0,
@@ -187,42 +204,51 @@ export async function callVisionStructuredWithFallback<T extends object>(
     console.error('[vlm-router] kimi failed:', msg.slice(0, 300))
   }
 
-  // Tier 2 — Gemini Flash
+  // Tier 2 — Gemini Flash (retry once with more tokens if JSON was truncated)
   const geminiKey = env.GEMINI_API_KEY?.trim()
   if (geminiKey) {
-    try {
-      const data = await withTimeout(
-        callGeminiVisionStructured<T>(geminiKey, {
-          systemPrompt: opts.systemPrompt,
-          userPrompt: opts.userPrompt,
-          images: opts.images,
-          responseSchema: opts.responseSchema,
+    const geminiAttempts = [maxTokens, Math.min(maxTokens * 2, 8192)]
+    let geminiErr = ''
+    for (let i = 0; i < geminiAttempts.length; i++) {
+      const tokens = geminiAttempts[i] ?? maxTokens
+      try {
+        const data = await withTimeout(
+          callGeminiVisionStructured<T>(geminiKey, {
+            systemPrompt: opts.systemPrompt,
+            userPrompt: opts.userPrompt,
+            images: opts.images,
+            responseSchema: opts.responseSchema,
+            model: VLM_MODELS.GEMINI_FLASH,
+            maxOutputTokens: tokens,
+            temperature,
+            thinkingLevel: opts.geminiThinkingLevel ?? 'MINIMAL',
+          }),
+          GEMINI_TIMEOUT_MS,
+          VLM_MODELS.GEMINI_FLASH
+        )
+        emitMetric({
           model: VLM_MODELS.GEMINI_FLASH,
-          maxOutputTokens: maxTokens,
-          temperature,
-          thinkingLevel: opts.geminiThinkingLevel ?? 'MINIMAL',
-        }),
-        GEMINI_TIMEOUT_MS,
-        VLM_MODELS.GEMINI_FLASH
-      )
-      emitMetric({
-        model: VLM_MODELS.GEMINI_FLASH,
-        fallbackDepth: 1,
-        latencyMs: Date.now() - startedAt,
-        metricLabel: opts.metricLabel,
-      })
-      return { data, model: VLM_MODELS.GEMINI_FLASH, fallbackDepth: 1 }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      errors.push(`gemini:${msg}`)
-      console.error('[vlm-router] gemini failed:', msg.slice(0, 300))
+          fallbackDepth: 1,
+          latencyMs: Date.now() - startedAt,
+          metricLabel: opts.metricLabel,
+        })
+        return { data, model: VLM_MODELS.GEMINI_FLASH, fallbackDepth: 1 }
+      } catch (err) {
+        geminiErr = err instanceof Error ? err.message : String(err)
+        const truncated = /vlm_invalid_json/i.test(geminiErr) && !/"landmarks"\s*:/.test(geminiErr)
+        if (!truncated || i === geminiAttempts.length - 1) break
+        console.warn('[vlm-router] gemini truncated json — retry higher tokens', { tokens })
+      }
     }
+    errors.push(`gemini:${geminiErr}`)
+    console.error('[vlm-router] gemini failed:', geminiErr.slice(0, 300))
   } else {
     errors.push('gemini:skipped_no_key')
   }
 
-  // Tier 3 — Llama 3.2 vision
+  // Tier 3 — Llama 3.2 vision (requires one-time Meta license agree on CF)
   try {
+    await ensureLlamaVisionLicense(env.AI)
     const raw = await callCfVisionJson(
       env.AI,
       VLM_MODELS.LLAMA_VISION,
@@ -236,7 +262,7 @@ export async function callVisionStructuredWithFallback<T extends object>(
         timeoutMs: LLAMA_TIMEOUT_MS,
       }
     )
-    const data = parseJsonObject<T>(raw)
+    const data = parseModelJsonObject<T>(raw)
     emitMetric({
       model: VLM_MODELS.LLAMA_VISION,
       fallbackDepth: 2,

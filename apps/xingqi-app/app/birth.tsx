@@ -19,17 +19,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BirthForm } from '@/components/BirthForm'
 import { searchCity as searchCityApi } from '@/lib/geocode'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
+import { setHomeCaptureHandoff } from '@/lib/home-capture-handoff'
 import { type Locale, resolveLocale } from '@/lib/i18n'
 import { pickUi } from '@/lib/locale-zh'
 import type { OnboardingDraft } from '@/lib/onboardingDraft'
 import {
-  draftHasThreePhotos,
   draftReadyForPaywall,
   getReadingDraft,
   hydrateReadingDraft,
   patchReadingDraft,
 } from '@/lib/reading-draft'
-import { getReadingJobState, showReadingStartedHandoff, startReadingJob } from '@/lib/reading-job'
+import { getReadingJobState, startReadingJob } from '@/lib/reading-job'
 import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
 
 function localeToLang(loc: Locale): string {
@@ -105,19 +105,19 @@ export default function BirthScreen() {
         await alertIfPhotosUnchanged({
           draft,
           locale,
-          onUpdatePhotos: () => router.replace('/capture' as never),
+          onUpdatePhotos: () => {
+            setHomeCaptureHandoff()
+            router.replace('/(app)' as never)
+          },
         })
       ) {
         return
       }
       startReadingJob({
         locale,
-        outputKind: 'period_brief',
+        outputKind: getReadingDraft().outputKind ?? 'oneshot',
         isPro: true,
         draft,
-        onQueued: () => {
-          void showReadingStartedHandoff({ locale })
-        },
       })
       router.replace('/(app)' as never)
     })()
@@ -164,12 +164,9 @@ export default function BirthScreen() {
       } catch {
         // local draft enough for paywall / reading
       }
-      if (!draftHasThreePhotos(getReadingDraft())) {
-        router.replace('/capture' as never)
-        return
-      }
       if (!draftReadyForPaywall(getReadingDraft())) {
-        setError(s('资料不完整', '資料不完整', 'Incomplete draft', '入力内容が不完全です'))
+        setHomeCaptureHandoff()
+        router.replace('/(app)' as never)
         return
       }
       // Pro: skip unlock sheet — start reading and return home.
@@ -242,7 +239,7 @@ export default function BirthScreen() {
         <Button variant='primary' onPress={() => void onContinue()} disabled={busy}>
           {(() => {
             const draft = getReadingDraft()
-            if (!draftHasThreePhotos(draft)) {
+            if (!draftReadyForPaywall(draft)) {
               return s('继续录入照片', '繼續錄入照片', 'Continue to photos', '写真の撮影へ')
             }
             if (isPro) {

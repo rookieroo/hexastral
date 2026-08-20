@@ -147,6 +147,12 @@
       // 用户持久化媒体（头像、手相照片、风水平面图等）
       "binding": "MEDIA_BUCKET",
       "bucket_name": "hexastral-media"
+    },
+    {
+      // Syel ephemeral face/palm JPEGs — extract then delete
+      // (app TTL ≤60m; R2 lifecycle expire-1d is CF day-granularity backstop)
+      "binding": "FACE_EPHEMERAL_BUCKET",
+      "bucket_name": "hexastral-face-ephemeral"
     }
   ],
   // Portfolio memory (Cloudflare AI Search) — open beta.

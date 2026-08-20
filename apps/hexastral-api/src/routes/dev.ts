@@ -38,8 +38,14 @@ devRoutes.post(
     const db = c.get('db')
     if (status === 'free') {
       await expireEntitlementNow(db, userId, 'universe_pro')
+      await expireEntitlementNow(db, userId, 'faceoracle_pro')
     } else {
       await grantEntitlement(db, userId, 'universe_pro', {
+        plan: 'monthly',
+        productId: 'dev_set_subscription',
+        expiresAt: null,
+      })
+      await grantEntitlement(db, userId, 'faceoracle_pro', {
         plan: 'monthly',
         productId: 'dev_set_subscription',
         expiresAt: null,

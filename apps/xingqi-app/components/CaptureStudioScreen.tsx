@@ -2,46 +2,44 @@ import { Button, useTheme } from '@zhop/core-ui'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import * as ImagePicker from 'expo-image-picker'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
+import { Camera, Image as ImageIcon } from 'lucide-react-native'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Linking, Pressable, Text, View } from 'react-native'
-import Animated, {
-  Easing,
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated'
+import { Alert, BackHandler, Linking, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { OffsetPhotoStack } from '@/components/OffsetPhotoStack'
+import { setHomeCaptureHandoff } from '@/lib/home-capture-handoff'
 import { resolveLocale } from '@/lib/i18n'
-import { captureStudioCopy, partLabels } from '@/lib/living-copy'
+import { captureStudioCopy, partLabels, periodCarryHint } from '@/lib/living-copy'
 import { pickUi } from '@/lib/locale-zh'
-import { consumeCaptureMagicHandoff } from '@/lib/capture-magic-handoff'
 import { persistPeriodPhoto } from '@/lib/period-photos'
 import {
   type CapturePart,
+  draftAllowsPartial,
+  draftChangedParts,
+  draftHasAnyPhoto,
   draftHasBirthInfo,
   draftHasThreePhotos,
   draftReadyForPaywall,
   getReadingDraft,
   hydrateReadingDraft,
   patchReadingDraft,
+  syncPartialMetaFromChanged,
 } from '@/lib/reading-draft'
-import { showReadingStartedHandoff, startReadingJob } from '@/lib/reading-job'
+import { startReadingJob } from '@/lib/reading-job'
 import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
-import { POLAROID_FAN_W, POLAROID_STACK_H } from '@/lib/stack-layout'
-
-const PARTS: CapturePart[] = ['palm_l', 'palm_r', 'face']
-const MAGIC_HOLD_MS = 90
+import { POLAROID_FAN_W, POLAROID_FACE_FOCUS_MS, POLAROID_STACK_H } from '@/lib/stack-layout'
 
 function parsePart(raw: unknown): CapturePart | undefined {
   if (raw === 'palm_l' || raw === 'palm_r' || raw === 'face') return raw
   return undefined
 }
 
+const PARTS: CapturePart[] = ['palm_l', 'palm_r', 'face']
+const CAPTURE_ORDER: CapturePart[] = ['face', 'palm_l', 'palm_r']
+
 function firstEmpty(uris: Partial<Record<CapturePart, string>>): CapturePart {
-  return PARTS.find((p) => !uris[p]) ?? 'face'
+  return CAPTURE_ORDER.find((p) => !uris[p]) ?? 'face'
 }
 
 function urisFromDraft(): Partial<Record<CapturePart, string>> {
@@ -117,43 +115,93 @@ function patchPart(part: CapturePart, uri: string): void {
   patchReadingDraft({ faceUri: uri, faceFeatureId: undefined })
 }
 
-export function CaptureStudioScreen() {
-  const { colors, spacing } = useTheme()
+export type CaptureStudioScreenProps = {
+  /** Render inside home (empty stack) instead of a dedicated route. */
+  embedded?: boolean
+  /** Bottom dock only — photos live in the home wheel draft row. */
+  dockOnly?: boolean
+  /** Parent is fading this layer out — drop dock/stack so timeline isn't double-drawn. */
+  exiting?: boolean
+  mode?: 'slot' | 'full'
+  part?: CapturePart
+  /** Controlled selection (period dock on home wheel). */
+  activePart?: CapturePart
+  onActivePartChange?: (part: CapturePart | undefined) => void
+  onPhotosChanged?: () => void
+  /** Slot mode: after save / Done. Embedded full: Close — may wipe period draft photos. */
+  onExit?: () => void
+  /** After job starts — dismiss capture without wiping photos needed for extract. */
+  onHandoff?: () => void
+  /** Bump when parent regains focus (e.g. after DEV Pro toggle in Settings). */
+  entitlementRevision?: number
+}
+
+export function CaptureStudioScreen({
+  embedded = false,
+  dockOnly = false,
+  exiting = false,
+  mode: modeProp,
+  part: partProp,
+  activePart: activePartProp,
+  onActivePartChange,
+  onPhotosChanged,
+  onExit,
+  onHandoff,
+  entitlementRevision = 0,
+}: CaptureStudioScreenProps = {}) {
+  const { colors, spacing, isDark } = useTheme()
   const insets = useSafeAreaInsets()
   const locale = resolveLocale()
   const s = (hans: string, hant: string, en: string, ja?: string) =>
     pickUi(locale, hans, hant, en, ja)
   const copy = captureStudioCopy(locale)
   const labels = partLabels(locale)
-  const handoff = useMemo(() => consumeCaptureMagicHandoff(), [])
-  const params = useLocalSearchParams<{
-    mode?: string
-    part?: string
-    spread?: string
-    ritual?: string
-    magic?: string
-  }>()
-  const slotMode = params.mode === 'slot'
-  const magicMode = params.magic === '1' && !slotMode
+  const params = useLocalSearchParams<{ mode?: string; part?: string }>()
+  const slotMode = modeProp === 'slot' || (modeProp == null && params.mode === 'slot')
+  const initialPart = partProp ?? parsePart(params.part)
   const entitlements = useEntitlements()
-  const isPro =
-    hasEntitlement(entitlements, 'faceoracle_pro') || hasEntitlement(entitlements, 'universe_pro')
+  const [entitlementTick, setEntitlementTick] = useState(0)
+  const isPro = useMemo(() => {
+    void entitlementTick
+    void entitlementRevision
+    return (
+      hasEntitlement(entitlements, 'faceoracle_pro') ||
+      hasEntitlement(entitlements, 'universe_pro')
+    )
+  }, [entitlements, entitlementTick, entitlementRevision])
 
-  const [activePart, setActivePart] = useState<CapturePart>(parsePart(params.part) ?? 'palm_l')
+  useFocusEffect(
+    useCallback(() => {
+      setEntitlementTick((n) => n + 1)
+    }, [])
+  )
+
+  const [activePartLocal, setActivePartLocal] = useState<CapturePart | undefined>(() => {
+    // Embedded / dock: settle first, then auto-focus Face with lift animation.
+    if ((embedded || dockOnly) && !initialPart && activePartProp === undefined) return undefined
+    return initialPart ?? 'face'
+  })
+  const activePart = activePartProp !== undefined ? activePartProp : activePartLocal
+  const setActivePart = useCallback(
+    (part: CapturePart | undefined) => {
+      if (onActivePartChange) onActivePartChange(part)
+      else setActivePartLocal(part)
+    },
+    [onActivePartChange]
+  )
+  const autoFocusedRef = useRef(false)
+  const settlingExitRef = useRef(false)
   const [uris, setUris] = useState<Partial<Record<CapturePart, string>>>({})
   const [bust, setBust] = useState(0)
   const [busy, setBusy] = useState(false)
-  const [targetLocalTop, setTargetLocalTop] = useState<number | null>(null)
-  const [magicTravelY, setMagicTravelY] = useState<number | null>(null)
-  const [magicDone, setMagicDone] = useState(!magicMode)
-  const magicProgress = useSharedValue(magicMode ? 0 : 1)
-  const magicTravelSv = useSharedValue(0)
-  const magicTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const stackAnchorRef = useRef<View>(null)
-  const rootRef = useRef<View>(null)
-  const [overlayTop, setOverlayTop] = useState<number | null>(null)
-  const showTargetStack = !magicMode || magicDone
-  const showChrome = !magicMode || magicDone
+  const [changedParts, setChangedParts] = useState<CapturePart[]>([])
+
+  const refreshChanged = useCallback(() => {
+    void draftChangedParts(getReadingDraft()).then((parts) => {
+      setChangedParts(parts)
+      syncPartialMetaFromChanged(parts)
+    })
+  }, [])
 
   const displayUris = useMemo(() => {
     const next: Partial<Record<CapturePart, string>> = {}
@@ -164,87 +212,87 @@ export function CaptureStudioScreen() {
     return next
   }, [uris, bust])
 
+  const hydrate = useCallback(() => {
+    const apply = () => {
+      const next = urisFromDraft()
+      setUris(next)
+      setBust(Date.now())
+      refreshChanged()
+      // Keep unset so delayed Face focus can animate lift (see effect below).
+      if ((embedded || dockOnly) && !initialPart && activePartProp === undefined) {
+        return
+      }
+      setActivePart(initialPart ?? firstEmpty(next))
+    }
+    if ((embedded || dockOnly) && draftHasAnyPhoto(getReadingDraft())) {
+      apply()
+      return
+    }
+    void hydrateReadingDraft().then(apply)
+  }, [activePartProp, dockOnly, embedded, initialPart, refreshChanged, setActivePart])
+
+  useEffect(() => {
+    if (dockOnly || !embedded || initialPart) return
+    if (autoFocusedRef.current || settlingExitRef.current) return
+    if (activePart) {
+      autoFocusedRef.current = true
+      return
+    }
+    const t = setTimeout(() => {
+      if (settlingExitRef.current) return
+      setActivePart(firstEmpty(urisFromDraft()))
+      autoFocusedRef.current = true
+    }, POLAROID_FACE_FOCUS_MS)
+    return () => clearTimeout(t)
+  }, [activePart, dockOnly, embedded, initialPart, setActivePart])
+
   useFocusEffect(
     useCallback(() => {
-      void hydrateReadingDraft().then(() => {
-        const next = urisFromDraft()
-        setUris(next)
-        setBust(Date.now())
-        const fromParam = parsePart(params.part)
-        setActivePart(fromParam ?? firstEmpty(next))
-      })
-    }, [params.part])
+      if (embedded || dockOnly) return
+      hydrate()
+    }, [dockOnly, embedded, hydrate])
   )
 
-  const poseSpread = (() => {
-    const raw = params.spread
-    if (handoff) return handoff.spread
-    if (!raw) return 1
-    const n = Number(raw)
-    return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 1
-  })()
+  useEffect(() => {
+    if (!embedded && !dockOnly) return
+    hydrate()
+  }, [dockOnly, embedded, hydrate])
 
-  const poseRitual = (() => {
-    const raw = params.ritual
-    if (handoff) return handoff.ritual
-    if (!raw) return magicMode ? 1 : 0
-    const n = Number(raw)
-    return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : magicMode ? 1 : 0
-  })()
+  /** Leave immediately — deselect settle fights the timeline underlay fade. */
+  const settleThenExit = useCallback(() => {
+    if (!onExit) return
+    settlingExitRef.current = true
+    if (activePart) setActivePart(undefined)
+    onExit()
+  }, [activePart, onExit, setActivePart])
 
   useEffect(() => {
-    if (!magicMode || magicDone || overlayTop != null) return
-    rootRef.current?.measureInWindow((_x, rootY, _w, rootH) => {
-      const startY = handoff?.startCenterY ?? rootY + rootH / 2
-      setOverlayTop(startY - POLAROID_STACK_H / 2 - rootY)
+    if ((!embedded && !dockOnly) || !onExit) return
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      settleThenExit()
+      return true
     })
-  }, [handoff?.startCenterY, magicDone, magicMode, overlayTop])
-
-  useEffect(() => {
-    if (!magicMode || magicDone || overlayTop == null || targetLocalTop == null) return
-    if (magicTravelY != null) return
-    const travel = targetLocalTop - overlayTop
-    setMagicTravelY(travel)
-    magicTravelSv.value = travel
-  }, [magicDone, magicMode, magicTravelSv, magicTravelY, overlayTop, targetLocalTop])
-
-  useEffect(() => {
-    if (!magicMode || magicDone || magicTravelY == null) return
-    magicProgress.value = 0
-    magicTimerRef.current = setTimeout(() => {
-      magicProgress.value = withTiming(
-        1,
-        { duration: 520, easing: Easing.out(Easing.cubic) },
-        (finished) => {
-          if (finished) {
-            runOnJS(setMagicDone)(true)
-          }
-        }
-      )
-    }, MAGIC_HOLD_MS)
-    return () => {
-      if (magicTimerRef.current) {
-        clearTimeout(magicTimerRef.current)
-        magicTimerRef.current = null
-      }
-    }
-  }, [magicDone, magicMode, magicProgress, magicTravelY])
-
-  const magicOverlayStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: magicTravelSv.value * magicProgress.value }],
-  }))
+    return () => sub.remove()
+  }, [dockOnly, embedded, onExit, settleThenExit])
 
   const continueFunnel = useCallback(async () => {
-    if (!draftHasThreePhotos(getReadingDraft())) return
-    const draft = getReadingDraft()
+    let draft = getReadingDraft()
+    if (draftAllowsPartial(draft)) {
+      const changed = await draftChangedParts(draft)
+      syncPartialMetaFromChanged(changed)
+      draft = getReadingDraft()
+    }
     if (!draftReadyForPaywall(draft)) {
-      router.push('/birth')
+      if (!draftHasBirthInfo(draft)) {
+        if (embedded) setHomeCaptureHandoff()
+        router.push('/birth')
+      }
       return
     }
     if (isPro) {
       if (
         await alertIfPhotosUnchanged({
-          draft,
+          draft: getReadingDraft(),
           locale,
           onUpdatePhotos: () => undefined,
         })
@@ -253,15 +301,14 @@ export function CaptureStudioScreen() {
       }
       const started = startReadingJob({
         locale,
-        outputKind: 'period_brief',
+        outputKind: getReadingDraft().outputKind ?? 'oneshot',
         isPro: true,
-        draft,
-        onQueued: () => {
-          void showReadingStartedHandoff({ locale })
-        },
+        draft: getReadingDraft(),
       })
       if (started) {
-        router.replace('/(app)' as never)
+        // Keep period JPEGs on disk for extract — Close path wipes; handoff must not.
+        ;(onHandoff ?? onExit)?.()
+        if (!embedded) router.replace('/(app)' as never)
         return
       }
       Alert.alert(
@@ -275,25 +322,39 @@ export function CaptureStudioScreen() {
       )
       return
     }
+    // Free: leave capture with photos intact so timeline draft shows the unfinished set.
+    ;(onHandoff ?? onExit)?.()
     router.push('/(commerce)/paywall' as never)
-  }, [isPro, locale, s])
+  }, [embedded, isPro, locale, onExit, onHandoff, s])
 
   const applyUri = useCallback(
     async (sourceUri: string) => {
+      const part = activePart ?? firstEmpty(urisFromDraft())
+      if (!activePart) setActivePart(part)
       setBusy(true)
       try {
-        const durable = await persistPeriodPhoto(activePart, sourceUri)
+        const durable = await persistPeriodPhoto(part, sourceUri)
         const clean = durable.split('?')[0] ?? durable
-        patchPart(activePart, clean)
-        setUris((prev) => ({ ...prev, [activePart]: clean }))
+        patchPart(part, clean)
+        setUris((prev) => ({ ...prev, [part]: clean }))
         setBust(Date.now())
+        const changed = await draftChangedParts(getReadingDraft())
+        setChangedParts(changed)
+        syncPartialMetaFromChanged(changed)
+        onPhotosChanged?.()
         if (slotMode) return
-        const after = { ...urisFromDraft(), [activePart]: clean }
-        if (draftHasThreePhotos(getReadingDraft())) {
+        const after = { ...urisFromDraft(), [part]: clean }
+        // Auto-start only for first seal (all three fresh).
+        if (!draftAllowsPartial(getReadingDraft()) && draftHasThreePhotos(getReadingDraft())) {
           await continueFunnel()
           return
         }
-        setActivePart(firstEmpty(after))
+        const nextEmpty = firstEmpty(after)
+        if (after[nextEmpty]) {
+          // All slots filled on a period refresh — stay on last part; CTA enabled.
+          return
+        }
+        setActivePart(nextEmpty)
       } catch (err) {
         const code = err instanceof Error ? err.message : ''
         Alert.alert(
@@ -316,21 +377,24 @@ export function CaptureStudioScreen() {
         setBusy(false)
       }
     },
-    [activePart, continueFunnel, locale, slotMode, s]
+    [activePart, continueFunnel, locale, onPhotosChanged, setActivePart, slotMode, s]
   )
 
+  const needsSlotPick = dockOnly && !slotMode && !activePart
+
   const confirmReplace = (onConfirm: () => void) => {
-    if (!uris[activePart]) {
+    const part = activePart ?? 'face'
+    if (!uris[part]) {
       onConfirm()
       return
     }
     Alert.alert(
       s('替换照片', '替換照片', 'Replace photo', '写真を差し替え'),
       s(
-        '替换后本机旧图将删除。原图不会上传到服务器。',
-        '替換後本機舊圖將刪除。原圖不會上傳到伺服器。',
-        'The previous on-device photo will be deleted. Source images are never kept on our servers.',
-        '端末の前の写真は削除されます。原画像はサーバーに保存されません。'
+        '替换后本机旧图将删除。解读时会短暂上传新图用于提取，处理后删除。',
+        '替換後本機舊圖將刪除。解讀時會短暫上傳新圖用於提取，處理後刪除。',
+        'The previous on-device photo will be deleted. New photos are briefly uploaded for extract, then deleted.',
+        '端末の前の写真は削除されます。新しい写真は抽出のため短時間アップロードし、処理後に削除します。'
       ),
       [
         { text: s('取消', '取消', 'Cancel', 'キャンセル'), style: 'cancel' },
@@ -345,6 +409,7 @@ export function CaptureStudioScreen() {
 
   const shoot = async () => {
     if (busy) return
+    if (needsSlotPick) return
     const perm = await ensureCameraPermission(locale)
     if (perm !== 'ok') return
     confirmReplace(() => {
@@ -362,6 +427,7 @@ export function CaptureStudioScreen() {
 
   const pickFromLibrary = async () => {
     if (busy) return
+    if (needsSlotPick) return
     const perm = await ensureLibraryPermission(locale)
     if (perm !== 'ok') return
     confirmReplace(() => {
@@ -380,191 +446,203 @@ export function CaptureStudioScreen() {
     })
   }
 
+  const hasActive = activePart ? Boolean(uris[activePart]) : false
+  const allReady = PARTS.every((p) => uris[p])
+  const draftNow = getReadingDraft()
+  const periodMode = draftAllowsPartial(draftNow)
+  // Period: ≥1 new photo + feature coverage for empty slots. First seal: all three files.
+  const submitReady = periodMode
+    ? draftHasAnyPhoto(draftNow) &&
+      Boolean(
+        (draftNow.palmLeftUri || draftNow.palmLeftFeatureId) &&
+          (draftNow.palmRightUri || draftNow.palmRightFeatureId) &&
+          (draftNow.faceUri || draftNow.faceFeatureId)
+      )
+    : allReady
+
   const onPrimary = () => {
+    const part = activePart ?? firstEmpty(urisFromDraft())
     if (slotMode) {
-      if (uris[activePart]) router.back()
+      if (part && uris[part]) {
+        if (onExit) onExit()
+        else router.back()
+      }
       return
     }
-    if (draftHasThreePhotos(getReadingDraft())) {
+    if (submitReady) {
       void continueFunnel()
+      return
+    }
+    // First seal: jump to next empty slot (label is "下一张").
+    if (!periodMode) {
+      const next = firstEmpty(urisFromDraft())
+      setActivePart(next)
     }
   }
 
-  const partTitle =
-    activePart === 'palm_l' ? labels.palmL : activePart === 'palm_r' ? labels.palmR : labels.face
-  const hasActive = Boolean(uris[activePart])
-  const allReady = PARTS.every((p) => uris[p])
+  const partTitle = activePart
+    ? activePart === 'palm_l'
+      ? labels.palmL
+      : activePart === 'palm_r'
+        ? labels.palmR
+        : labels.face
+    : labels.face
+  const primaryLabel = slotMode
+    ? copy.done
+    : submitReady
+      ? draftHasBirthInfo(draftNow)
+        ? isPro
+          ? copy.continueReading
+          : copy.continueUnlock
+        : copy.continueBirth
+      : periodMode
+        ? copy.continueReading
+        : copy.nextSlot
+  const carryHint = periodCarryHint(locale)
 
-  return (
+  const dock = (
     <View
-      ref={rootRef}
-      collapsable={false}
       style={{
-        flex: 1,
-        backgroundColor: colors.bg,
-        paddingTop: insets.top + spacing.md,
-        paddingBottom: insets.bottom + spacing.lg,
-        paddingHorizontal: spacing.xl,
-        gap: spacing.md,
+        ...(dockOnly
+          ? { paddingHorizontal: spacing.xl, paddingBottom: insets.bottom + spacing.lg, gap: spacing.sm }
+          : {
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              paddingHorizontal: spacing.xl,
+              paddingBottom: insets.bottom + spacing.lg,
+              gap: spacing.sm,
+              backgroundColor: colors.bg,
+            }),
       }}
     >
-      <View style={{ zIndex: 2, marginBottom: spacing.sm, display: showChrome ? 'flex' : 'none' }}>
-        <Text style={{ color: colors.secondary, fontSize: 13 }}>
-          {slotMode
-            ? s('本期槽位', '本期槽位', 'Period slot', '今回のスロット')
-            : s('三张入镜', '三張入鏡', 'Three photos', '三枚の写真')}
-        </Text>
-        <Text
-          style={{
-            color: colors.text,
-            fontSize: 22,
-            fontWeight: '600',
-            marginTop: spacing.xs,
-          }}
-        >
-          {partTitle}
-        </Text>
-        <Text
-          style={{
-            color: colors.secondary,
-            fontSize: 14,
-            lineHeight: 20,
-            marginTop: spacing.xs,
-          }}
-        >
-          {copy.quality}
-        </Text>
-      </View>
-
-      <View
-        ref={stackAnchorRef}
-        collapsable={false}
-        onLayout={() => {
-          if (targetLocalTop != null) return
-          rootRef.current?.measureInWindow((_x, rootY) => {
-            stackAnchorRef.current?.measureInWindow((_x, targetY) => {
-              setTargetLocalTop(targetY - rootY)
-            })
-          })
-        }}
-        style={{
-          marginTop: spacing.lg,
-          width: POLAROID_FAN_W,
-          height: POLAROID_STACK_H,
-          alignSelf: 'center',
-          zIndex: 1,
-        }}
-        pointerEvents={showTargetStack ? 'auto' : 'none'}
-      >
-        {showTargetStack ? (
-          <OffsetPhotoStack
-            uris={displayUris}
-            labels={labels}
-            activePart={activePart}
-            onPressPart={(part) => setActivePart(part)}
-            spread={poseSpread}
-            ritual={poseRitual}
-            compact
-            interactive
-            instantPose={handoff != null}
-          />
-        ) : null}
-      </View>
-
-      <Text
-        style={{
-          color: colors.dim,
-          fontSize: 12,
-          lineHeight: 18,
-          textAlign: 'center',
-          display: showChrome ? 'flex' : 'none',
-        }}
-      >
-        {hasActive ? copy.privacy : copy.empty}
+      <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600', textAlign: 'center' }}>
+        {partTitle}
       </Text>
-
-      <View
-        style={{
-          flexDirection: 'row',
-          gap: spacing.sm,
-          display: showChrome ? 'flex' : 'none',
-        }}
-      >
+      {!slotMode ? (
+        <Text
+          style={{
+            color: colors.dim,
+            fontSize: 12,
+            lineHeight: 18,
+            textAlign: 'center',
+            marginBottom: spacing.xs,
+          }}
+        >
+          {needsSlotPick
+            ? copy.selectSlot
+            : periodMode
+              ? carryHint
+              : hasActive
+                ? copy.privacy
+                : copy.empty}
+        </Text>
+      ) : null}
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
         <Pressable
           onPress={() => void shoot()}
-          disabled={busy}
+          disabled={busy || needsSlotPick}
           style={{
             flex: 1,
             borderWidth: 0.5,
-            borderColor: colors.separator,
+            borderColor: isDark ? colors.accent : colors.separator,
+            backgroundColor: colors.cardElevated,
             padding: 14,
             alignItems: 'center',
-            opacity: busy ? 0.5 : 1,
+            justifyContent: 'center',
+            flexDirection: 'row',
+            gap: 8,
+            opacity: busy || needsSlotPick ? 0.5 : 1,
           }}
         >
+          <Camera size={18} color={colors.text} strokeWidth={1.6} />
           <Text style={{ color: colors.text }}>{hasActive ? copy.retake : copy.camera}</Text>
         </Pressable>
         <Pressable
           onPress={() => void pickFromLibrary()}
-          disabled={busy}
+          disabled={busy || needsSlotPick}
           style={{
             flex: 1,
             borderWidth: 0.5,
-            borderColor: colors.separator,
+            borderColor: isDark ? colors.accent : colors.separator,
+            backgroundColor: colors.cardElevated,
             padding: 14,
             alignItems: 'center',
-            opacity: busy ? 0.5 : 1,
+            justifyContent: 'center',
+            flexDirection: 'row',
+            gap: 8,
+            opacity: busy || needsSlotPick ? 0.5 : 1,
           }}
         >
+          <ImageIcon size={18} color={colors.text} strokeWidth={1.6} />
           <Text style={{ color: colors.text }}>
             {hasActive ? copy.replaceLibrary : copy.library}
           </Text>
         </Pressable>
       </View>
-
-      <View style={{ display: showChrome ? 'flex' : 'none' }}>
-        <Button
-          variant='primary'
-          onPress={onPrimary}
-          disabled={busy || (slotMode ? !hasActive : !allReady)}
+      <Button
+        variant='primary'
+        onPress={onPrimary}
+        disabled={busy || (slotMode ? !hasActive : periodMode ? !submitReady : false)}
+      >
+        {primaryLabel}
+      </Button>
+      {(embedded || dockOnly) && onExit ? (
+        <Pressable
+          onPress={settleThenExit}
+          disabled={busy}
+          accessibilityRole='button'
+          accessibilityLabel={copy.close}
+          style={{ alignItems: 'center', paddingVertical: spacing.sm }}
         >
-          {slotMode
-            ? copy.done
-            : allReady
-              ? draftHasBirthInfo(getReadingDraft())
-                ? copy.continueUnlock
-                : copy.continueBirth
-              : copy.nextSlot}
-        </Button>
+          <Text style={{ color: colors.secondary, fontSize: 15 }}>{copy.close}</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  )
+
+  if (dockOnly) {
+    return dock
+  }
+
+  // Solid veil only — avoids empty polaroids + dock fighting the timeline during fade.
+  if (exiting) {
+    return <View style={{ flex: 1, backgroundColor: colors.bg }} />
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <View
+        pointerEvents='box-none'
+        style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingHorizontal: spacing.xl,
+        }}
+      >
+        <View style={{ width: POLAROID_FAN_W, height: POLAROID_STACK_H }}>
+          <OffsetPhotoStack
+            uris={displayUris}
+            labels={labels}
+            activePart={activePart}
+            onPressPart={(part) => setActivePart(part)}
+            spread={1}
+            ritual={1}
+            compact
+            interactive
+            instantPose
+            photoCache='none'
+          />
+        </View>
       </View>
 
-      {magicMode && !magicDone && overlayTop != null ? (
-        <Animated.View
-          pointerEvents='none'
-          style={[
-            {
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              top: overlayTop,
-              alignItems: 'center',
-              zIndex: 3,
-            },
-            magicOverlayStyle,
-          ]}
-        >
-          <View style={{ width: POLAROID_FAN_W, height: POLAROID_STACK_H }}>
-            <OffsetPhotoStack
-              uris={displayUris}
-              labels={labels}
-              spread={poseSpread}
-              ritual={poseRitual}
-              compact
-              instantPose
-            />
-          </View>
-        </Animated.View>
-      ) : null}
+      {dock}
     </View>
   )
 }

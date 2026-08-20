@@ -1,5 +1,11 @@
 import { runPreview } from '@zhop/portfolio-client'
-import { getPortfolioUserId, resolvePortfolioApiUrl, signRequest } from '@zhop/satellite-runtime'
+import {
+  getDeviceSecret,
+  getPortfolioUserId,
+  repairPortfolioCredentialMismatch,
+  resolvePortfolioApiUrl,
+  signRequest,
+} from '@zhop/satellite-runtime'
 import * as FileSystem from 'expo-file-system/legacy'
 
 import { getCachedBiometricConsent, setCachedBiometricConsent } from './biometric-consent-cache'
@@ -12,11 +18,13 @@ const EXTRACT_FETCH_TIMEOUT_MS = 100_000
 
 /**
  * Always emit JPEG base64 ≤1280w. Raw HEIC labeled as image/jpeg hangs Gemini.
+ * Period sandbox files are already JPEG; if manipulator fails, read bytes directly.
  */
 async function readBase64(uri: string): Promise<string> {
+  const clean = uri.split('?')[0] ?? uri
   try {
     const ImageManipulator = await import('expo-image-manipulator')
-    const resized = await ImageManipulator.manipulateAsync(uri, [{ resize: { width: 1280 } }], {
+    const resized = await ImageManipulator.manipulateAsync(clean, [{ resize: { width: 1280 } }], {
       compress: 0.7,
       format: ImageManipulator.SaveFormat.JPEG,
       base64: true,
@@ -25,8 +33,28 @@ async function readBase64(uri: string): Promise<string> {
     return FileSystem.readAsStringAsync(resized.uri, { encoding: 'base64' })
   } catch (err) {
     console.warn('[xingqi.extract] jpeg_resize_failed', err)
+    try {
+      const raw = await FileSystem.readAsStringAsync(clean, { encoding: 'base64' })
+      if (raw.length > 0) return raw
+    } catch (readErr) {
+      console.warn('[xingqi.extract] jpeg_read_failed', readErr)
+    }
     throw new Error('extract_image_encode_failed')
   }
+}
+
+async function prepareSignedSession(): Promise<string> {
+  await repairPortfolioCredentialMismatch()
+  const userId = await getPortfolioUserId()
+  const secret = await getDeviceSecret()
+  if (!userId || !secret) throw new Error('signin_required')
+  return userId
+}
+
+function mapSignedHttpError(status: number): Error {
+  if (status === 401 || status === 403) return new Error('session_expired')
+  if (status >= 500) return new Error('server_error')
+  return new Error(`http_${status}`)
 }
 
 async function signedJson(
@@ -35,8 +63,7 @@ async function signedJson(
   body?: unknown,
   opts?: { timeoutMs?: number }
 ): Promise<Response> {
-  const userId = await getPortfolioUserId()
-  if (!userId) throw new Error('signin_required')
+  const userId = await prepareSignedSession()
   const requestBody = body !== undefined ? JSON.stringify(body) : ''
   const signed = await signRequest({ body: requestBody, userId, method, path })
   if (!signed) throw new Error('signin_required')
@@ -94,20 +121,16 @@ export function isTransientNetworkError(msg: string): boolean {
 
 /** True if server (or local cache) says biometric disclosure was accepted. */
 export async function fetchBiometricConsent(): Promise<boolean> {
-  const userId = await getPortfolioUserId()
-  if (!userId) return false
+  let userId: string
+  try {
+    userId = await prepareSignedSession()
+  } catch {
+    return false
+  }
   const cached = await getCachedBiometricConsent()
   const path = `/api/user/${encodeURIComponent(userId)}/biometric-consent`
   try {
-    const signed = await signRequest({ body: '', userId, method: 'GET', path })
-    if (!signed) return cached
-    const res = await fetch(`${resolvePortfolioApiUrl()}${path}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${userId}`,
-        ...signed,
-      },
-    })
+    const res = await signedJson('GET', path)
     if (!res.ok) return cached
     const json = (await res.json()) as { data?: { consented?: boolean } }
     const consented = Boolean(json.data?.consented)
@@ -119,25 +142,15 @@ export async function fetchBiometricConsent(): Promise<boolean> {
 }
 
 export async function recordBiometricConsent(): Promise<void> {
-  const userId = await getPortfolioUserId()
-  if (!userId) throw new Error('signin_required')
+  const userId = await prepareSignedSession()
   const path = `/api/user/${encodeURIComponent(userId)}/biometric-consent`
-  const signed = await signRequest({ body: '', userId, method: 'POST', path })
-  if (!signed) throw new Error('signin_required')
-  const res = await fetch(`${resolvePortfolioApiUrl()}${path}`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${userId}`,
-      ...signed,
-    },
-  })
-  if (!res.ok) throw new Error(`consent_failed:${res.status}`)
+  const res = await signedJson('POST', path)
+  if (!res.ok) throw mapSignedHttpError(res.status)
   await setCachedBiometricConsent(true)
 }
 
 export async function revokeBiometricConsent(): Promise<void> {
-  const userId = await getPortfolioUserId()
-  if (!userId) throw new Error('signin_required')
+  const userId = await prepareSignedSession()
   const path = `/api/user/${encodeURIComponent(userId)}/biometric-consent`
   const signed = await signRequest({ body: '', userId, method: 'DELETE', path })
   if (!signed) throw new Error('signin_required')
@@ -148,7 +161,7 @@ export async function revokeBiometricConsent(): Promise<void> {
       ...signed,
     },
   })
-  if (!res.ok) throw new Error(`consent_revoke_failed:${res.status}`)
+  if (!res.ok) throw mapSignedHttpError(res.status)
   await setCachedBiometricConsent(false)
 }
 
@@ -167,7 +180,7 @@ export async function extractFeature(
       userId,
       imageBase64,
       mimeType: 'image/jpeg',
-      privacyConsentVersion: 'v1',
+      privacyConsentVersion: 'v2',
       type,
     },
     { timeoutMs: EXTRACT_FETCH_TIMEOUT_MS }
@@ -253,7 +266,7 @@ function unwrapApiData<T>(json: unknown): T {
   return json as T
 }
 
-export type FaceoracleJobStage = 'queued' | 'interpreting' | 'done' | 'failed'
+export type FaceoracleJobStage = 'extracting' | 'queued' | 'interpreting' | 'done' | 'failed'
 
 export type FaceoracleJobPoll = {
   jobId: string
@@ -264,28 +277,99 @@ export type FaceoracleJobPoll = {
   resultPayload: string | null
 }
 
+export type EphemeralPhotoKeys = {
+  palm_l?: string
+  palm_r?: string
+  face?: string
+  batchId?: string
+}
+
+/**
+ * Upload period JPEGs to short-lived R2. Returns keys for job enqueue.
+ */
+export async function uploadEphemeralPhotos(
+  parts: Array<{ part: CapturePart; uri: string }>,
+  opts?: { onProgress?: (progress: number) => void; batchId?: string }
+): Promise<EphemeralPhotoKeys> {
+  if (parts.length === 0) return {}
+  const photos: Array<{ part: CapturePart; imageBase64: string; mimeType: 'image/jpeg' }> = []
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i]
+    if (!p) continue
+    opts?.onProgress?.(5 + Math.round(((i + 0.5) / parts.length) * 25))
+    const imageBase64 = await readBase64(p.uri)
+    photos.push({ part: p.part, imageBase64, mimeType: 'image/jpeg' })
+  }
+  opts?.onProgress?.(32)
+  const res = await signedJson(
+    'POST',
+    '/api/physiognomy/ephemeral-photos',
+    { batchId: opts?.batchId, photos },
+    { timeoutMs: EXTRACT_FETCH_TIMEOUT_MS }
+  )
+  if (res.status === 403) {
+    const j = (await res.json().catch(() => ({}))) as { error?: string }
+    if (j.error === 'biometric_consent_required') throw new Error('biometric_consent_required')
+    throw new Error(`upload_forbidden:${res.status}`)
+  }
+  if (!res.ok) {
+    throw new Error(`ephemeral_upload_failed:${res.status}`)
+  }
+  const json = (await res.json()) as {
+    batchId?: string
+    keys?: Partial<Record<CapturePart, string>>
+  }
+  return {
+    batchId: json.batchId,
+    palm_l: json.keys?.palm_l,
+    palm_r: json.keys?.palm_r,
+    face: json.keys?.face,
+  }
+}
+
 function buildJobBody(
   draft: ReadingDraft,
   locale: string,
   notifyOnComplete: boolean,
-  regen = false
+  regen = false,
+  ephemeralKeys?: EphemeralPhotoKeys | null
 ) {
-  if (!draft.faceFeatureId || !draft.palmLeftFeatureId || !draft.palmRightFeatureId) {
-    throw new Error('features_incomplete')
-  }
   if (!draft.solarDate || draft.timeIndex == null || !draft.gender) {
     throw new Error('birth_incomplete')
   }
+  const keys = ephemeralKeys
+    ? {
+        palm_l: ephemeralKeys.palm_l,
+        palm_r: ephemeralKeys.palm_r,
+        face: ephemeralKeys.face,
+        batchId: ephemeralKeys.batchId,
+      }
+    : undefined
+  const hasKeys = Boolean(keys?.palm_l || keys?.palm_r || keys?.face)
+  const faceFeatureId = draft.faceFeatureId
+  const palmLeftFeatureId = draft.palmLeftFeatureId
+  const palmRightFeatureId = draft.palmRightFeatureId
+  if (!hasKeys && (!faceFeatureId || !palmLeftFeatureId || !palmRightFeatureId)) {
+    throw new Error('features_incomplete')
+  }
+  // Coverage: each modality needs featureId or ephemeral key.
+  const hasFace = Boolean(faceFeatureId || keys?.face)
+  const hasL = Boolean(palmLeftFeatureId || keys?.palm_l)
+  const hasR = Boolean(palmRightFeatureId || keys?.palm_r)
+  if (!hasFace || !hasL || !hasR) {
+    throw new Error('features_incomplete')
+  }
   return {
-    faceFeatureId: draft.faceFeatureId,
-    palmLeftFeatureId: draft.palmLeftFeatureId,
-    palmRightFeatureId: draft.palmRightFeatureId,
+    faceFeatureId: faceFeatureId || undefined,
+    palmLeftFeatureId: palmLeftFeatureId || undefined,
+    palmRightFeatureId: palmRightFeatureId || undefined,
+    ephemeralKeys: hasKeys ? keys : undefined,
     solarDate: draft.solarDate,
     timeIndex: draft.timeIndex,
     gender: draft.gender,
     city: draft.city,
     locale,
-    outputKind: draft.outputKind ?? 'period_brief',
+    outputKind: draft.outputKind ?? 'oneshot',
     horizonMonths: draft.horizonMonths ?? 3,
     updateKind: draft.updateKind ?? 'full',
     partialParts: draft.partialParts,
@@ -358,12 +442,13 @@ export async function enqueueFaceReadingJob(
   draft: ReadingDraft,
   locale: string,
   notifyOnComplete = true,
-  regen = false
+  regen = false,
+  ephemeralKeys?: EphemeralPhotoKeys | null
 ): Promise<{ jobId: string; stage: FaceoracleJobStage; progress: number }> {
   const res = await signedJson(
     'POST',
     '/api/physiognomy/jobs',
-    buildJobBody(draft, locale, notifyOnComplete, regen)
+    buildJobBody(draft, locale, notifyOnComplete, regen, ephemeralKeys)
   )
   if (res.status === 403) {
     const j = (await res.json().catch(() => ({}))) as { error?: string }
@@ -479,12 +564,15 @@ export async function pollFaceReadingJob(
 }
 
 export type FaceReadingProgress =
-  | { phase: 'extracting'; progress: number }
-  | { phase: 'queued' | 'interpreting' | 'done' | 'failed'; job: FaceoracleJobPoll }
+  | { phase: 'uploading'; progress: number }
+  | {
+      phase: 'extracting' | 'queued' | 'interpreting' | 'done' | 'failed'
+      job: FaceoracleJobPoll
+    }
 
 /**
- * Extract (sync) → enqueue → poll. Callers should treat `queued` as the
- * quit-safe handoff point (server owns the LLM stage).
+ * Upload ephemeral photos → enqueue → poll.
+ * Quit-safe as soon as job enqueue returns 202 (server owns extract + LLM).
  */
 export async function runFaceReading(
   draft: ReadingDraft,
@@ -503,38 +591,76 @@ export async function runFaceReading(
   const userId = await getPortfolioUserId()
   if (!userId) throw new Error('signin_required')
 
-  opts?.onProgress?.({ phase: 'extracting', progress: 5 })
-  const withFeatures = await ensureFeaturesExtracted(draft, {
-    onProgress: (progress) => opts?.onProgress?.({ phase: 'extracting', progress }),
-  })
-  opts?.onProgress?.({ phase: 'extracting', progress: 35 })
+  opts?.onProgress?.({ phase: 'uploading', progress: 5 })
+
+  const uploadParts: Array<{ part: CapturePart; uri: string }> = []
+  const partial = draft.partialParts
+  const needsUpload = (
+    part: CapturePart,
+    uri: string | undefined,
+    featureId: string | undefined
+  ): uri is string => {
+    if (!uri) return false
+    if (opts?.regen && featureId) return false
+    if (!featureId) return true
+    // Period partial: only upload replaced parts.
+    if (draft.updateKind === 'partial' && partial?.includes(part)) return true
+    return false
+  }
+
+  if (needsUpload('palm_l', draft.palmLeftUri, draft.palmLeftFeatureId)) {
+    uploadParts.push({ part: 'palm_l', uri: draft.palmLeftUri })
+  }
+  if (needsUpload('palm_r', draft.palmRightUri, draft.palmRightFeatureId)) {
+    uploadParts.push({ part: 'palm_r', uri: draft.palmRightUri })
+  }
+  if (needsUpload('face', draft.faceUri, draft.faceFeatureId)) {
+    uploadParts.push({ part: 'face', uri: draft.faceUri })
+  }
+
+  let ephemeralKeys: EphemeralPhotoKeys | null = null
+  if (uploadParts.length > 0) {
+    ephemeralKeys = await uploadEphemeralPhotos(uploadParts, {
+      onProgress: (progress) => opts?.onProgress?.({ phase: 'uploading', progress }),
+    })
+  } else if (!draft.faceFeatureId || !draft.palmLeftFeatureId || !draft.palmRightFeatureId) {
+    throw new Error('features_incomplete')
+  }
+
+  opts?.onProgress?.({ phase: 'uploading', progress: 38 })
 
   const enqueued = await enqueueFaceReadingJob(
-    withFeatures,
+    draft,
     locale,
     opts?.notifyOnComplete ?? true,
-    opts?.regen ?? false
+    opts?.regen ?? false,
+    ephemeralKeys
   )
   const queuedPoll: FaceoracleJobPoll = {
     jobId: enqueued.jobId,
-    stage: enqueued.stage,
+    stage: enqueued.stage === 'extracting' ? 'extracting' : 'queued',
     progress: Math.max(enqueued.progress, 40),
     readingId: null,
     errorMessage: null,
     resultPayload: null,
   }
-  opts?.onProgress?.({ phase: 'queued', job: queuedPoll })
+  opts?.onProgress?.({
+    phase: queuedPoll.stage === 'extracting' ? 'extracting' : 'queued',
+    job: queuedPoll,
+  })
 
   const done = await pollFaceReadingJob(enqueued.jobId, {
     onProgress: (p) => {
       const phase =
-        p.stage === 'interpreting'
-          ? 'interpreting'
-          : p.stage === 'done'
-            ? 'done'
-            : p.stage === 'failed'
-              ? 'failed'
-              : 'queued'
+        p.stage === 'extracting'
+          ? 'extracting'
+          : p.stage === 'interpreting'
+            ? 'interpreting'
+            : p.stage === 'done'
+              ? 'done'
+              : p.stage === 'failed'
+                ? 'failed'
+                : 'queued'
       opts?.onProgress?.({ phase, job: p })
     },
   })

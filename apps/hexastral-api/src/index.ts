@@ -64,6 +64,7 @@ import {
   pairPreviewRoutes,
   pairRoutes,
   physiognomyCycleRoutes,
+  physiognomyEphemeralPhotosRoutes,
   physiognomyJobsRoutes,
   physiognomyPushRoutes,
   portfolioAuthRoutes,
@@ -348,8 +349,12 @@ app.route('/api/pair', pairAnnualForecastRoutes)
 // 合婚预览 — 公开端点 (Turnstile only, no HMAC/auth)
 app.route('/api/pair-preview', pairPreviewRoutes)
 
-// 面相特征提取（R2 + Gemini Vision，隐私优先架构）
+// 面相特征提取（legacy sync + ephemeral R2 early-quit）
 app.route('/api/physiognomy/face-features', faceFeaturesRoutes)
+
+app.use('/api/physiognomy/ephemeral-photos', hmacVerify)
+app.use('/api/physiognomy/ephemeral-photos/*', hmacVerify)
+app.route('/api/physiognomy/ephemeral-photos', physiognomyEphemeralPhotosRoutes)
 
 // FaceOracle / Xingqi Pro push — HMAC for register; internal key for cron
 // targets / unregister-stale / weekly purge-inactive
@@ -612,6 +617,12 @@ app.route('/api/feng/declination', fengDeclinationRoutes)
 // repair-user; previously only hmacVerify-gated, so any signed device could hit them).
 app.use('/api/dev/*', async (c, next) => {
   if (c.env.ENVIRONMENT === 'production') {
+    // Pre-PMF: HMAC-gated Pro toggle for satellite DEV chips (Kindred/Syel).
+    // Block full-reset / repair-user; those stay non-prod only.
+    const path = new URL(c.req.url).pathname
+    if (c.req.method === 'POST' && path === '/api/dev/set-subscription') {
+      return next()
+    }
     return c.json({ error: 'not_found' }, 404)
   }
   return next()
@@ -729,6 +740,8 @@ const _rpcApp = new Hono<AppEnv>()
   .route('/api/natal', natalRoutes)
   .route('/api/pair', pairRoutes)
   .route('/api/physiognomy/face-features', faceFeaturesRoutes)
+  .route('/api/physiognomy/ephemeral-photos', physiognomyEphemeralPhotosRoutes)
+  .route('/api/physiognomy/jobs', physiognomyJobsRoutes)
   .route('/api/yiching/cast', divinationRoutes)
   .route('/api/yiching/hexagrams', hexagramRoutes)
   .route('/api/portfolio', portfolioRoutes)

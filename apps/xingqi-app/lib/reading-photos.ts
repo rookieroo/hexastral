@@ -166,3 +166,43 @@ export async function resolveReadingPhotoUri(
   }
   return undefined
 }
+
+/**
+ * Prefill live period sandbox from a reading snapshot (New period carry).
+ * Plain file copy in parallel — snapshots are already JPEG; skip ImageManipulator.
+ */
+export async function copyReadingSnapshotToPeriod(readingId: string): Promise<void> {
+  if (!readingId) return
+  const { persistPeriodPhotoCopy } = await import('./period-photos')
+  await Promise.all(
+    PARTS.map(async (part) => {
+      const src = await photoUriForReading(readingId, part)
+      if (!src) return
+      try {
+        await persistPeriodPhotoCopy(part, src)
+      } catch (err) {
+        console.warn('[xingqi.reading-photos] carry_failed', part, err)
+      }
+    })
+  )
+}
+
+/**
+ * Instant carry: bind draft URIs to reading snapshots (known paths, no disk scan).
+ * Mirrors into period sandbox in the background so later hydrate stays consistent.
+ */
+export function bindCarryFromReading(readingId: string): {
+  palm_l?: string
+  palm_r?: string
+  face?: string
+} {
+  const dir = readingDir(readingId)
+  if (!dir) return {}
+  const uris = {
+    palm_l: `${dir}palm_l.jpg`,
+    palm_r: `${dir}palm_r.jpg`,
+    face: `${dir}face.jpg`,
+  }
+  void copyReadingSnapshotToPeriod(readingId)
+  return uris
+}

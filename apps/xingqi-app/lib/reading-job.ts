@@ -1,6 +1,6 @@
 /**
- * Background face reading job — extract (sync) → enqueue → poll.
- * After enqueue, interpretation is quit-safe on Cloudflare Queues.
+ * Background face reading job — upload → enqueue → poll.
+ * After enqueue 202, extract + interpretation are quit-safe on Cloudflare Queues.
  * Home restores via GET /jobs/active + stored jobId.
  */
 
@@ -20,9 +20,10 @@ import {
 import { syncReadingPhotosToICloudIfEnabled } from './icloud-sync-preference'
 import { pickUi } from './locale-zh'
 import { getXingqiPushPrefs, setXingqiPushPrefs } from './push-preference'
+import { consumeDeepNextReading } from './reading-preference'
 import { scheduleXingqiPush } from './push-schedule'
 import {
-  clearReadingDraft,
+  draftAllowsPartial,
   getReadingDraft,
   patchReadingDraft,
   type ReadingDraft,
@@ -39,7 +40,14 @@ const PENDING_KEY = 'xingqi_reading_job_pending_v1'
 const JOB_ID_KEY = 'xingqi_reading_job_id_v1'
 
 export type ReadingJobStatus = 'idle' | 'running' | 'done' | 'error'
-export type ReadingJobPhase = 'idle' | 'extracting' | 'queued' | 'interpreting' | 'done' | 'failed'
+export type ReadingJobPhase =
+  | 'idle'
+  | 'uploading'
+  | 'extracting'
+  | 'queued'
+  | 'interpreting'
+  | 'done'
+  | 'failed'
 
 export interface ReadingJobState {
   status: ReadingJobStatus
@@ -158,10 +166,10 @@ export async function showReadingStartedHandoff(opts: {
       zhCopy(loc, '解读已开始', '解讀已開始', 'Reading started', '解読を開始しました'),
       zhCopy(
         loc,
-        '可离开应用。特征提取后会在云端继续解读，完成后通知你。',
-        '可離開應用。特徵提取後會在雲端繼續解讀，完成後通知你。',
-        'You can leave the app. After extract, interpretation continues in the cloud — we will notify you when ready.',
-        'アプリを閉じても大丈夫です。特徴抽出のあと、解読はクラウドで続きます。完了したらお知らせします。'
+        '照片已上传。可离开应用，云端会继续提取特征并生成解读，完成后通知你。',
+        '照片已上傳。可離開應用，雲端會繼續提取特徵並生成解讀，完成後通知你。',
+        'Photos uploaded. You can leave — the cloud continues extract and reading, then notifies you.',
+        '写真をアップロード済み。アプリを閉じてもクラウドで抽出と解読が続き、完了したらお知らせします。'
       ),
       [{ text: zhCopy(loc, '好', '好', 'OK', 'OK'), onPress: opts.onDismiss }]
     )
@@ -313,7 +321,14 @@ function mapJobError(msg: string, locale: string): string {
       'This image does not match the expected part (left palm / right palm / face). Retake for this step.',
       'この画像は手順の部位（左手・右手・顔）と一致しません。該当ステップで撮り直してください。'
     )
-  } else if (msg.includes('extract_failed:502') || msg.includes('VLM')) {
+  } else if (
+    msg.includes('extract_failed:502') ||
+    msg.includes('VLM') ||
+    msg.includes('vlm-router') ||
+    msg.includes('All vision tiers') ||
+    msg.includes('svc-astro') ||
+    msg.includes('extract_features_failed')
+  ) {
     error = zhCopy(
       locale,
       '图像特征服务暂不可用，请稍后重试',
@@ -364,24 +379,29 @@ function keepQueuedAfterDisconnect(notifyQueued?: () => void): void {
   setState({
     status: 'running',
     phase:
-      state.phase === 'extracting' ? 'queued' : state.phase === 'idle' ? 'queued' : state.phase,
+      state.phase === 'uploading'
+        ? 'extracting'
+        : state.phase === 'idle'
+          ? 'queued'
+          : state.phase,
     error: null,
     progress: Math.max(state.progress, 50),
   })
 }
 
 function applyProgress(p: FaceReadingProgress): void {
-  if (p.phase === 'extracting') {
+  if (p.phase === 'uploading') {
     setState({
       status: 'running',
-      phase: 'extracting',
+      phase: 'uploading',
       progress: Math.max(p.progress, 5),
     })
     return
   }
   const job = p.job
   void setPendingFlag(true, job.jobId)
-  const floor = p.phase === 'queued' ? 10 : p.phase === 'interpreting' ? 20 : 0
+  const floor =
+    p.phase === 'extracting' ? 10 : p.phase === 'queued' ? 15 : p.phase === 'interpreting' ? 35 : 0
   setState({
     status: 'running',
     phase: p.phase === 'failed' ? 'failed' : p.phase,
@@ -423,22 +443,9 @@ async function finishSuccess(opts: {
     }
   }
 
-  // Keep feature IDs so identical photos cannot silently re-bill a new reading.
+  // Archive under readingId, then empty the period workspace so New period / processing
+  // never flash the previous seal's JPEGs. Keep featureIds for unchanged-photo detection.
   const kept = getReadingDraft()
-  await clearReadingDraft()
-  patchReadingDraft({
-    faceFeatureId: kept.faceFeatureId,
-    palmLeftFeatureId: kept.palmLeftFeatureId,
-    palmRightFeatureId: kept.palmRightFeatureId,
-    palmLeftUri: kept.palmLeftUri,
-    palmRightUri: kept.palmRightUri,
-    faceUri: kept.faceUri,
-    solarDate: kept.solarDate,
-    timeIndex: kept.timeIndex,
-    gender: kept.gender,
-    city: kept.city,
-    horizonMonths: kept.horizonMonths,
-  })
   await saveLastReadingPhotoSnapshot({
     draft: {
       ...kept,
@@ -454,6 +461,24 @@ async function finishSuccess(opts: {
   } catch (err) {
     console.warn('[xingqi.reading-job] snapshot_photos_failed', err)
   }
+  const { clearAllPeriodPhotos } = await import('./period-photos')
+  await clearAllPeriodPhotos()
+  patchReadingDraft({
+    faceFeatureId: kept.faceFeatureId,
+    palmLeftFeatureId: kept.palmLeftFeatureId,
+    palmRightFeatureId: kept.palmRightFeatureId,
+    palmLeftUri: undefined,
+    palmRightUri: undefined,
+    faceUri: undefined,
+    solarDate: kept.solarDate,
+    timeIndex: kept.timeIndex,
+    gender: kept.gender,
+    city: kept.city,
+    horizonMonths: kept.horizonMonths,
+    outputKind: undefined,
+    updateKind: undefined,
+    partialParts: undefined,
+  })
   const payload = encodeURIComponent(JSON.stringify(opts.output))
   setState({
     status: 'done',
@@ -532,7 +557,12 @@ async function attachAndPollJob(jobId: string, locale: string, isPro: boolean): 
   }
 
   setState({
-    phase: snap.stage === 'interpreting' ? 'interpreting' : 'queued',
+    phase:
+      snap.stage === 'extracting'
+        ? 'extracting'
+        : snap.stage === 'interpreting'
+          ? 'interpreting'
+          : 'queued',
     progress: snap.progress,
   })
 
@@ -541,7 +571,12 @@ async function attachAndPollJob(jobId: string, locale: string, isPro: boolean): 
       setState({
         jobId: p.jobId,
         progress: p.progress,
-        phase: p.stage === 'interpreting' ? 'interpreting' : 'queued',
+        phase:
+          p.stage === 'extracting'
+            ? 'extracting'
+            : p.stage === 'interpreting'
+              ? 'interpreting'
+              : 'queued',
       })
     },
   })
@@ -593,9 +628,9 @@ export interface StartReadingJobInput {
   /** Same photos — new body/locale; consumes report regen meter. */
   regen?: boolean
   /**
-   * Fires only after the job is safely queued (or an existing cloud job is attached).
-   * Callers must NOT show "Reading started" before this — early extract/enqueue
-   * failures should surface as "Reading incomplete" only.
+   * Fires only after the job is safely on the server (upload done + 202;
+   * stage may be extracting or queued). Callers must NOT show "Reading started"
+   * before this — early upload/enqueue failures should surface as incomplete only.
    */
   onQueued?: () => void
 }
@@ -607,12 +642,28 @@ export function startReadingJob(input: StartReadingJobInput): boolean {
   if (state.status === 'running' || inFlight) return false
 
   const locale = input.locale
-  patchReadingDraft({ outputKind: input.outputKind, updateKind: 'full' })
-  const draft = input.draft ?? getReadingDraft()
+  if (input.draft) patchReadingDraft(input.draft)
+  // First seal / regen: force full. Period (incl. deep-next oneshot body) keeps partial photo meta.
+  if (input.regen) {
+    patchReadingDraft({
+      outputKind: input.outputKind,
+      updateKind: 'full',
+      partialParts: undefined,
+    })
+  } else if (input.outputKind === 'oneshot' && !draftAllowsPartial(getReadingDraft())) {
+    patchReadingDraft({
+      outputKind: 'oneshot',
+      updateKind: 'full',
+      partialParts: undefined,
+    })
+  } else {
+    patchReadingDraft({ outputKind: input.outputKind })
+  }
+  const draft = getReadingDraft()
 
   setState({
     status: 'running',
-    phase: 'extracting',
+    phase: 'uploading',
     startedAt: new Date().toISOString(),
     jobId: null,
     readingId: null,
@@ -635,6 +686,16 @@ export function startReadingJob(input: StartReadingJobInput): boolean {
 
   inFlight = (async () => {
     try {
+      let effectiveOutputKind = input.outputKind
+      if (effectiveOutputKind === 'period_brief') {
+        const deep = await consumeDeepNextReading()
+        if (deep) {
+          effectiveOutputKind = 'oneshot'
+          // Keep updateKind/partialParts — deep body, same photo billing.
+          patchReadingDraft({ outputKind: 'oneshot' })
+        }
+      }
+
       // Prefer attaching an existing cloud job over starting a duplicate.
       const active = await fetchActiveFaceReadingJob()
       if (active?.jobId) {
@@ -658,7 +719,13 @@ export function startReadingJob(input: StartReadingJobInput): boolean {
         regen: input.regen ?? false,
         onProgress: (p) => {
           applyProgress(p)
-          if (p.phase === 'queued' || p.phase === 'interpreting' || p.phase === 'done') {
+          // Quit-safe once the server has the job (extract or interpret).
+          if (
+            p.phase === 'extracting' ||
+            p.phase === 'queued' ||
+            p.phase === 'interpreting' ||
+            p.phase === 'done'
+          ) {
             notifyQueued()
           }
         },
@@ -668,7 +735,7 @@ export function startReadingJob(input: StartReadingJobInput): boolean {
       await finishSuccess({
         locale,
         isPro: input.isPro,
-        outputKind: input.outputKind,
+        outputKind: effectiveOutputKind,
         readingId: res.readingId,
         output: res.output,
         jobId: res.jobId,
@@ -837,8 +904,9 @@ export function readingJobSteps(
   phase: ReadingJobPhase,
   locale: string
 ): Array<{ key: string; label: string; done: boolean; active: boolean }> {
-  const order = ['extracting', 'queued', 'interpreting', 'done'] as const
+  const order = ['uploading', 'extracting', 'queued', 'interpreting', 'done'] as const
   const labels: Record<(typeof order)[number], string> = {
+    uploading: zhCopy(locale, '上传照片', '上傳照片', 'Uploading photos', '写真を送信'),
     extracting: zhCopy(locale, '提取特征', '提取特徵', 'Extract features', '特徴を抽出'),
     queued: zhCopy(locale, '云端排队', '雲端排隊', 'Queued in cloud', 'クラウド待ち'),
     interpreting: zhCopy(locale, '生成解读', '生成解讀', 'Writing reading', '解読を生成'),
@@ -848,12 +916,15 @@ export function readingJobSteps(
     phase === 'failed'
       ? 'interpreting'
       : phase === 'idle'
-        ? 'extracting'
+        ? 'uploading'
         : phase === 'done'
           ? 'done'
-          : phase === 'extracting' || phase === 'queued' || phase === 'interpreting'
+          : phase === 'uploading' ||
+              phase === 'extracting' ||
+              phase === 'queued' ||
+              phase === 'interpreting'
             ? phase
-            : 'extracting'
+            : 'uploading'
   const idx = order.indexOf(activeKey)
   return order.map((key, i) => ({
     key,

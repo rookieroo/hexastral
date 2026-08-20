@@ -11,7 +11,7 @@ import { useStrings } from '@/lib/i18n-context'
 
 export function ZiweiIntro() {
   const { colors, spacing } = useTheme()
-  const { t, locale } = useStrings()
+  const { locale } = useStrings()
   const material = getCultureCategory('ziwei')
   const wikiUrl = getWikipediaUrl(locale, material.wikipediaTitle[locale])
 
@@ -20,7 +20,6 @@ export function ZiweiIntro() {
       <Text style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}>
         {material.intro[locale]}
       </Text>
-      <Text style={{ color: colors.dim, fontSize: 14 }}>{t.ziweiChartComingSoon}</Text>
       <CultureWikiLink url={wikiUrl} />
     </View>
   )

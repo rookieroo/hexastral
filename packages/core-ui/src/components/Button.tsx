@@ -46,7 +46,7 @@ export function Button({
   style,
   ...rest
 }: ButtonProps) {
-  const { colors, spacing, radius } = useTheme()
+  const { colors, spacing, radius, isDark } = useTheme()
   const { animatedStyle, onPressIn, onPressOut } = usePressScale()
   const triggerHaptic = useHaptic()
 
@@ -97,7 +97,7 @@ export function Button({
             borderRadius: radius.none, // Ink Brutalism — square edges
             borderWidth: variant === 'secondary' ? 0.5 : 0,
             borderColor,
-            opacity: isDisabled ? 0.4 : 1,
+            opacity: isDisabled ? (isDark ? 0.52 : 0.4) : 1,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',

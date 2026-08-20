@@ -12,10 +12,12 @@ import { PolaroidInkFrame } from '@/components/PolaroidInkFrame'
 
 export function polaroidLift(isDark: boolean, layer = 0): ViewStyle {
   const y = 3 + layer * 2
-  const blur = 8 + layer * 3
-  const a = isDark ? 0.4 : 0.1 + layer * 0.015
+  const blur = 10 + layer * 3
+  const a = isDark ? 0.38 : 0.08 + layer * 0.012
   return {
-    boxShadow: `0px ${y}px ${blur}px rgba(28, 27, 25, ${a})`,
+    boxShadow: isDark
+      ? `0px ${y}px ${blur}px rgba(0, 0, 0, ${a})`
+      : `0px ${y}px ${blur}px rgba(28, 27, 25, ${a})`,
     elevation: 3 + layer,
   }
 }
@@ -39,17 +41,18 @@ export function PolaroidChrome({
   onPressOut?: () => void
   inkDrawn?: SharedValue<number>
 }) {
-  const { colors } = useTheme()
-  const wellFill = colors.surfaceTint ?? colors.accentGhost
+  const { colors, isDark } = useTheme()
+  const wellFill = isDark
+    ? 'rgba(216, 212, 203, 0.10)'
+    : 'rgba(44, 42, 39, 0.06)'
+  const plate = isDark ? (colors.cardElevated ?? colors.card) : (colors.card ?? colors.bg)
   const frame: ViewStyle = {
     flex: 1,
     overflow: 'hidden',
-    backgroundColor: colors.cardElevated ?? colors.card,
-    borderWidth: active ? 1 : 0.5,
-    borderColor: active ? colors.accent : colors.secondary,
-    paddingTop: 8,
-    paddingHorizontal: 8,
-    paddingBottom: 22,
+    backgroundColor: plate,
+    paddingTop: 7,
+    paddingHorizontal: 7,
+    paddingBottom: 18,
   }
   const inner = (
     <View
@@ -57,8 +60,6 @@ export function PolaroidChrome({
         flex: 1,
         overflow: 'hidden',
         backgroundColor: wellFill,
-        borderWidth: 0.5,
-        borderColor: colors.separator,
       }}
     >
       {children}

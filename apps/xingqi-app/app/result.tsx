@@ -26,7 +26,7 @@ import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { loadHighlights, saveHighlights } from '@/lib/highlights'
 import { resolveLocale } from '@/lib/i18n'
 import { useImageShare } from '@/lib/imageShare'
-import { livingLayerLabels } from '@/lib/living-copy'
+import { livingLayerLabels, readingBriefCopy } from '@/lib/living-copy'
 import { isCjkZh, isJa, okForReadingLocale, pickUi } from '@/lib/locale-zh'
 import { hydrateReadingDraft, patchReadingDraft } from '@/lib/reading-draft'
 import { showReadingStartedHandoff, startReadingJob } from '@/lib/reading-job'
@@ -351,6 +351,28 @@ export default function FaceResultScreen() {
       >
         <X size={22} color={colors.text} strokeWidth={1.6} />
       </Pressable>
+      {readingId ? (
+        <Pressable
+          onPress={() =>
+            router.push({ pathname: '/locus', params: { readingId, part: 'face' } } as never)
+          }
+          hitSlop={8}
+          accessibilityRole='button'
+          accessibilityLabel={readingBriefCopy(locale).lociCta}
+          style={{
+            position: 'absolute',
+            top: insets.top + 14,
+            right: spacing.xl + 40,
+            zIndex: 30,
+            paddingVertical: 6,
+            paddingHorizontal: 8,
+          }}
+        >
+          <Text style={{ color: colors.secondary, fontSize: 13 }}>
+            {readingBriefCopy(locale).lociCta}
+          </Text>
+        </Pressable>
+      ) : null}
       <SelectionActionBar
         quote={pickedQuote}
         labels={{

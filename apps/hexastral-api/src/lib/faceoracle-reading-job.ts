@@ -28,6 +28,15 @@ import { hasActiveEntitlement } from '../services/entitlements'
 import { refundFaceoraclePhotoSlots, refundFaceoracleReportRegen } from '../services/quota'
 import { sendExpoPushMessages } from './expo-push'
 import {
+  deleteEphemeralObjects,
+  ephemeralKeyList,
+  parseEphemeralKeysJson,
+} from './faceoracle-ephemeral-keys'
+import {
+  extractFaceoracleFeaturesFromBytes,
+  FaceoracleExtractError,
+} from './faceoracle-extract-from-bytes'
+import {
   buildLocusIndex,
   buildLocusIndexFromLoci,
   type LocusCitation,
@@ -46,6 +55,7 @@ import {
   formatSuggestedLociBlock,
 } from './faceoracle-suggested-loci'
 import {
+  buildFaceOracleBriefPrompt,
   buildFaceOracleChaptersPrompt,
   buildFaceOracleLociPrompt,
   type FaceOracleChapterKind,
@@ -66,6 +76,63 @@ const CHAPTER_KINDS: FaceOracleChapterKind[] = ['overview', 'face', 'palms', 'na
 const LEGACY_CHAPTER_KINDS = new Set(['period', 'advice'])
 
 type JobRow = typeof faceoracleJobs.$inferSelect
+type PartialPart = 'face' | 'palm_l' | 'palm_r'
+
+function parsePartialMetaFromJob(job: JobRow): {
+  updateKind: 'full' | 'partial'
+  partialParts: PartialPart[] | null
+} {
+  const src = job.creditSource
+  if (typeof src === 'string' && src.startsWith('partial:')) {
+    const parts = src
+      .slice('partial:'.length)
+      .split(',')
+      .map((p) => p.trim())
+      .filter((p): p is PartialPart => p === 'face' || p === 'palm_l' || p === 'palm_r')
+    if (parts.length > 0 && parts.length < 3) {
+      return { updateKind: 'partial', partialParts: parts }
+    }
+  }
+  return { updateKind: 'full', partialParts: null }
+}
+
+export type FaceoracleBrief = {
+  title: string
+  excerpt: string
+  summary: string
+  suggestion: string
+  axis: 'career' | 'love' | 'health' | null
+}
+
+function clampChars(s: string, max: number): string {
+  const t = s.replace(/\s+/g, ' ').trim()
+  if (t.length <= max) return t
+  return `${t.slice(0, max).trimEnd()}…`
+}
+
+export function parseFaceoracleBrief(raw: unknown): FaceoracleBrief | null {
+  if (!raw || typeof raw !== 'object') return null
+  const root = raw as Record<string, unknown>
+  const b = (root.brief && typeof root.brief === 'object' ? root.brief : root) as Record<
+    string,
+    unknown
+  >
+  const title = typeof b.title === 'string' ? b.title.trim() : ''
+  const excerpt = typeof b.excerpt === 'string' ? b.excerpt.trim() : ''
+  const summary = typeof b.summary === 'string' ? b.summary.trim() : ''
+  const suggestion = typeof b.suggestion === 'string' ? b.suggestion.trim() : ''
+  if (!title || !excerpt || !summary || !suggestion) return null
+  const axisRaw = typeof b.axis === 'string' ? b.axis : null
+  const axis =
+    axisRaw === 'career' || axisRaw === 'love' || axisRaw === 'health' ? axisRaw : null
+  return {
+    title: clampChars(title, 24),
+    excerpt: clampChars(excerpt, 42),
+    summary: clampChars(summary, 280),
+    suggestion: suggestion.slice(0, 600),
+    axis,
+  }
+}
 
 type ChapterCitation = LocusCitation
 
@@ -202,8 +269,9 @@ function safeJsonParse<T>(raw: string): T | null {
 async function loadFeatureJson(
   db: AppDb,
   userId: string,
-  id: string
+  id: string | null | undefined
 ): Promise<Record<string, string> | null> {
+  if (!id) return null
   const row = await db
     .select({ featuresJson: userPhysiognomyFeatures.featuresJson })
     .from(userPhysiognomyFeatures)
@@ -220,8 +288,9 @@ async function loadFeatureJson(
 async function loadLandmarksJson(
   db: AppDb,
   userId: string,
-  id: string
+  id: string | null | undefined
 ): Promise<Partial<Record<string, { x: number; y: number }>>> {
+  if (!id) return {}
   const row = await db
     .select({ landmarksJson: userPhysiognomyFeatures.landmarksJson })
     .from(userPhysiognomyFeatures)
@@ -492,9 +561,17 @@ function proseFromNormalized(normalized: {
 async function setJobStage(
   db: AppDb,
   jobId: string,
-  stage: 'queued' | 'interpreting' | 'done' | 'failed',
+  stage: 'extracting' | 'queued' | 'interpreting' | 'done' | 'failed',
   progress: number,
-  extras?: { readingId?: string; errorMessage?: string; finishedAt?: string }
+  extras?: {
+    readingId?: string
+    errorMessage?: string
+    finishedAt?: string
+    faceFeatureId?: string | null
+    palmLeftFeatureId?: string | null
+    palmRightFeatureId?: string | null
+    ephemeralKeysJson?: string | null
+  }
 ): Promise<void> {
   await db
     .update(faceoracleJobs)
@@ -504,8 +581,27 @@ async function setJobStage(
       ...(extras?.readingId !== undefined ? { readingId: extras.readingId } : {}),
       ...(extras?.errorMessage !== undefined ? { errorMessage: extras.errorMessage } : {}),
       ...(extras?.finishedAt !== undefined ? { finishedAt: extras.finishedAt } : {}),
+      ...(extras?.faceFeatureId !== undefined ? { faceFeatureId: extras.faceFeatureId } : {}),
+      ...(extras?.palmLeftFeatureId !== undefined
+        ? { palmLeftFeatureId: extras.palmLeftFeatureId }
+        : {}),
+      ...(extras?.palmRightFeatureId !== undefined
+        ? { palmRightFeatureId: extras.palmRightFeatureId }
+        : {}),
+      ...(extras?.ephemeralKeysJson !== undefined
+        ? { ephemeralKeysJson: extras.ephemeralKeysJson }
+        : {}),
     })
     .where(eq(faceoracleJobs.id, jobId))
+}
+
+async function cleanupJobEphemeral(
+  env: CloudflareBindings | null | undefined,
+  job: JobRow
+): Promise<void> {
+  const keys = parseEphemeralKeysJson(job.ephemeralKeysJson)
+  if (!keys || !env?.FACE_EPHEMERAL_BUCKET) return
+  await deleteEphemeralObjects(env.FACE_EPHEMERAL_BUCKET, ephemeralKeyList(keys))
 }
 
 export async function refundFaceoracleJobAccess(db: AppDb, job: JobRow): Promise<void> {
@@ -610,12 +706,15 @@ async function failJob(
   db: AppDb,
   job: JobRow,
   errorMessage: string,
-  notify: boolean
+  notify: boolean,
+  env?: CloudflareBindings | null
 ): Promise<void> {
+  await cleanupJobEphemeral(env, job)
   await refundFaceoracleJobAccess(db, job)
   await setJobStage(db, job.id, 'failed', 100, {
     errorMessage: errorMessage.slice(0, 480),
     finishedAt: new Date().toISOString(),
+    ephemeralKeysJson: null,
   })
   if (notify && job.notifyOnComplete) {
     await notifyReadingReady(db, {
@@ -632,8 +731,12 @@ const STALE_JOB_MS = 15 * 60 * 1000
 /** LLM can hang at progress=50 for a long time — fail sooner so the user can retry. */
 const STALE_INTERPRETING_LOW_PROGRESS_MS = 14 * 60 * 1000
 
-/** Mark stuck queued/interpreting jobs failed + refund. */
-export async function sweepStaleFaceoracleJobs(db: AppDb, userId: string): Promise<number> {
+/** Mark stuck extracting/queued/interpreting jobs failed + refund. */
+export async function sweepStaleFaceoracleJobs(
+  db: AppDb,
+  userId: string,
+  env?: CloudflareBindings | null
+): Promise<number> {
   const rows = await db
     .select()
     .from(faceoracleJobs)
@@ -641,7 +744,9 @@ export async function sweepStaleFaceoracleJobs(db: AppDb, userId: string): Promi
   const now = Date.now()
   let n = 0
   for (const job of rows) {
-    if (job.stage !== 'queued' && job.stage !== 'interpreting') continue
+    if (job.stage !== 'extracting' && job.stage !== 'queued' && job.stage !== 'interpreting') {
+      continue
+    }
     const started = Date.parse(job.startedAt || job.createdAt)
     if (!Number.isFinite(started)) continue
     const age = now - started
@@ -650,10 +755,104 @@ export async function sweepStaleFaceoracleJobs(db: AppDb, userId: string): Promi
       job.progress <= 50 &&
       age >= STALE_INTERPRETING_LOW_PROGRESS_MS
     if (!lowProgressHang && age < STALE_JOB_MS) continue
-    await failJob(db, job, lowProgressHang ? 'stale_interpreting_timeout' : 'stale_timeout', true)
+    await failJob(
+      db,
+      job,
+      lowProgressHang ? 'stale_interpreting_timeout' : 'stale_timeout',
+      true,
+      env
+    )
     n += 1
   }
   return n
+}
+
+type FeaturePart = 'face' | 'palm_l' | 'palm_r'
+
+async function extractEphemeralFeaturesForJob(
+  env: CloudflareBindings,
+  db: AppDb,
+  job: JobRow
+): Promise<JobRow> {
+  const keys = parseEphemeralKeysJson(job.ephemeralKeysJson)
+  if (!keys) return job
+
+  await setJobStage(db, job.id, 'extracting', 8)
+  const bucket = env.FACE_EPHEMERAL_BUCKET
+  if (!bucket) {
+    await failJob(db, job, 'ephemeral_bucket_unavailable', true, env)
+    throw new Error('ephemeral_bucket_unavailable')
+  }
+
+  const partToType: Record<FeaturePart, 'face' | 'palm_l' | 'palm_r'> = {
+    face: 'face',
+    palm_l: 'palm_l',
+    palm_r: 'palm_r',
+  }
+  const updates: {
+    faceFeatureId?: string
+    palmLeftFeatureId?: string
+    palmRightFeatureId?: string
+  } = {}
+  const keyEntries: Array<{ part: FeaturePart; key: string }> = []
+  if (keys.face) keyEntries.push({ part: 'face', key: keys.face })
+  if (keys.palm_l) keyEntries.push({ part: 'palm_l', key: keys.palm_l })
+  if (keys.palm_r) keyEntries.push({ part: 'palm_r', key: keys.palm_r })
+
+  try {
+    for (let i = 0; i < keyEntries.length; i++) {
+      const entry = keyEntries[i]
+      if (!entry) continue
+      const progress = 8 + Math.round(((i + 0.5) / keyEntries.length) * 22)
+      await setJobStage(db, job.id, 'extracting', progress)
+
+      const obj = await bucket.get(entry.key)
+      if (!obj) {
+        await failJob(db, job, `ephemeral_missing:${entry.part}`, true, env)
+        throw new Error(`ephemeral_missing:${entry.part}`)
+      }
+      const buf = new Uint8Array(await obj.arrayBuffer())
+      const mimeRaw = obj.httpMetadata?.contentType ?? 'image/jpeg'
+      const mimeType =
+        mimeRaw === 'image/png' || mimeRaw === 'image/heic' || mimeRaw === 'image/webp'
+          ? mimeRaw
+          : 'image/jpeg'
+
+      try {
+        const extracted = await extractFaceoracleFeaturesFromBytes(env, db, {
+          userId: job.userId,
+          type: partToType[entry.part],
+          imageBytes: buf,
+          mimeType,
+          privacyConsentVersion: 'v2',
+        })
+        if (entry.part === 'face') updates.faceFeatureId = extracted.featureId
+        else if (entry.part === 'palm_l') updates.palmLeftFeatureId = extracted.featureId
+        else updates.palmRightFeatureId = extracted.featureId
+      } catch (err) {
+        const msg =
+          err instanceof FaceoracleExtractError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : 'extract_failed'
+        await failJob(db, job, `extract_failed:${msg}`.slice(0, 480), true, env)
+        throw err
+      }
+    }
+  } finally {
+    await deleteEphemeralObjects(bucket, ephemeralKeyList(keys))
+  }
+
+  await setJobStage(db, job.id, 'queued', 32, {
+    faceFeatureId: updates.faceFeatureId ?? job.faceFeatureId,
+    palmLeftFeatureId: updates.palmLeftFeatureId ?? job.palmLeftFeatureId,
+    palmRightFeatureId: updates.palmRightFeatureId ?? job.palmRightFeatureId,
+    ephemeralKeysJson: null,
+  })
+
+  const refreshed = await db.select().from(faceoracleJobs).where(eq(faceoracleJobs.id, job.id)).get()
+  return refreshed ?? job
 }
 
 /**
@@ -664,7 +863,7 @@ export async function runFaceoracleReadingJob(
   db: AppDb,
   jobId: string
 ): Promise<void> {
-  const job = await db.select().from(faceoracleJobs).where(eq(faceoracleJobs.id, jobId)).get()
+  let job = await db.select().from(faceoracleJobs).where(eq(faceoracleJobs.id, jobId)).get()
   if (!job) return
   if (job.stage === 'done' || job.stage === 'failed') return
   // Idempotent: already persisted a reading
@@ -676,7 +875,12 @@ export async function runFaceoracleReadingJob(
     return
   }
 
-  await setJobStage(db, jobId, 'interpreting', 20)
+  if (job.ephemeralKeysJson || job.stage === 'extracting') {
+    job = await extractEphemeralFeaturesForJob(env, db, job)
+    if (job.stage === 'failed') return
+  }
+
+  await setJobStage(db, jobId, 'interpreting', 35)
 
   const [face, palmL, palmR, faceLm, palmLm, palmRm] = await Promise.all([
     loadFeatureJson(db, job.userId, job.faceFeatureId),
@@ -687,11 +891,11 @@ export async function runFaceoracleReadingJob(
     loadLandmarksJson(db, job.userId, job.palmRightFeatureId),
   ])
   if (!face || !palmL || !palmR) {
-    await failJob(db, job, 'features_missing', true)
+    await failJob(db, job, 'features_missing', true, env)
     return
   }
 
-  await setJobStage(db, jobId, 'interpreting', 35)
+  await setJobStage(db, jobId, 'interpreting', 40)
 
   const landmarkCounts = {
     face: Object.keys(faceLm).length,
@@ -821,13 +1025,21 @@ export async function runFaceoracleReadingJob(
       ? job.outputKind
       : 'oneshot'
   const horizonMonths = job.horizonMonths === 6 ? 6 : 3
+  const { updateKind, partialParts } = parsePartialMetaFromJob(job)
+  // Pass 2 switch is the job column, not a client-only convention:
+  // oneshot/deep → five chapters; period_brief → short brief schema.
+  const isShortBrief = outputKind === 'period_brief'
+  const lociTopN = isShortBrief ? 12 : 20
+  const lociFloors = isShortBrief
+    ? { face: 3, palm_l: 2, palm_r: 2, caution: 1 }
+    : { face: 5, palm_l: 5, palm_r: 5, caution: 2 }
 
   const suggested = buildSuggestedLoci({
     face,
     palmLeft: palmL,
     palmRight: palmR,
     natalSummary,
-    topN: 20,
+    topN: lociTopN,
   })
   const suggestedLociBlock = formatSuggestedLociBlock(suggested)
   console.info('[faceoracle-job] suggestedLoci', {
@@ -845,15 +1057,19 @@ export async function runFaceoracleReadingJob(
     horizonMonths,
     outputKind,
     suggestedLociBlock,
+    partialUpdate: partialParts ?? undefined,
   } as const
 
   // ── Pass 1: curated loci only ───────────────────────────────────────────
   await setJobStage(db, jobId, 'interpreting', 50)
   const lociPrompt = buildFaceOracleLociPrompt(promptParams)
+  const lociCountHint = isShortBrief
+    ? '8–12 deep readings (face≥3, each palm≥2, ≥1 CAUTION)'
+    : '16–20 deep readings (face≥5, each palm≥5, ≥2 CAUTION)'
   let lociParsed: Record<string, unknown> | null = null
   {
     const ai = await callReadingAi(env, lociPrompt, job.locale, {
-      maxTokens: 4096,
+      maxTokens: isShortBrief ? 3072 : 4096,
       metricLabel: 'faceoracle_loci',
     })
     if (ai.parsed && Array.isArray(ai.parsed.loci) && ai.parsed.loci.length > 0) {
@@ -866,9 +1082,9 @@ export async function runFaceoracleReadingJob(
       await setJobStage(db, jobId, 'interpreting', 55)
       const retry = await callReadingAi(
         env,
-        `${lociPrompt}\n\nCOMPACT RETRY: Output ONLY {"loci":[...]} with 16–20 deep readings (face≥5, each palm≥5, ≥2 CAUTION).`,
+        `${lociPrompt}\n\nCOMPACT RETRY: Output ONLY {"loci":[...]} with ${lociCountHint}.`,
         job.locale,
-        { maxTokens: 4096, metricLabel: 'faceoracle_loci_retry' }
+        { maxTokens: isShortBrief ? 3072 : 4096, metricLabel: 'faceoracle_loci_retry' }
       )
       if (retry.parsed && Array.isArray(retry.parsed.loci) && retry.parsed.loci.length > 0) {
         lociParsed = retry.parsed
@@ -877,7 +1093,7 @@ export async function runFaceoracleReadingJob(
           db,
           job,
           `ai_failed:loci:${(retry.error ?? ai.error ?? 'empty').slice(0, 180)}`,
-          true
+          true, env
         )
         return
       }
@@ -887,7 +1103,7 @@ export async function runFaceoracleReadingJob(
   // Hard coverage floors — one more retry if thin
   {
     const parsedLoci = parseLoci(lociParsed.loci)
-    const cov = assessLociCoverage(parsedLoci)
+    const cov = assessLociCoverage(parsedLoci, lociFloors)
     if (!cov.ok) {
       console.warn('[faceoracle-job] loci coverage short — coverage retry', {
         jobId,
@@ -896,9 +1112,9 @@ export async function runFaceoracleReadingJob(
       await setJobStage(db, jobId, 'interpreting', 58)
       const covRetry = await callReadingAi(
         env,
-        `${lociPrompt}\n\nCOVERAGE RETRY: Prior attempt was ${cov.detail}. Must return face≥5, palm_l≥5, palm_r≥5, ≥2 CAUTION-toned readings. Prefer SuggestedLoci. Output ONLY {"loci":[...]}.`,
+        `${lociPrompt}\n\nCOVERAGE RETRY: Prior attempt was ${cov.detail}. Must return ${lociCountHint}. Prefer SuggestedLoci. Output ONLY {"loci":[...]}.`,
         job.locale,
-        { maxTokens: 4096, metricLabel: 'faceoracle_loci_coverage_retry' }
+        { maxTokens: isShortBrief ? 3072 : 4096, metricLabel: 'faceoracle_loci_coverage_retry' }
       )
       if (
         covRetry.parsed &&
@@ -906,7 +1122,7 @@ export async function runFaceoracleReadingJob(
         covRetry.parsed.loci.length > 0
       ) {
         const next = parseLoci(covRetry.parsed.loci)
-        const nextCov = assessLociCoverage(next)
+        const nextCov = assessLociCoverage(next, lociFloors)
         if (nextCov.ok || next.length >= parsedLoci.length) {
           lociParsed = covRetry.parsed
           console.info('[faceoracle-job] loci coverage retry accepted', {
@@ -925,46 +1141,119 @@ export async function runFaceoracleReadingJob(
 
   const lociJson = JSON.stringify(lociParsed.loci).slice(0, 24_000)
 
-  // ── Pass 2: chapters + events from fixed loci ──────────────────────────
+  // ── Pass 2: chapters (seal) or short brief (period) ─────────────────────
   await setJobStage(db, jobId, 'interpreting', 70)
-  const chaptersPrompt = buildFaceOracleChaptersPrompt(promptParams, lociJson)
+
+  let brief: FaceoracleBrief | null = null
   let normalized: ReturnType<typeof normalizeFaceoracleInterpretation> = null
-  {
-    const ai = await callReadingAi(env, chaptersPrompt, job.locale, {
-      maxTokens: 8192,
-      metricLabel: 'faceoracle_chapters',
-    })
-    const merged = ai.parsed ? { ...ai.parsed, loci: lociParsed.loci } : null
-    if (merged) {
-      normalized = normalizeFaceoracleInterpretation(merged, job.locale)
-    }
-    if (!normalized || !interpretationHasBody(normalized)) {
-      console.warn('[faceoracle-job] chapters pass miss — compact retry', {
-        jobId,
-        error: ai.error,
+  let pass2Prompt = ''
+
+  if (isShortBrief) {
+    const briefPrompt = buildFaceOracleBriefPrompt(promptParams, lociJson)
+    pass2Prompt = briefPrompt
+    {
+      const ai = await callReadingAi(env, briefPrompt, job.locale, {
+        maxTokens: 2048,
+        metricLabel: 'faceoracle_brief',
       })
-      await setJobStage(db, jobId, 'interpreting', 80)
-      const retry = await callReadingAi(
-        env,
-        `${chaptersPrompt}\n\nCOMPACT RETRY: Keep all 5 chapters; tighten prose. Output ONLY valid JSON.`,
-        job.locale,
-        { maxTokens: 8192, metricLabel: 'faceoracle_chapters_retry' }
-      )
-      const mergedRetry = retry.parsed ? { ...retry.parsed, loci: lociParsed.loci } : null
-      if (!mergedRetry) {
-        await failJob(
-          db,
-          job,
-          `ai_failed:chapters:${(retry.error ?? ai.error ?? 'empty').slice(0, 180)}`,
-          true
+      brief = ai.parsed ? parseFaceoracleBrief(ai.parsed) : null
+      if (!brief) {
+        const retry = await callReadingAi(
+          env,
+          `${briefPrompt}\n\nCOMPACT RETRY: Output ONLY {"brief":{title,excerpt,summary,suggestion,axis}, "events":[]}.`,
+          job.locale,
+          { maxTokens: 2048, metricLabel: 'faceoracle_brief_retry' }
         )
-        return
+        brief = retry.parsed ? parseFaceoracleBrief(retry.parsed) : null
+        if (!brief) {
+          await failJob(
+            db,
+            job,
+            `ai_failed:brief:${(retry.error ?? ai.error ?? 'empty').slice(0, 180)}`,
+            true, env
+          )
+          return
+        }
       }
-      normalized = normalizeFaceoracleInterpretation(mergedRetry, job.locale)
+      let eventsRaw: unknown[] = []
+      const briefSource = ai.parsed
+      if (briefSource && typeof briefSource === 'object' && Array.isArray((briefSource as { events?: unknown }).events)) {
+        eventsRaw = (briefSource as { events: unknown[] }).events
+      }
+      // Synthesize a thin chapter shell so legacy clients still render something.
+      normalized = normalizeFaceoracleInterpretation(
+        {
+          loci: lociParsed.loci,
+          chapters: [
+            {
+              kind: 'overview',
+              goldenLine: brief.excerpt,
+              evidence: brief.summary,
+              dynamic: brief.suggestion,
+              reef: null,
+              remedy: brief.suggestion,
+              counterpoint: null,
+              citations: [],
+            },
+            {
+              kind: 'horizon',
+              goldenLine: brief.title,
+              evidence: brief.summary,
+              dynamic: brief.suggestion,
+              reef: null,
+              remedy: brief.suggestion,
+              counterpoint: null,
+              citations: [],
+            },
+          ],
+          overview: brief.summary,
+          advice: brief.suggestion,
+          periodDiff: null,
+          events: eventsRaw,
+        },
+        job.locale
+      )
+    }
+  } else {
+    const chaptersPrompt = buildFaceOracleChaptersPrompt(promptParams, lociJson)
+    pass2Prompt = chaptersPrompt
+    {
+      const ai = await callReadingAi(env, chaptersPrompt, job.locale, {
+        maxTokens: 8192,
+        metricLabel: 'faceoracle_chapters',
+      })
+      const merged = ai.parsed ? { ...ai.parsed, loci: lociParsed.loci } : null
+      if (merged) {
+        normalized = normalizeFaceoracleInterpretation(merged, job.locale)
+      }
+      if (!normalized || !interpretationHasBody(normalized)) {
+        console.warn('[faceoracle-job] chapters pass miss — compact retry', {
+          jobId,
+          error: ai.error,
+        })
+        await setJobStage(db, jobId, 'interpreting', 80)
+        const retry = await callReadingAi(
+          env,
+          `${chaptersPrompt}\n\nCOMPACT RETRY: Keep all 5 chapters; tighten prose. Output ONLY valid JSON.`,
+          job.locale,
+          { maxTokens: 8192, metricLabel: 'faceoracle_chapters_retry' }
+        )
+        const mergedRetry = retry.parsed ? { ...retry.parsed, loci: lociParsed.loci } : null
+        if (!mergedRetry) {
+          await failJob(
+            db,
+            job,
+            `ai_failed:chapters:${(retry.error ?? ai.error ?? 'empty').slice(0, 180)}`,
+            true, env
+          )
+          return
+        }
+        normalized = normalizeFaceoracleInterpretation(mergedRetry, job.locale)
+      }
     }
   }
   if (!normalized || !interpretationHasBody(normalized)) {
-    await failJob(db, job, 'ai_empty', true)
+    await failJob(db, job, 'ai_empty', true, env)
     return
   }
 
@@ -993,27 +1282,83 @@ export async function runFaceoracleReadingJob(
     faceoracleBodyLooksWrongLocale(job.locale, proseSample) ||
     faceoracleFieldsLookWrongLocale(job.locale, fieldSamples)
   ) {
-    console.warn('[faceoracle-job] locale drift — retrying chapters', { jobId, locale: job.locale })
+    console.warn('[faceoracle-job] locale drift — retrying pass2', { jobId, locale: job.locale })
     const zhLeak = faceoracleZhLooksEnglishLeaky(proseSample)
-    const retryPrompt = [
-      chaptersPrompt,
-      '',
-      zhLeak
-        ? 'CRITICAL RETRY: Previous draft mixed English into Chinese prose (e.g. future/tension/palm). Rewrite ALL user-facing strings in 中文; ban English words. Keep FixedLoci featureKey unchanged.'
-        : 'CRITICAL RETRY: Previous draft violated the output language. Rewrite chapters/events in the required language. Keep FixedLoci as-is (do not translate featureKey).',
-      'Output ONLY valid JSON.',
-    ].join('\n')
-    const langRetry = await callReadingAi(env, retryPrompt, job.locale, {
-      maxTokens: 8192,
-      metricLabel: 'faceoracle_chapters_locale',
-    })
-    if (langRetry.parsed) {
-      const again = normalizeFaceoracleInterpretation(
-        { ...langRetry.parsed, loci: lociParsed.loci },
-        job.locale
-      )
-      if (again && interpretationHasBody(again)) {
-        normalized = again
+    if (isShortBrief && brief) {
+      const briefPrompt = buildFaceOracleBriefPrompt(promptParams, lociJson)
+      const retryPrompt = [
+        briefPrompt,
+        '',
+        zhLeak
+          ? 'CRITICAL RETRY: Previous draft mixed English into Chinese. Rewrite brief fields in 中文; ban English craft tokens.'
+          : 'CRITICAL RETRY: Rewrite brief in the required language.',
+        'Output ONLY valid JSON.',
+      ].join('\n')
+      const langRetry = await callReadingAi(env, retryPrompt, job.locale, {
+        maxTokens: 2048,
+        metricLabel: 'faceoracle_brief_locale',
+      })
+      const againBrief = langRetry.parsed ? parseFaceoracleBrief(langRetry.parsed) : null
+      if (againBrief) {
+        brief = againBrief
+        const again = normalizeFaceoracleInterpretation(
+          {
+            loci: lociParsed.loci,
+            chapters: [
+              {
+                kind: 'overview',
+                goldenLine: againBrief.excerpt,
+                evidence: againBrief.summary,
+                dynamic: againBrief.suggestion,
+                reef: null,
+                remedy: againBrief.suggestion,
+                counterpoint: null,
+                citations: [],
+              },
+              {
+                kind: 'horizon',
+                goldenLine: againBrief.title,
+                evidence: againBrief.summary,
+                dynamic: againBrief.suggestion,
+                reef: null,
+                remedy: againBrief.suggestion,
+                counterpoint: null,
+                citations: [],
+              },
+            ],
+            overview: againBrief.summary,
+            advice: againBrief.suggestion,
+            periodDiff: null,
+            events: normalized.flat.events,
+          },
+          job.locale
+        )
+        if (again && interpretationHasBody(again)) {
+          normalized = again
+        }
+      }
+    } else {
+      const chaptersPrompt = buildFaceOracleChaptersPrompt(promptParams, lociJson)
+      const retryPrompt = [
+        chaptersPrompt,
+        '',
+        zhLeak
+          ? 'CRITICAL RETRY: Previous draft mixed English into Chinese prose (e.g. future/tension/palm). Rewrite ALL user-facing strings in 中文; ban English words. Keep FixedLoci featureKey unchanged.'
+          : 'CRITICAL RETRY: Previous draft violated the output language. Rewrite chapters/events in the required language. Keep FixedLoci as-is (do not translate featureKey).',
+        'Output ONLY valid JSON.',
+      ].join('\n')
+      const langRetry = await callReadingAi(env, retryPrompt, job.locale, {
+        maxTokens: 8192,
+        metricLabel: 'faceoracle_chapters_locale',
+      })
+      if (langRetry.parsed) {
+        const again = normalizeFaceoracleInterpretation(
+          { ...langRetry.parsed, loci: lociParsed.loci },
+          job.locale
+        )
+        if (again && interpretationHasBody(again)) {
+          normalized = again
+        }
       }
     }
   }
@@ -1056,23 +1401,66 @@ export async function runFaceoracleReadingJob(
       patterns: hardHits.map((h) => h.pattern),
     })
     const forbidPrompt = [
-      chaptersPrompt,
+      pass2Prompt,
       '',
       buildForbiddenRewriteSuffix(hardHits),
       'Keep FixedLoci unchanged. Output ONLY valid JSON.',
     ].join('\n')
     const forbidRetry = await callReadingAi(env, forbidPrompt, job.locale, {
-      maxTokens: 8192,
-      metricLabel: 'faceoracle_chapters_forbid',
+      maxTokens: isShortBrief ? 2048 : 8192,
+      metricLabel: isShortBrief ? 'faceoracle_brief_forbid' : 'faceoracle_chapters_forbid',
     })
     if (forbidRetry.parsed) {
-      const forbidAgain = normalizeFaceoracleInterpretation(
-        { ...forbidRetry.parsed, loci: lociParsed.loci },
-        job.locale
-      )
-      if (forbidAgain && interpretationHasBody(forbidAgain)) {
-        normalized = forbidAgain
-        hardHits = auditHardForbiddenHits(proseFromNormalized(normalized))
+      if (isShortBrief) {
+        const forbidBrief = parseFaceoracleBrief(forbidRetry.parsed)
+        if (forbidBrief && normalized) {
+          const forbidAgain = normalizeFaceoracleInterpretation(
+            {
+              loci: lociParsed.loci,
+              chapters: [
+                {
+                  kind: 'overview',
+                  goldenLine: forbidBrief.excerpt,
+                  evidence: forbidBrief.summary,
+                  dynamic: forbidBrief.suggestion,
+                  reef: null,
+                  remedy: forbidBrief.suggestion,
+                  counterpoint: null,
+                  citations: [],
+                },
+                {
+                  kind: 'horizon',
+                  goldenLine: forbidBrief.title,
+                  evidence: forbidBrief.summary,
+                  dynamic: forbidBrief.suggestion,
+                  reef: null,
+                  remedy: forbidBrief.suggestion,
+                  counterpoint: null,
+                  citations: [],
+                },
+              ],
+              overview: forbidBrief.summary,
+              advice: forbidBrief.suggestion,
+              periodDiff: null,
+              events: normalized.flat.events,
+            },
+            job.locale
+          )
+          if (forbidAgain && interpretationHasBody(forbidAgain)) {
+            normalized = forbidAgain
+            brief = forbidBrief
+            hardHits = auditHardForbiddenHits(proseFromNormalized(normalized))
+          }
+        }
+      } else {
+        const forbidAgain = normalizeFaceoracleInterpretation(
+          { ...forbidRetry.parsed, loci: lociParsed.loci },
+          job.locale
+        )
+        if (forbidAgain && interpretationHasBody(forbidAgain)) {
+          normalized = forbidAgain
+          hardHits = auditHardForbiddenHits(proseFromNormalized(normalized))
+        }
       }
     }
     if (hardHits.length > 0) {
@@ -1081,6 +1469,11 @@ export async function runFaceoracleReadingJob(
         patterns: hardHits.map((h) => h.pattern),
       })
     }
+  }
+
+  if (!normalized || !interpretationHasBody(normalized)) {
+    await failJob(db, job, 'ai_empty', true, env)
+    return
   }
 
   const interpretation = normalized.flat
@@ -1116,14 +1509,15 @@ export async function runFaceoracleReadingJob(
     natalFacts,
     horizonMonths,
     outputKind,
-    updateKind: 'full',
-    partialParts: null,
+    updateKind,
+    partialParts,
+    brief: brief ?? undefined,
     visionMode: 'real',
     aiInterpretation: interpretation,
     chapters: normalized.chapters,
     events,
     rawAiText: '',
-    promptPasses: ['loci', 'chapters'],
+    promptPasses: isShortBrief ? ['loci', 'brief'] : ['loci', 'chapters'],
   }
 
   const storedInput = {
@@ -1136,7 +1530,8 @@ export async function runFaceoracleReadingJob(
     city: job.city ?? undefined,
     horizonMonths,
     outputKind,
-    updateKind: 'full',
+    updateKind,
+    partialParts,
   }
 
   const finishedAt = new Date().toISOString()
@@ -1232,9 +1627,10 @@ export async function runFaceoracleReadingJob(
 export async function markFaceoracleJobFailed(
   db: AppDb,
   jobId: string,
-  message: string
+  message: string,
+  env?: CloudflareBindings | null
 ): Promise<void> {
   const job = await db.select().from(faceoracleJobs).where(eq(faceoracleJobs.id, jobId)).get()
   if (!job || job.stage === 'done' || job.stage === 'failed') return
-  await failJob(db, job, message, true)
+  await failJob(db, job, message, true, env)
 }
