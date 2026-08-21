@@ -12,7 +12,12 @@ import { OffsetPhotoStack } from '@/components/OffsetPhotoStack'
 import { XingqiLoader } from '@/components/XingqiLoader'
 import type { Locale } from '@/lib/i18n'
 import { partLabels, readingProcessingCopy } from '@/lib/living-copy'
-import type { CapturePart } from '@/lib/reading-draft'
+import {
+  type CapturePart,
+  draftCarriesPalmFeatures,
+  draftPartsPendingUpload,
+  getReadingDraft,
+} from '@/lib/reading-draft'
 import { periodPhotoMap } from '@/lib/period-photos'
 import type { ReadingJobPhase } from '@/lib/reading-job'
 import { POLAROID_FAN_W, POLAROID_STACK_H } from '@/lib/stack-layout'
@@ -46,7 +51,12 @@ export function ReadingProcessingPanel({
   const { colors, spacing } = useTheme()
   const insets = useSafeAreaInsets()
   const labels = partLabels(locale)
-  const copy = readingProcessingCopy(locale, phase)
+  const draft = getReadingDraft()
+  const activeParts = draftPartsPendingUpload(draft)
+  const copy = readingProcessingCopy(locale, phase, {
+    active: activeParts.length > 0 ? activeParts : undefined,
+    carryPalms: draftCarriesPalmFeatures(draft),
+  })
   const [uris, setUris] = useState<Partial<Record<CapturePart, string>>>({})
   const pct = Math.max(4, Math.min(100, Math.round(progress)))
   const canDismiss =
@@ -62,6 +72,13 @@ export function ReadingProcessingPanel({
       cancelled = true
     }
   }, [])
+
+  const dismissLabel =
+    locale === 'zh' || locale === 'zh-Hant'
+      ? '返回首页'
+      : locale === 'ja'
+        ? 'ホームに戻る'
+        : 'Back to home'
 
   return (
     <View
@@ -158,24 +175,10 @@ export function ReadingProcessingPanel({
           <Pressable
             onPress={onDismiss}
             accessibilityRole='button'
-            accessibilityLabel={
-              locale === 'zh' || locale === 'zh-Hant'
-                ? '返回首页'
-                : locale === 'ja'
-                  ? 'ホームに戻る'
-                  : 'Back to home'
-            }
+            accessibilityLabel={dismissLabel}
             style={{ paddingVertical: spacing.sm, paddingHorizontal: spacing.lg }}
           >
-            <Text style={{ color: colors.secondary, fontSize: 15 }}>
-              {locale === 'zh'
-                ? '返回首页查看进度'
-                : locale === 'zh-Hant'
-                  ? '返回首頁查看進度'
-                  : locale === 'ja'
-                    ? 'ホームで進捗を見る'
-                    : 'Back to home'}
-            </Text>
+            <Text style={{ color: colors.secondary, fontSize: 15 }}>{dismissLabel}</Text>
           </Pressable>
         ) : null}
       </View>

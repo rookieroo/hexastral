@@ -10,6 +10,7 @@ import {
 import { Alert } from 'react-native'
 
 import { devSetServerPro } from '@/lib/dev-tools'
+import { setDeepNextReading } from '@/lib/reading-preference'
 
 export function devEntitlementLabel(override: DevEntitlementOverride): string {
   if (override === 'pro') return 'PRO'
@@ -22,6 +23,8 @@ export async function cycleDevEntitlementOverride(): Promise<DevEntitlementOverr
   const next: DevEntitlementOverride = current === null ? 'pro' : current === 'pro' ? 'free' : null
   setDevEntitlementOverride(next)
   if (next === 'pro') {
+    // Deep-next is opt-in; never inherit an old ON when flipping DEV Pro.
+    await setDeepNextReading(false)
     const result = await devSetServerPro(true)
     if (!result.ok) {
       if (result.reason === 'no_session' || result.reason === 'hmac') {

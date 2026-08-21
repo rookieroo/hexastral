@@ -86,13 +86,16 @@ export default function SettingsScreen() {
       void fetchReadings(PORTFOLIO_TARGET_APP)
         .then((hist) => setReadingCount(hist.readings?.length ?? 0))
         .catch(() => setReadingCount(0))
-      void getDeepNextReading().then(setDeepNext)
+      void getDeepNextReading().then((on) => {
+        // Opt-in only; never show ON until the user flips it while Pro.
+        setDeepNext(isPro ? on : false)
+      })
       if (icloudBridge) {
         void getIcloudPhotoSyncEnabled().then(setIcloudOn)
         void pullReadingPhotosFromICloudIfEnabled()
       }
       if (__DEV__) setDevPro(getDevEntitlementOverride())
-    }, [icloudBridge])
+    }, [icloudBridge, isPro])
   )
 
   const softGatePro = () => {
@@ -143,7 +146,10 @@ export default function SettingsScreen() {
   }
 
   const cycleDevPro = () => {
-    void cycleDevEntitlementOverride().then(setDevPro)
+    void cycleDevEntitlementOverride().then((next) => {
+      setDevPro(next)
+      if (next === 'pro') setDeepNext(false)
+    })
   }
 
   return (

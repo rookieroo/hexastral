@@ -650,9 +650,34 @@ type ProcessingPhase =
   | 'done'
   | 'failed'
 
+export type ReadingProcessingParts = {
+  /** Parts ephemeral-uploaded / extracted this job. */
+  active?: Array<'palm_l' | 'palm_r' | 'face'>
+  /** Palms reused from prior featureIds (not re-uploaded). */
+  carryPalms?: boolean
+}
+
+function formatActiveParts(
+  locale: Locale,
+  parts: Array<'palm_l' | 'palm_r' | 'face'> | undefined
+): string {
+  const labels = partLabels(locale)
+  const list = parts?.length
+    ? parts.map((p) => (p === 'palm_l' ? labels.palmL : p === 'palm_r' ? labels.palmR : labels.face))
+    : [labels.palmL, labels.palmR, labels.face]
+  if (locale === 'ja') return list.join('・')
+  if (locale === 'en') {
+    if (list.length === 1) return list[0]!
+    if (list.length === 2) return `${list[0]} and ${list[1]}`
+    return `${list.slice(0, -1).join(', ')}, and ${list[list.length - 1]}`
+  }
+  return list.join('、')
+}
+
 export function readingProcessingCopy(
   locale: Locale,
-  phase: ProcessingPhase
+  phase: ProcessingPhase,
+  parts?: ReadingProcessingParts
 ): { title: string; hint: string; leave: string } {
   const key =
     phase === 'uploading'
@@ -665,93 +690,132 @@ export function readingProcessingCopy(
             ? 'interpret'
             : 'default'
 
+  const activeLabel = formatActiveParts(locale, parts?.active)
+  const carry =
+    Boolean(parts?.carryPalms) &&
+    !(parts?.active?.includes('palm_l') || parts?.active?.includes('palm_r'))
+
+  const uploadHint = (() => {
+    switch (locale) {
+      case 'zh':
+        return `正在安全传送${activeLabel}…`
+      case 'zh-Hant':
+        return `正在安全傳送${activeLabel}…`
+      case 'ja':
+        return `${activeLabel}を安全に送信しています…`
+      default:
+        return `Securely sending ${activeLabel}…`
+    }
+  })()
+
+  const extractHint = (() => {
+    switch (locale) {
+      case 'zh':
+        return carry
+          ? `云端正在结构化${activeLabel}（掌纹沿用上次特征）…`
+          : `云端正在结构化${activeLabel}…`
+      case 'zh-Hant':
+        return carry
+          ? `雲端正在結構化${activeLabel}（掌紋沿用上次特徵）…`
+          : `雲端正在結構化${activeLabel}…`
+      case 'ja':
+        return carry
+          ? `クラウドが${activeLabel}を構造化中（手相は前回特徴を継承）…`
+          : `クラウドが${activeLabel}を構造化しています…`
+      default:
+        return carry
+          ? `Cloud is structuring ${activeLabel} (palms reuse last extract)…`
+          : `Cloud is structuring ${activeLabel}…`
+    }
+  })()
+
   const pack = {
     upload: {
       zh: {
         title: '上传照片',
-        hint: '正在安全传送左掌、右掌与面部…',
+        hint: uploadHint,
         leave: '请保持打开直至上传完成。上传后即可离开，云端会继续提取与解读。',
       },
       hant: {
         title: '上傳照片',
-        hint: '正在安全傳送左掌、右掌與面部…',
+        hint: uploadHint,
         leave: '請保持打開直至上傳完成。上傳後即可離開，雲端會繼續提取與解讀。',
       },
       ja: {
         title: '写真を送信中',
-        hint: '左掌・右掌・顔を安全に送信しています…',
+        hint: uploadHint,
         leave: '送信完了までアプリを開いたままに。送信後は閉じてもクラウドで抽出・解読が続きます。',
       },
       en: {
         title: 'Uploading photos',
-        hint: 'Securely sending left palm, right palm, and face…',
+        hint: uploadHint,
         leave: 'Keep the app open until upload finishes. After that you can leave — the cloud continues.',
       },
     },
     extract: {
       zh: {
         title: '提取形气特征',
-        hint: '云端正在结构化左掌、右掌与面部…',
-        leave: '已上传，可离开。回首页可查看进度，完成后会通知你。',
+        hint: extractHint,
+        leave: '已上传，可离开。完成后会通知你。',
       },
       hant: {
         title: '提取形氣特徵',
-        hint: '雲端正在結構化左掌、右掌與面部…',
-        leave: '已上傳，可離開。回首頁可查看進度，完成後會通知你。',
+        hint: extractHint,
+        leave: '已上傳，可離開。完成後會通知你。',
       },
       ja: {
         title: '形気の特徴を抽出中',
-        hint: 'クラウドが左掌・右掌・顔を構造化しています…',
-        leave: '送信済み。アプリを閉じても大丈夫。ホームで進捗を確認できます。',
+        hint: extractHint,
+        leave: '送信済み。アプリを閉じても大丈夫。完了したらお知らせします。',
       },
       en: {
         title: 'Extracting form features',
-        hint: 'Cloud is structuring left palm, right palm, and face…',
-        leave: 'Uploaded — you can leave. Check progress on home; we notify when ready.',
+        hint: extractHint,
+        leave: 'Uploaded — you can leave. We notify you when ready.',
       },
     },
     queue: {
       zh: {
         title: '排队解读',
         hint: '特征已就绪，等待云端席位…',
-        leave: '已入队，可离开。回首页可查看进度，完成后会通知你。',
+        leave: '已入队，可离开。完成后会通知你。',
       },
       hant: {
         title: '排隊解讀',
         hint: '特徵已就緒，等待雲端席位…',
-        leave: '已入隊，可離開。回首頁可查看進度，完成後會通知你。',
+        leave: '已入隊，可離開。完成後會通知你。',
       },
       ja: {
         title: '解読待ち',
         hint: '特徴は準備完了。クラウドの順番待ち…',
-        leave: 'キュー済み。アプリを閉じても大丈夫。ホームで進捗を確認できます。',
+        leave: 'キュー済み。アプリを閉じても大丈夫。完了したらお知らせします。',
       },
       en: {
         title: 'Queued for reading',
         hint: 'Features ready — waiting for a cloud slot…',
-        leave: 'Queued — you can leave. Check progress on home; we notify you when ready.',
+        leave: 'Queued — you can leave. We notify you when ready.',
       },
     },
     interpret: {
       zh: {
         title: '撰写形气简报',
         hint: '五章简报正在密封成稿…',
-        leave: '云端撰写中，可离开。回首页可查看进度。',
+        leave: '云端撰写中，可离开。',
       },
       hant: {
         title: '撰寫形氣簡報',
         hint: '五章簡報正在密封成稿…',
-        leave: '雲端撰寫中，可離開。回首頁可查看進度。',
+        leave: '雲端撰寫中，可離開。',
       },
       ja: {
         title: '形気ブリーフを執筆中',
         hint: '五章のブリーフを密封しています…',
-        leave: 'クラウド執筆中。閉じても大丈夫。ホームで進捗を確認できます。',
+        leave: 'クラウド執筆中。閉じても大丈夫。',
       },
       en: {
         title: 'Writing your brief',
         hint: 'Sealing the five-chapter form brief…',
-        leave: 'Writing in the cloud — you can leave. Check progress on home.',
+        leave: 'Writing in the cloud — you can leave.',
       },
     },
     default: {

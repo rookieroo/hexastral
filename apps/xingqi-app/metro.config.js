@@ -3,11 +3,14 @@ const path = require('node:path')
 
 const projectRoot = __dirname
 const workspaceRoot = path.resolve(projectRoot, '../..')
+const syelIcloudRoot = path.resolve(projectRoot, 'modules/syel-icloud')
 
 const config = getDefaultConfig(projectRoot)
 config.watchFolders = [
   path.resolve(workspaceRoot, 'node_modules'),
   path.resolve(workspaceRoot, 'packages'),
+  // Local Expo module (Bun file: symlink under .bun is often invisible to Metro).
+  syelIcloudRoot,
 ]
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
@@ -21,6 +24,7 @@ config.resolver.extraNodeModules = {
   'react-native': path.resolve(projectRoot, 'node_modules/react-native'),
   'react-native-reanimated': path.resolve(projectRoot, 'node_modules/react-native-reanimated'),
   'expo-router': path.resolve(projectRoot, 'node_modules/expo-router'),
+  'syel-icloud': syelIcloudRoot,
 }
 
 // Pin expo-router (and React) to a single physical copy. Without this, Metro can
@@ -29,7 +33,13 @@ config.resolver.extraNodeModules = {
 const expoRouterRoot = path.dirname(
   require.resolve('expo-router/package.json', { paths: [projectRoot] })
 )
-const PINNED = ['expo-router', 'react', 'react-native', 'react-native-reanimated']
+const PINNED = [
+  'expo-router',
+  'react',
+  'react-native',
+  'react-native-reanimated',
+  'syel-icloud',
+]
 
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   const match = PINNED.find((p) => moduleName === p || moduleName.startsWith(`${p}/`))
@@ -37,7 +47,16 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     const root =
       match === 'expo-router'
         ? expoRouterRoot
-        : path.dirname(require.resolve(`${match}/package.json`, { paths: [projectRoot] }))
+        : match === 'syel-icloud'
+          ? syelIcloudRoot
+          : path.dirname(require.resolve(`${match}/package.json`, { paths: [projectRoot] }))
+    if (match === 'syel-icloud' && moduleName === 'syel-icloud') {
+      return context.resolveRequest(
+        { ...context, resolveRequest: undefined },
+        path.join(root, 'src', 'index.ts'),
+        platform
+      )
+    }
     const subpath = moduleName === match ? '' : moduleName.slice(match.length)
     const absolutePath = path.join(root, subpath)
     return context.resolveRequest(

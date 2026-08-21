@@ -318,3 +318,41 @@ export function draftUriForPart(part: CapturePart, d: ReadingDraft = draft): str
   if (part === 'palm_r') return d.palmRightUri
   return d.faceUri
 }
+
+/**
+ * Parts that will be ephemeral-uploaded for this job (mirrors runFaceReading needsUpload).
+ * Face always uploads when a local JPEG exists; palms skip when a prior featureId is kept.
+ */
+export function draftPartsPendingUpload(d: ReadingDraft = draft): CapturePart[] {
+  const partial = d.partialParts
+  const out: CapturePart[] = []
+  const consider = (
+    part: CapturePart,
+    uri: string | undefined,
+    featureId: string | undefined
+  ): void => {
+    if (!uri) return
+    if (part === 'face') {
+      out.push('face')
+      return
+    }
+    if (!featureId) {
+      out.push(part)
+      return
+    }
+    if (d.updateKind === 'partial' && partial?.includes(part)) out.push(part)
+  }
+  consider('palm_l', d.palmLeftUri, d.palmLeftFeatureId)
+  consider('palm_r', d.palmRightUri, d.palmRightFeatureId)
+  consider('face', d.faceUri, d.faceFeatureId)
+  return out
+}
+
+/** True when palms are covered by featureId without a new JPEG this round. */
+export function draftCarriesPalmFeatures(d: ReadingDraft = draft): boolean {
+  const hasL = Boolean(d.palmLeftUri || d.palmLeftFeatureId)
+  const hasR = Boolean(d.palmRightUri || d.palmRightFeatureId)
+  if (!hasL || !hasR) return false
+  const uploading = draftPartsPendingUpload(d)
+  return !uploading.includes('palm_l') && !uploading.includes('palm_r')
+}
