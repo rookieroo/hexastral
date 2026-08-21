@@ -15,10 +15,12 @@
 import { and, eq, sql } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import {
+  FACEORACLE_PRO_DEEP_READS_PER_MONTH,
   FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH,
   FACEORACLE_PRO_REPORT_REGENS_PER_MONTH,
+  FACEORACLE_PRO_SHALLOW_PER_DAY,
 } from '../config/products'
-import { bondInviteCredits, freeMonthlyQuotas, users } from '../db/schema'
+import { bondInviteCredits, faceoracleDailyQuotas, freeMonthlyQuotas, users } from '../db/schema'
 import type { AppDb } from '../infra-types'
 
 // FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH imported for ADR-0028 meter
@@ -250,6 +252,7 @@ export async function checkAndConsumeFaceoraclePhotoSlots(
       physiognomyUploads: 0,
       faceoraclePhotoSlots: 0,
       faceoracleReportRegens: 0,
+      faceoracleDeepReads: 0,
     })
     .onConflictDoNothing()
 
@@ -330,6 +333,7 @@ export async function checkAndConsumeFaceoracleReportRegen(
       physiognomyUploads: 0,
       faceoraclePhotoSlots: 0,
       faceoracleReportRegens: 0,
+      faceoracleDeepReads: 0,
     })
     .onConflictDoNothing()
 
@@ -383,17 +387,170 @@ export async function refundFaceoracleReportRegen(db: AppDb, userId: string): Pr
     .where(and(eq(freeMonthlyQuotas.userId, userId), eq(freeMonthlyQuotas.month, month)))
 }
 
-/** Combined Pro meters for Xingqi home quota chrome. */
+function currentUtcDay(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+async function ensureMonthlyQuotaRow(db: AppDb, userId: string, month: string): Promise<void> {
+  await db
+    .insert(freeMonthlyQuotas)
+    .values({
+      id: nanoid(),
+      userId,
+      month,
+      divinationUsed: 0,
+      physiognomyUploads: 0,
+      faceoraclePhotoSlots: 0,
+      faceoracleReportRegens: 0,
+      faceoracleDeepReads: 0,
+    })
+    .onConflictDoNothing()
+}
+
+/** Pro deep five-chapter readings (oneshot / deep / discouraged deep regen). Cap = 3 / UTC month. */
+export async function checkAndConsumeFaceoracleDeepRead(
+  db: AppDb,
+  userId: string
+): Promise<{ granted: boolean; used: number; limit: number }> {
+  const month = currentMonth()
+  const limit = FACEORACLE_PRO_DEEP_READS_PER_MONTH
+  await ensureMonthlyQuotaRow(db, userId, month)
+
+  const result = await db
+    .update(freeMonthlyQuotas)
+    .set({
+      faceoracleDeepReads: sql`${freeMonthlyQuotas.faceoracleDeepReads} + 1`,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(
+      and(
+        eq(freeMonthlyQuotas.userId, userId),
+        eq(freeMonthlyQuotas.month, month),
+        sql`${freeMonthlyQuotas.faceoracleDeepReads} + 1 <= ${limit}`
+      )
+    )
+
+  const changed = (result as unknown as { meta: { changes: number } }).meta.changes
+  const row = await db
+    .select({ used: freeMonthlyQuotas.faceoracleDeepReads })
+    .from(freeMonthlyQuotas)
+    .where(and(eq(freeMonthlyQuotas.userId, userId), eq(freeMonthlyQuotas.month, month)))
+    .get()
+
+  return { granted: changed > 0, used: row?.used ?? 0, limit }
+}
+
+export async function getFaceoracleDeepReadUsage(
+  db: AppDb,
+  userId: string
+): Promise<{ used: number; limit: number; remaining: number }> {
+  const month = currentMonth()
+  const limit = FACEORACLE_PRO_DEEP_READS_PER_MONTH
+  const row = await db
+    .select({ used: freeMonthlyQuotas.faceoracleDeepReads })
+    .from(freeMonthlyQuotas)
+    .where(and(eq(freeMonthlyQuotas.userId, userId), eq(freeMonthlyQuotas.month, month)))
+    .get()
+  const used = row?.used ?? 0
+  return { used, limit, remaining: Math.max(0, limit - used) }
+}
+
+export async function refundFaceoracleDeepRead(db: AppDb, userId: string): Promise<void> {
+  const month = currentMonth()
+  await db
+    .update(freeMonthlyQuotas)
+    .set({
+      faceoracleDeepReads: sql`max(0, ${freeMonthlyQuotas.faceoracleDeepReads} - 1)`,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(and(eq(freeMonthlyQuotas.userId, userId), eq(freeMonthlyQuotas.month, month)))
+}
+
+/** Pro Face shallow brief (`period_brief`) — 1 per UTC calendar day. */
+export async function checkAndConsumeFaceoracleShallowDaily(
+  db: AppDb,
+  userId: string
+): Promise<{ granted: boolean; used: number; limit: number; day: string }> {
+  const day = currentUtcDay()
+  const limit = FACEORACLE_PRO_SHALLOW_PER_DAY
+
+  await db
+    .insert(faceoracleDailyQuotas)
+    .values({
+      id: nanoid(),
+      userId,
+      day,
+      shallowUsed: 0,
+    })
+    .onConflictDoNothing()
+
+  const result = await db
+    .update(faceoracleDailyQuotas)
+    .set({
+      shallowUsed: sql`${faceoracleDailyQuotas.shallowUsed} + 1`,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(
+      and(
+        eq(faceoracleDailyQuotas.userId, userId),
+        eq(faceoracleDailyQuotas.day, day),
+        sql`${faceoracleDailyQuotas.shallowUsed} + 1 <= ${limit}`
+      )
+    )
+
+  const changed = (result as unknown as { meta: { changes: number } }).meta.changes
+  const row = await db
+    .select({ used: faceoracleDailyQuotas.shallowUsed })
+    .from(faceoracleDailyQuotas)
+    .where(and(eq(faceoracleDailyQuotas.userId, userId), eq(faceoracleDailyQuotas.day, day)))
+    .get()
+
+  return { granted: changed > 0, used: row?.used ?? 0, limit, day }
+}
+
+export async function getFaceoracleShallowDailyUsage(
+  db: AppDb,
+  userId: string
+): Promise<{ used: number; limit: number; remaining: number; day: string }> {
+  const day = currentUtcDay()
+  const limit = FACEORACLE_PRO_SHALLOW_PER_DAY
+  const row = await db
+    .select({ used: faceoracleDailyQuotas.shallowUsed })
+    .from(faceoracleDailyQuotas)
+    .where(and(eq(faceoracleDailyQuotas.userId, userId), eq(faceoracleDailyQuotas.day, day)))
+    .get()
+  const used = row?.used ?? 0
+  return { used, limit, remaining: Math.max(0, limit - used), day }
+}
+
+export async function refundFaceoracleShallowDaily(db: AppDb, userId: string): Promise<void> {
+  const day = currentUtcDay()
+  await db
+    .update(faceoracleDailyQuotas)
+    .set({
+      shallowUsed: sql`max(0, ${faceoracleDailyQuotas.shallowUsed} - 1)`,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(and(eq(faceoracleDailyQuotas.userId, userId), eq(faceoracleDailyQuotas.day, day)))
+}
+
+/** Combined Pro meters for Xingqi usage chrome. */
 export async function getFaceoracleQuotaBundle(
   db: AppDb,
   userId: string
 ): Promise<{
+  deep: { used: number; limit: number; remaining: number }
+  shallow: { used: number; limit: number; remaining: number; day: string }
+  /** @deprecated Legacy photo-slot meter — no longer charged on enqueue. */
   photos: { used: number; limit: number; remaining: number }
+  /** @deprecated Deep regen discouraged; prefer new capture. */
   reports: { used: number; limit: number; remaining: number }
 }> {
-  const [photos, reports] = await Promise.all([
+  const [deep, shallow, photos, reports] = await Promise.all([
+    getFaceoracleDeepReadUsage(db, userId),
+    getFaceoracleShallowDailyUsage(db, userId),
     getFaceoraclePhotoSlotUsage(db, userId),
     getFaceoracleReportRegenUsage(db, userId),
   ])
-  return { photos, reports }
+  return { deep, shallow, photos, reports }
 }

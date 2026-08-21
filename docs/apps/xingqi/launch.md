@@ -6,6 +6,9 @@
 
 **产品**：面相/手相三源（L/R 掌 + 脸）+ 生辰必填（ADR-0028）。产品脊柱见 [product.md](./product.md)。
 
+**权益句（商店 / RC / App 对齐）：**  
+> Pro: 3 deep form readings / month · 1 Face brief / day · archive & qi tools. First reading is deep. One-shot purchase: one full five-chapter reading ($9.99). List: Pro monthly $14.99 · annual $99.99.
+
 ## 已知阻塞（human）
 
 - [ ] EAS `projectId` 仍为 `REPLACE_*`（`apps/xingqi-app/eas.json`）

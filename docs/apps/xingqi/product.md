@@ -37,13 +37,15 @@ On-device period sandbox remains for viewing drafts; VLM extract runs in the que
 
 | Mode | Input | Output | Billing |
 |---|---|---|---|
-| **Seal / oneshot** (first complete read) | Three fresh photos | Dense **5-chapter** report + loci | 1 credit / purchase, or Pro photo slots ×3 |
-| **Period brief** (New period / Pro refresh) | ≥1 **new** photo; missing slots reuse last **featureIds** (no visual carry) | Short **`brief`** schema + shorter loci | Pro photo slots = **number of new parts** (1–3) |
-| **Regen** | Zero new photos | Same photos, new body/locale | Report regen (not photo slots) |
+| **Seal / oneshot** (consumable or Pro first seal / deep-next) | Deep: three photos (first seal / consumable); period deep may reuse palm featureIds | Dense **5-chapter** report + loci | Consumable: 1 credit. Pro: **1 deep / month** unit |
+| **Period brief** (Pro refresh after first seal) | ≥1 **new** Face photo; palms may reuse **featureIds** | Short **`brief`** schema + shorter loci | Pro: **1 Face shallow / UTC day** |
+| **Regen** (discouraged for deep) | Zero new photos | Same photos, new body/locale | Counts as **deep** if deep body; prefer new capture |
 
-**New period:** Same fan → capture UX as first seal (empty slots, no photo carry). After the first oneshot, **≥1 new photo** is enough — empty slots reuse the previous reading’s featureIds. Continue enables once one slot is filled.
+**New period:** Same fan → capture UX as first seal (empty slots, no photo carry). After the first oneshot, **Face required**; empty palm slots reuse previous featureIds.
 
-**Deep next (settings):** Toggle *下次深度解读* — visible once you have at least one reading (PRO badge if not subscribed). When on, the **next** period enqueue uses `oneshot` (five chapters) while photo billing stays partial. Default off; consumed once at job start. **First seal is always deep.**
+**Deep next (settings):** Toggle *下次深度解读* — visible once you have at least one reading (PRO badge if not subscribed). **Default off.** When on, the **next** period enqueue uses `oneshot` (five chapters) and consumes a **deep** monthly unit. **First seal is always deep** and ignores this toggle.
+
+**Suggested list prices:** consumable **$9.99** · Pro monthly **$14.99** · Pro annual **$99.99**.
 
 **`brief` schema** (`outputKind: period_brief`, stored on `resultJson`):
 
@@ -71,11 +73,11 @@ brief: {
 
 | | One-shot | Pro (`faceoracle_pro`) |
 |---|---|---|
-| SKU | `faceoracle_reading` | `faceoracle_pro_*` |
-| Result | Dense 5-chapter seal once | Seal + **period briefs** (short schema) |
+| SKU | `faceoracle_reading` (~$9.99) | `faceoracle_pro_monthly` (~$14.99) / `_annual` (~$99.99) |
+| Result | Dense 5-chapter seal once | First seal deep + later **period briefs** (short schema); optional deep-next |
 | Living layer | **No** Timeline / What-if / Chat / Living FAB | Yes |
 | History / 档案 | Current reading only | Snapshots + period briefs |
-| Quota | 1 credit / purchase | **Photos:** 6 slots / UTC month (**1 slot per new photo** on partial period). **Report regen:** 3 / UTC month (same photos, new locale/body; `regen: true`) |
+| Quota | 1 credit / purchase | **Deep:** 3 / UTC month. **Shallow Face brief:** 1 / UTC day. (Legacy photo-slot meter retired.) |
 | Events | Written once | Refreshed each reading; drives push + period / 形气窗口 strip |
 | Life axis | — | Yuun-parity git-graph (`/timeline`) via `/api/physiognomy/cycle/*` |
 | What-if | — | Yuun-parity forks (`/makeif`) via same facade |
@@ -114,7 +116,7 @@ See [lantai/demand.md](../lantai/demand.md).
 - **Generation language** = device locale at enqueue → stored on `faceoracle_jobs.locale` / `portfolio_readings.locale`. Body is frozen.
 - **Chrome** (chapter titles, layer labels, History list titles) follows **current** device locale.
 - **Switching locale never auto-regenerates** stored readings.
-- **Explicit regen** (Living FAB → “Regenerate in this language”) costs **1 report regen**, not photo slots; bypasses `features_unchanged`.
+- **Explicit regen** (Living FAB) for deep is **discouraged** — prefer a new period capture. If used, it consumes **1 deep** monthly unit and bypasses `features_unchanged`.
 - Prompt uses Yuel-aligned language blocks (`faceoracle-locale.ts`):
   - **zh:** meaning-first 白话 around classical terms; **no English craft tokens** (`future` / `tension` / `palm`…); Latin/denylist leak → locale retry.
   - **en/ja:** keep load-bearing **汉字** terms (天庭、生命线、用神…); meaning in target-language prose; **no romanization-as-primary**; app tap-to-gloss (`TermAwareText` + Settings terms). Same north star as Yuel [term-glossary-plan](../yuel/term-glossary-plan.md).
@@ -154,7 +156,7 @@ Privacy: **never** cache source images (ADR-0028). Only hashes + derived JSON.
 | **L0 Client** | photo mtime+size / featureIds | AsyncStorage stamp | Block duplicate **reading** start | Replace any period photo |
 | **L1 VLM** | `SHA-256(bytes\|type\|model\|schemaVer)` per user | D1 `user_physiognomy_features.content_hash` | Skip Gemini; reuse `featureId`; no free upload quota | Bump `FACEORACLE_VLM_MODEL` / `FACEORACLE_VLM_SCHEMA_VERSION` |
 | **L2 Job** | featureId triple | jobs + last reading `inputJson` | In-flight → 202 `deduped`; done/same → 409 `features_unchanged` (unless `regen`) | New featureId after photo change; or Pro `regen: true` |
-| **L2b Report regen** | user + UTC month | D1 `faceoracle_report_regens` | Cap 3; charge on `regen` enqueue | Month rollover |
+| **L2b Deep / shallow** | user + UTC month / UTC day | D1 deep_reads + shallow daily | Cap 3 deep/mo; 1 shallow/day | Month / day rollover |
 | **L3 Timeline** | birth context | D1 `life_timeline_cache` | Return payload | Birth change; `TIMELINE_CACHE_VERSION` |
 | **L3 Explain** | owner + node + locale | `timeline_readings` | Return stored reading | New node / locale / guard app |
 | **L3 Make-if** | birth + shape + locale | GUARD_KV + `makeif_forks` | KV narrate TTL; forks CRUD | Shape change; user delete fork |

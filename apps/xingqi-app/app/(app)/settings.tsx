@@ -475,10 +475,10 @@ export default function SettingsScreen() {
             <SettingsRow
               label={s('用量与周期', '用量與週期', 'Usage & cadence', '用量と周期')}
               hint={s(
-                '最近解读、25 天更新建议、本月额度',
-                '最近解讀、25 天更新建議、本月額度',
-                'Last reading, 25-day refresh, monthly quotas',
-                '直近の解読、25日更新の目安、今月の枠'
+                '最近解读、25 天更新建议、深度/浅读额度',
+                '最近解讀、25 天更新建議、深度／淺讀額度',
+                'Last reading, 25-day refresh, deep & Face-brief quotas',
+                '直近の解読、25日更新の目安、深度・浅読枠'
               )}
               onPress={() => router.push('/(app)/usage' as never)}
               divider={Boolean(userId)}

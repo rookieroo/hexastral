@@ -442,15 +442,17 @@ export const faceFeaturesRoutes = new Hono<AppEnv>()
     })
   })
 
-  /** GET /face-features/quota — Pro photo + report-regen usage this UTC month */
+  /** GET /face-features/quota — Pro deep (month) + Face shallow (UTC day) */
   .get('/quota', async (c) => {
     const userId = requireUserId(c)
     const bundle = await getFaceoracleQuotaBundle(c.get('db'), userId)
     return c.json({
-      // Backward-compatible flat photo fields
-      used: bundle.photos.used,
-      limit: bundle.photos.limit,
-      remaining: bundle.photos.remaining,
+      deep: bundle.deep,
+      shallow: bundle.shallow,
+      // Legacy fields (photo slots no longer charged on enqueue)
+      used: bundle.deep.used,
+      limit: bundle.deep.limit,
+      remaining: bundle.deep.remaining,
       photos: bundle.photos,
       reports: bundle.reports,
     })

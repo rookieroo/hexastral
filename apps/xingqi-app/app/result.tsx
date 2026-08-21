@@ -10,7 +10,7 @@ import * as Clipboard from 'expo-clipboard'
 import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { X } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Dimensions, Pressable, Text, View } from 'react-native'
+import { Dimensions, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ChapterPager } from '@/components/reading/ChapterPager'
@@ -28,8 +28,6 @@ import { resolveLocale } from '@/lib/i18n'
 import { useImageShare } from '@/lib/imageShare'
 import { livingLayerLabels, readingBriefCopy } from '@/lib/living-copy'
 import { isCjkZh, isJa, okForReadingLocale, pickUi } from '@/lib/locale-zh'
-import { hydrateReadingDraft, patchReadingDraft } from '@/lib/reading-draft'
-import { showReadingStartedHandoff, startReadingJob } from '@/lib/reading-job'
 import {
   adaptReadingChapters,
   chapterTitle,
@@ -146,76 +144,6 @@ export default function FaceResultScreen() {
   const goHome = () => router.replace('/(app)' as never)
   const chatId = readingId ?? 'draft'
   const softGatePro = () => router.push('/(commerce)/paywall' as never)
-
-  const confirmRegenerate = () => {
-    if (!isPro) {
-      softGatePro()
-      return
-    }
-    Alert.alert(
-      s('重新生成报告？', '重新生成報告？', 'Regenerate report?', 'レポートを再生成しますか？'),
-      s(
-        '使用当前系统语言重写正文，消耗 1 次本月报告重生成额度（不消耗照片额度）。',
-        '使用目前系統語言重寫正文，消耗 1 次本月報告重新生成額度（不消耗照片額度）。',
-        'Rewrites the body in your current language. Uses 1 monthly report regeneration (not photo slots).',
-        '現在の言語で本文を書き直します。月次の再生成枠を1回消費します（写真枠は消費しません）。'
-      ),
-      [
-        { text: s('取消', '取消', 'Cancel', 'キャンセル'), style: 'cancel' },
-        {
-          text: s('生成', '生成', 'Regenerate', '再生成'),
-          onPress: () => {
-            void (async () => {
-              const birth = (output.birth ?? {}) as Record<string, unknown>
-              const faceFeatureId =
-                typeof output.faceFeatureId === 'string' ? output.faceFeatureId : undefined
-              const palmLeftFeatureId =
-                typeof output.palmLeftFeatureId === 'string' ? output.palmLeftFeatureId : undefined
-              const palmRightFeatureId =
-                typeof output.palmRightFeatureId === 'string'
-                  ? output.palmRightFeatureId
-                  : undefined
-              if (faceFeatureId && palmLeftFeatureId && palmRightFeatureId) {
-                patchReadingDraft({
-                  faceFeatureId,
-                  palmLeftFeatureId,
-                  palmRightFeatureId,
-                  solarDate: typeof birth.solarDate === 'string' ? birth.solarDate : undefined,
-                  timeIndex: typeof birth.timeIndex === 'number' ? birth.timeIndex : undefined,
-                  gender: birth.gender === '男' || birth.gender === '女' ? birth.gender : undefined,
-                  city: typeof birth.city === 'string' ? birth.city : undefined,
-                  outputKind: 'period_brief',
-                })
-              }
-              const draft = await hydrateReadingDraft()
-              const started = startReadingJob({
-                locale,
-                outputKind: 'period_brief',
-                isPro: true,
-                draft,
-                regen: true,
-                onQueued: () => {
-                  void showReadingStartedHandoff({ locale })
-                  goHome()
-                },
-              })
-              if (!started) {
-                Alert.alert(
-                  s('解读进行中', '解讀進行中', 'Reading in progress', '解読中'),
-                  s(
-                    '请等待当前解读完成。',
-                    '請等待目前解讀完成。',
-                    'Wait for the current reading to finish.',
-                    '現在の解読が終わるまでお待ちください。'
-                  )
-                )
-              }
-            })()
-          },
-        },
-      ]
-    )
-  }
 
   const cardColors = {
     bg: colors.bg,
@@ -450,7 +378,6 @@ export default function FaceResultScreen() {
             )
           }
           onChat={() => openChat(null)}
-          onRegenerate={confirmRegenerate}
         />
       ) : null}
       {!isPro ? (

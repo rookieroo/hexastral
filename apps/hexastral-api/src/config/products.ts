@@ -165,7 +165,7 @@ export const PRODUCTS: readonly ProductSpec[] = [
     grantsEntitlements: ['coincast_pro'],
   },
 
-  // ── FaceOracle Pro (ADR-0028) — Timeline + photo-slot quota ─────────────
+  // ── FaceOracle Pro (ADR-0028) — deep/shallow meters + living layer ─────
   {
     productId: 'faceoracle_pro_monthly',
     kind: 'subscription',
@@ -347,8 +347,27 @@ export const ENTITLEMENT_MONTHLY_ALLOWANCE: Partial<
   universe_pro: UNIVERSE_MONTHLY_ALLOWANCE,
 }
 
-/** FaceOracle Pro photo slots per UTC calendar month (full=3, partial=1). */
+/**
+ * @deprecated Pro enqueue no longer charges photo slots (2026-08-21).
+ * Kept for legacy refund paths / usage chrome migration.
+ */
 export const FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH = 6
 
-/** FaceOracle Pro report regenerations per UTC month (same feature triple, new locale/body). */
+/**
+ * @deprecated Deep same-photo regen is discouraged; deep jobs consume deep_reads.
+ * Column retained for historical rows.
+ */
 export const FACEORACLE_PRO_REPORT_REGENS_PER_MONTH = 3
+
+/** FaceOracle Pro deep five-chapter readings per UTC calendar month. */
+export const FACEORACLE_PRO_DEEP_READS_PER_MONTH = 3
+
+/** FaceOracle Pro Face shallow briefs (`period_brief`) per UTC calendar day. */
+export const FACEORACLE_PRO_SHALLOW_PER_DAY = 1
+
+/** Suggested store list prices (ASC / Play / RC) — not enforced in code. */
+export const FACEORACLE_LIST_PRICE_USD = {
+  reading: 9.99,
+  proMonthly: 14.99,
+  proAnnual: 99.99,
+} as const

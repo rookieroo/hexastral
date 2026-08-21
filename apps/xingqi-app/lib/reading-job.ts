@@ -5,12 +5,15 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { fetchReadings } from '@zhop/portfolio-client'
 import {
   getPortfolioUserId,
   getPushPermissionStatus,
   requestPushPermission,
 } from '@zhop/satellite-runtime'
 import { Alert, AppState, type AppStateStatus, Linking } from 'react-native'
+
+import { PORTFOLIO_TARGET_APP } from './growth-config'
 
 import {
   type FaceoracleJobPoll,
@@ -271,8 +274,7 @@ function mapJobError(msg: string, locale: string): string {
     )
   } else if (
     msg === 'purchase_required' ||
-    msg.toLowerCase().includes('purchase_required') ||
-    msg.toLowerCase().includes('quota')
+    msg.toLowerCase().includes('purchase_required')
   ) {
     error = zhCopy(
       locale,
@@ -281,21 +283,37 @@ function mapJobError(msg: string, locale: string): string {
       'A valid subscription or one-time purchase is required to start a reading.',
       '有効なサブスクリプションまたは単発購入が必要です。'
     )
-  } else if (msg.includes('photo_slot_exhausted')) {
+  } else if (msg.includes('deep_quota_exhausted') || msg.includes('photo_slot_exhausted')) {
     error = zhCopy(
       locale,
-      '本月照片额度已用尽',
-      '本月照片額度已用盡',
-      'Monthly photo slots exhausted',
-      '今月の写真枠を使い切りました'
+      '本月深度解读额度已用尽。可购买单次深读，或等到下月。',
+      '本月深度解讀額度已用盡。可購買單次深讀，或等到下月。',
+      'Monthly deep readings exhausted. Buy a one-shot deep reading, or wait until next month.',
+      '今月の深度解読枠を使い切りました。単発の深度解読を購入するか、翌月までお待ちください。'
+    )
+  } else if (msg.includes('shallow_daily_exhausted')) {
+    error = zhCopy(
+      locale,
+      '今日浅读额度已用完，请明天再试（UTC 日界）。',
+      '今日淺讀額度已用完，請明天再試（UTC 日界）。',
+      'Today’s Face brief is used up. Try again tomorrow (UTC day).',
+      '本日の浅読枠を使い切りました。UTC 日付が変わってからお試しください。'
     )
   } else if (msg.includes('report_regen_exhausted')) {
     error = zhCopy(
       locale,
-      '本月报告重生成额度已用尽',
-      '本月報告重新生成額度已用盡',
-      'Monthly report regenerations exhausted',
-      '今月の再生成枠を使い切りました'
+      '本月深度解读额度已用尽',
+      '本月深度解讀額度已用盡',
+      'Monthly deep readings exhausted',
+      '今月の深度解読枠を使い切りました'
+    )
+  } else if (msg.toLowerCase().includes('quota')) {
+    error = zhCopy(
+      locale,
+      '额度不足，请购买单次深读或等待重置。',
+      '額度不足，請購買單次深讀或等待重置。',
+      'Quota exhausted. Buy a one-shot deep reading or wait for reset.',
+      '枠が不足しています。単発の深度解読を購入するか、リセットまでお待ちください。'
     )
   } else if (msg === 'extract_not_pro' || msg.includes('extract_not_pro')) {
     error = zhCopy(
@@ -698,15 +716,31 @@ export function startReadingJob(input: StartReadingJobInput): boolean {
   inFlight = (async () => {
     try {
       let effectiveOutputKind = input.outputKind
+      // First Pro seal is always deep (ignore deep-next / client period_brief).
+      if (input.isPro && !input.regen) {
+        try {
+          const prior = await fetchReadings(PORTFOLIO_TARGET_APP)
+          if ((prior.readings?.length ?? 0) === 0) {
+            effectiveOutputKind = 'oneshot'
+            patchReadingDraft({
+              outputKind: 'oneshot',
+              updateKind: 'full',
+              partialParts: undefined,
+            })
+          }
+        } catch {
+          // If we cannot load archive, keep client kind; API also forces first seal.
+        }
+      }
       if (effectiveOutputKind === 'period_brief') {
         const deep = await consumeDeepNextReading()
         if (deep) {
           effectiveOutputKind = 'oneshot'
-          // Keep updateKind/partialParts — deep body, same photo billing.
+          // Keep updateKind/partialParts — deep body on partial Face refresh.
           patchReadingDraft({ outputKind: 'oneshot' })
         }
       }
-      // Re-read after deep-next patch — frozen `draft` above still had period_brief.
+      // Re-read after deep-next / first-seal patch.
       const draftForJob = getReadingDraft()
 
       // Prefer attaching an existing cloud job over starting a duplicate.

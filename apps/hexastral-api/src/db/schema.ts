@@ -1959,10 +1959,12 @@ export const freeMonthlyQuotas = sqliteTable(
     divinationUsed: integer('divination_used').default(0).notNull(),
     /** 当月面相/手相上传次数 */
     physiognomyUploads: integer('physiognomy_uploads').default(0).notNull(),
-    /** FaceOracle Pro photo slots used this UTC month (ADR-0028; cap 6). */
+    /** FaceOracle Pro photo slots used this UTC month (legacy; enqueue no longer charges). */
     faceoraclePhotoSlots: integer('faceoracle_photo_slots').default(0).notNull(),
-    /** FaceOracle Pro report regenerations used this UTC month (same photos, new locale/body; cap 3). */
+    /** FaceOracle Pro report regenerations used this UTC month (legacy / discouraged). */
     faceoracleReportRegens: integer('faceoracle_report_regens').default(0).notNull(),
+    /** FaceOracle Pro deep five-chapter readings used this UTC month (cap 3). */
+    faceoracleDeepReads: integer('faceoracle_deep_reads').default(0).notNull(),
     createdAt: text('created_at')
       .notNull()
       .$defaultFn(() => new Date().toISOString()),
@@ -1973,6 +1975,33 @@ export const freeMonthlyQuotas = sqliteTable(
   (t) => [
     unique('fmq_user_month_uniq').on(t.userId, t.month),
     index('fmq_user_month_idx').on(t.userId, t.month),
+  ]
+)
+
+/**
+ * FaceOracle Pro Face shallow briefs per UTC calendar day (cap 1).
+ */
+export const faceoracleDailyQuotas = sqliteTable(
+  'faceoracle_daily_quotas',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    /** UTC day YYYY-MM-DD */
+    day: text('day').notNull(),
+    /** Shallow period_brief jobs used this day */
+    shallowUsed: integer('shallow_used').default(0).notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    updatedAt: text('updated_at')
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (t) => [
+    unique('fdq_user_day_uniq').on(t.userId, t.day),
+    index('fdq_user_day_idx').on(t.userId, t.day),
   ]
 )
 

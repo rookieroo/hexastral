@@ -59,7 +59,10 @@ import {
   refundCredit,
 } from '../services/credits'
 import { hasActiveEntitlement } from '../services/entitlements'
-import { checkAndConsumeFaceoraclePhotoSlots } from '../services/quota'
+import {
+  checkAndConsumeFaceoracleDeepRead,
+  checkAndConsumeFaceoracleShallowDaily,
+} from '../services/quota'
 import {
   checkDivinationGuard,
   type GuardReason,
@@ -1174,7 +1177,7 @@ portfolioRoutes.post('/linked/:target', async (c) => {
   if (!user) throw new HTTPException(404, { message: 'User not found' })
 
   // FaceOracle (ADR-0028): biometric consent + birth + three sources; pay via
-  // faceoracle_pro (photo slots) OR one `face` credit (faceoracle_reading / universe).
+  // faceoracle_pro (deep/shallow meters) OR one `face` credit (faceoracle_reading).
   let faceVlmAuthorized = false
   let faceCreditSource: CreditSource | null = null
   if (targetParsed.data === 'faceoracle') {
@@ -1204,18 +1207,43 @@ portfolioRoutes.post('/linked/:target', async (c) => {
       (await hasActiveEntitlement(db, userId, 'faceoracle_pro')) ||
       (await hasActiveEntitlement(db, userId, 'universe_pro'))
     if (isFacePro) {
-      const slots = fi.updateKind === 'partial' ? Math.max(1, fi.partialParts?.length ?? 1) : 3
-      const slot = await checkAndConsumeFaceoraclePhotoSlots(db, userId, slots)
-      if (!slot.granted) {
-        return c.json(
-          {
-            error: 'photo_slot_exhausted',
-            used: slot.used,
-            limit: slot.limit,
-            upsell: 'faceoracle_reading',
-          },
-          402
+      const prior = await db
+        .select({ id: portfolioReadings.id })
+        .from(portfolioReadings)
+        .where(
+          and(eq(portfolioReadings.userId, userId), eq(portfolioReadings.targetApp, 'faceoracle'))
         )
+        .limit(1)
+        .get()
+      const kind = fi.outputKind ?? 'oneshot'
+      const chargeDeep = !prior || kind === 'oneshot' || kind === 'deep'
+      if (chargeDeep) {
+        const deep = await checkAndConsumeFaceoracleDeepRead(db, userId)
+        if (!deep.granted) {
+          return c.json(
+            {
+              error: 'deep_quota_exhausted',
+              used: deep.used,
+              limit: deep.limit,
+              upsell: 'faceoracle_reading',
+            },
+            402
+          )
+        }
+      } else {
+        const shallow = await checkAndConsumeFaceoracleShallowDaily(db, userId)
+        if (!shallow.granted) {
+          return c.json(
+            {
+              error: 'shallow_daily_exhausted',
+              used: shallow.used,
+              limit: shallow.limit,
+              day: shallow.day,
+              upsell: 'faceoracle_pro',
+            },
+            402
+          )
+        }
       }
       faceVlmAuthorized = true
     } else {

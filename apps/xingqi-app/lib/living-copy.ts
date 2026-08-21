@@ -621,22 +621,22 @@ export function deepNextReadingCopy(locale: Locale): {
     case 'zh':
       return {
         label: '下次深度解读',
-        hint: '默认短简；开启后下一期生成完整五章（会消耗一次开关）。首读不受此开关影响。',
+        hint: '默认关闭。开启后，下一期（已有解读之后）升为完整五章，并扣 1 次本月深度额度。首封始终深读，不受此开关影响。',
       }
     case 'zh-Hant':
       return {
         label: '下次深度解讀',
-        hint: '預設短簡；開啟後下一期生成完整五章（會消耗一次開關）。首讀不受此開關影響。',
+        hint: '預設關閉。開啟後，下一期（已有解讀之後）升為完整五章，並扣 1 次本月深度額度。首封始終深讀，不受此開關影響。',
       }
     case 'ja':
       return {
         label: '次回は深度解読',
-        hint: '通常は短簡。オンにすると次の一期は五章。初回は対象外。',
+        hint: '既定はオフ。オンにすると、2回目以降の次の一期が五章になり、月の深度枠を1消費。初回は常に深度（対象外）。',
       }
     default:
       return {
         label: 'Deep reading next time',
-        hint: 'Default is the short brief. When on, your next period uses five chapters. First seal is always deep.',
+        hint: 'Off by default. When on, your next period after the first seal uses five chapters and 1 monthly deep unit. First seal is always deep.',
       }
   }
 }

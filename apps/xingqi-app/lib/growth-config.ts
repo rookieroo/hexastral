@@ -11,3 +11,7 @@ export const REVENUECAT_PRODUCT_IDS = {
 
 /** ASC / RC list price floor for the one-shot SKU (USD). */
 export const ONESHOT_PRICE_FLOOR_USD = 9.99
+
+/** Suggested Pro list prices (ASC / Play / RC) — display guidance. */
+export const PRO_MONTHLY_LIST_USD = 14.99
+export const PRO_ANNUAL_LIST_USD = 99.99

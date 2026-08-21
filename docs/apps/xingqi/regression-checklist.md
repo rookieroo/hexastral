@@ -30,8 +30,11 @@ Run after deploying `hexastral-api` (prompt density, compliance, VLM gates, `nat
 
 ## Pro smoke
 
-- [ ] Paywall copy: oneshot = sealed brief; Pro = archive + qi layer
-- [ ] Pro: Living FAB → Timeline / What-if / Chat / regen
+- [ ] Paywall copy: one-shot **$9.99** deep; Pro **$14.99**/mo · **$99.99**/yr — 3 deep/mo · 1 Face brief/day · first seal deep
+- [ ] Usage: deep x/3 (UTC month) + shallow today (UTC day) — not photo slots
+- [ ] First Pro enqueue forces oneshot; deep-next default off
+- [ ] 402 `deep_quota_exhausted` / `shallow_daily_exhausted` map to paywall / wait copy
+- [ ] Pro: Living FAB → Timeline / What-if / Chat (**no** same-photo regen entry)
 
 ## Fail notes
 

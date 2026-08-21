@@ -454,8 +454,10 @@ export async function enqueueFaceReadingJob(
   }
   if (res.status === 402) {
     const j = (await res.json().catch(() => ({}))) as { error?: string }
-    if (j.error === 'photo_slot_exhausted') throw new Error('photo_slot_exhausted')
-    if (j.error === 'report_regen_exhausted') throw new Error('report_regen_exhausted')
+    if (j.error === 'deep_quota_exhausted') throw new Error('deep_quota_exhausted')
+    if (j.error === 'shallow_daily_exhausted') throw new Error('shallow_daily_exhausted')
+    if (j.error === 'photo_slot_exhausted') throw new Error('deep_quota_exhausted')
+    if (j.error === 'report_regen_exhausted') throw new Error('deep_quota_exhausted')
     throw new Error('purchase_required')
   }
   if (res.status === 409) {
@@ -712,6 +714,8 @@ export async function fetchFaceEvents(): Promise<{
 }
 
 export async function fetchPhotoQuota(): Promise<{
+  deep: { used: number; limit: number; remaining: number }
+  shallow: { used: number; limit: number; remaining: number; day?: string }
   used: number
   limit: number
   remaining: number
@@ -720,30 +724,38 @@ export async function fetchPhotoQuota(): Promise<{
 }> {
   const res = await signedJson('GET', '/api/physiognomy/face-features/quota')
   const fallback = {
+    deep: { used: 0, limit: 3, remaining: 3 },
+    shallow: { used: 0, limit: 1, remaining: 1 },
     used: 0,
-    limit: 6,
-    remaining: 6,
+    limit: 3,
+    remaining: 3,
     photos: { used: 0, limit: 6, remaining: 6 },
     reports: { used: 0, limit: 3, remaining: 3 },
   }
   if (!res.ok) return fallback
   const json = (await res.json()) as {
+    deep?: { used: number; limit: number; remaining: number }
+    shallow?: { used: number; limit: number; remaining: number; day?: string }
     used?: number
     limit?: number
     remaining?: number
     photos?: { used: number; limit: number; remaining: number }
     reports?: { used: number; limit: number; remaining: number }
   }
-  const photos = json.photos ?? {
+  const deep = json.deep ?? {
     used: json.used ?? 0,
-    limit: json.limit ?? 6,
-    remaining: json.remaining ?? 6,
+    limit: json.limit ?? 3,
+    remaining: json.remaining ?? 3,
   }
+  const shallow = json.shallow ?? { used: 0, limit: 1, remaining: 1 }
+  const photos = json.photos ?? { used: 0, limit: 6, remaining: 6 }
   const reports = json.reports ?? { used: 0, limit: 3, remaining: 3 }
   return {
-    used: photos.used,
-    limit: photos.limit,
-    remaining: photos.remaining,
+    deep,
+    shallow,
+    used: deep.used,
+    limit: deep.limit,
+    remaining: deep.remaining,
     photos,
     reports,
   }

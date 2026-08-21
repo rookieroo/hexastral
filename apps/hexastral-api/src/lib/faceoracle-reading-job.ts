@@ -25,7 +25,12 @@ import type { AppDb, CloudflareBindings } from '../infra-types'
 import type { CreditSource } from '../services/credits'
 import { refundCredit } from '../services/credits'
 import { hasActiveEntitlement } from '../services/entitlements'
-import { refundFaceoraclePhotoSlots, refundFaceoracleReportRegen } from '../services/quota'
+import {
+  refundFaceoracleDeepRead,
+  refundFaceoraclePhotoSlots,
+  refundFaceoracleReportRegen,
+  refundFaceoracleShallowDaily,
+} from '../services/quota'
 import { sendExpoPushMessages } from './expo-push'
 import {
   deleteEphemeralObjects,
@@ -612,7 +617,12 @@ export async function refundFaceoracleJobAccess(db: AppDb, job: JobRow): Promise
       if (source === 'purchased' || source === 'allowance') {
         await refundCredit(db, job.userId, 'face', source)
       }
+    } else if (job.accessVia === 'pro_deep' && job.slotsCharged > 0) {
+      await refundFaceoracleDeepRead(db, job.userId)
+    } else if (job.accessVia === 'pro_shallow' && job.slotsCharged > 0) {
+      await refundFaceoracleShallowDaily(db, job.userId)
     } else if (job.accessVia === 'pro_slots' && job.slotsCharged > 0) {
+      // Legacy jobs charged photo slots before 2026-08-21.
       await refundFaceoraclePhotoSlots(db, job.userId, job.slotsCharged)
     } else if (job.accessVia === 'pro_report_regen') {
       await refundFaceoracleReportRegen(db, job.userId)

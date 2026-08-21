@@ -7,7 +7,7 @@ import { ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { XingqiLoader } from '@/components/XingqiLoader'
-import { ONESHOT_PRICE_FLOOR_USD, REVENUECAT_PRODUCT_IDS } from '@/lib/growth-config'
+import { ONESHOT_PRICE_FLOOR_USD, PRO_ANNUAL_LIST_USD, PRO_MONTHLY_LIST_USD, REVENUECAT_PRODUCT_IDS } from '@/lib/growth-config'
 import { setHomeCaptureHandoff } from '@/lib/home-capture-handoff'
 import { resolveLocale } from '@/lib/i18n'
 import { purchaseProduct, restorePurchases } from '@/lib/iap'
@@ -315,10 +315,10 @@ export default function XingqiPaywallScreen() {
             </Text>
             <Text style={{ color: colors.secondary, fontSize: 14, lineHeight: 20 }}>
               {s(
-                `单次：密封五章简报——三轴（事业·爱情·健康）· 位点依据 · 大运流年对照 · 本期窗口。不是聊天式看图说话。Pro：档案 · 周期重拍 · 人生时间线 · 假如 · 报告内追问。起价 $${ONESHOT_PRICE_FLOOR_USD}。`,
-                `單次：密封五章簡報——三軸（事業·愛情·健康）· 位點依據 · 大運流年對照 · 本期窗口。不是聊天式看圖說話。Pro：檔案 · 週期重拍 · 人生時間線 · 假如 · 報告內追問。起價 $${ONESHOT_PRICE_FLOOR_USD}。`,
-                `One-shot: a sealed five-chapter brief — career · love · health, locus citations, computed DaYun/LiuNian contrast, period windows. Not chatty photo-reading. Pro: archive, period recapture, Life axis, What-if, in-report chat. From $${ONESHOT_PRICE_FLOOR_USD}.`,
-                `単発：密封の五章ブリーフ——事業・恋愛・健康、部位の根拠、大運・流年対照、今期の窓。雑談的な写真読みではありません。Pro：アーカイブ・周期の再撮影・人生軸・もしも・報告内の質問。$${ONESHOT_PRICE_FLOOR_USD} から。`
+                `单次 $${ONESHOT_PRICE_FLOOR_USD}：完整形气深读（三图·五章）。Pro $${PRO_MONTHLY_LIST_USD}/月或 $${PRO_ANNUAL_LIST_USD}/年：档案 · 人生轴 · 假如 · 划词聊 · 每月 3 次深读 · 每天 1 次 Face 浅读；首封送深读。`,
+                `單次 $${ONESHOT_PRICE_FLOOR_USD}：完整形氣深讀（三圖·五章）。Pro $${PRO_MONTHLY_LIST_USD}/月或 $${PRO_ANNUAL_LIST_USD}/年：檔案 · 人生軸 · 假如 · 劃詞聊 · 每月 3 次深讀 · 每天 1 次 Face 淺讀；首封送深讀。`,
+                `One-shot $${ONESHOT_PRICE_FLOOR_USD}: one full deep reading (3 photos · 5 chapters). Pro $${PRO_MONTHLY_LIST_USD}/mo or $${PRO_ANNUAL_LIST_USD}/yr: archive, Life axis, What-if, in-report chat, 3 deep/month, 1 Face brief/day; first seal is deep.`,
+                `単発 $${ONESHOT_PRICE_FLOOR_USD}：完全な深度解読（三写真・五章）。Pro $${PRO_MONTHLY_LIST_USD}/月または $${PRO_ANNUAL_LIST_USD}/年：アーカイブ・人生軸・もしも・報告内チャット・月3回深度・日1回 Face 浅読。初回は深度。`
               )}
             </Text>
 

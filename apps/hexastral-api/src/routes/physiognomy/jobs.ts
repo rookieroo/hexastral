@@ -34,8 +34,8 @@ import {
 import { enqueueFaceoracleReadingJob } from '../../lib/faceoracle-reading-queue'
 import { hasActiveEntitlement } from '../../services/entitlements'
 import {
-  checkAndConsumeFaceoraclePhotoSlots,
-  checkAndConsumeFaceoracleReportRegen,
+  checkAndConsumeFaceoracleDeepRead,
+  checkAndConsumeFaceoracleShallowDaily,
 } from '../../services/quota'
 
 const ACTIVE_STAGES = ['extracting', 'queued', 'interpreting'] as const
@@ -255,8 +255,17 @@ physiognomyJobsRoutes.post('/', async (c) => {
   let creditSource: string | null = null
   let slotsCharged = 0
   const isReportRegen = Boolean((body.regen || devQuotaBypass) && conflicting)
+  const hasPriorReading = recentReadings.length > 0
 
-  // Resolve partial vs full photo billing (period carry).
+  // First Pro seal is always deep (ignore client period_brief / deep-next).
+  let effectiveOutputKind = body.outputKind
+  if (isFacePro && !hasPriorReading && !isReportRegen) {
+    effectiveOutputKind = 'oneshot'
+  }
+  const isDeepOutput =
+    effectiveOutputKind === 'oneshot' || effectiveOutputKind === 'deep'
+
+  // Resolve partial vs full photo billing (period carry) — meta only; no photo-slot charge.
   let effectiveUpdateKind: 'full' | 'partial' = body.updateKind === 'partial' ? 'partial' : 'full'
   let effectivePartialParts: Array<'face' | 'palm_l' | 'palm_r'> | null = null
   if (!isReportRegen && effectiveUpdateKind === 'partial') {
@@ -264,8 +273,6 @@ physiognomyJobsRoutes.post('/', async (c) => {
     let uniq = [...new Set(raw)].filter(
       (p): p is 'face' | 'palm_l' | 'palm_r' => p === 'face' || p === 'palm_l' || p === 'palm_r'
     )
-    // Drop parts whose featureId matches the latest reading (same extract / content hash).
-    // Ephemeral parts always count as changed.
     const lastFeats = recentReadings[0] ? parseReadingFeatureIds(recentReadings[0].inputJson) : null
     if (lastFeats) {
       uniq = uniq.filter((p) => {
@@ -295,6 +302,7 @@ physiognomyJobsRoutes.post('/', async (c) => {
   }
 
   if (isReportRegen) {
+    // Deep same-photo regen is discouraged but, if used, consumes a deep monthly unit.
     if (!isFacePro) {
       return c.json(
         {
@@ -306,54 +314,93 @@ physiognomyJobsRoutes.post('/', async (c) => {
       )
     }
     if (!devQuotaBypass) {
-      const regen = await checkAndConsumeFaceoracleReportRegen(db, userId)
-      if (!regen.granted) {
-        return c.json(
-          {
-            error: 'report_regen_exhausted',
-            used: regen.used,
-            limit: regen.limit,
-            upsell: 'faceoracle_pro',
-          },
-          402
-        )
+      if (isDeepOutput) {
+        const deep = await checkAndConsumeFaceoracleDeepRead(db, userId)
+        if (!deep.granted) {
+          return c.json(
+            {
+              error: 'deep_quota_exhausted',
+              used: deep.used,
+              limit: deep.limit,
+              upsell: 'faceoracle_reading',
+            },
+            402
+          )
+        }
+        accessVia = 'pro_deep'
+        slotsCharged = 1
+      } else {
+        const shallow = await checkAndConsumeFaceoracleShallowDaily(db, userId)
+        if (!shallow.granted) {
+          return c.json(
+            {
+              error: 'shallow_daily_exhausted',
+              used: shallow.used,
+              limit: shallow.limit,
+              day: shallow.day,
+              upsell: 'faceoracle_pro',
+            },
+            402
+          )
+        }
+        accessVia = 'pro_shallow'
+        slotsCharged = 1
       }
-    }
-    accessVia = 'pro_report_regen'
-    slotsCharged = 0
-  } else if (isFacePro) {
-    // Charge by modalities actually present (face-only = 1), not a flat 3 on "full".
-    const modalityCount =
-      (body.faceFeatureId || ephemeralKeys?.face ? 1 : 0) +
-      (body.palmLeftFeatureId || ephemeralKeys?.palm_l ? 1 : 0) +
-      (body.palmRightFeatureId || ephemeralKeys?.palm_r ? 1 : 0)
-    const slots =
-      effectiveUpdateKind === 'partial' && effectivePartialParts
-        ? Math.max(1, effectivePartialParts.length)
-        : Math.max(1, Math.min(3, modalityCount || 1))
-    if (!devQuotaBypass) {
-      const slot = await checkAndConsumeFaceoraclePhotoSlots(db, userId, slots)
-      if (!slot.granted) {
-        return c.json(
-          {
-            error: 'photo_slot_exhausted',
-            used: slot.used,
-            limit: slot.limit,
-            upsell: 'faceoracle_reading',
-          },
-          402
-        )
-      }
-      slotsCharged = slots
     } else {
+      accessVia = isDeepOutput ? 'pro_deep' : 'pro_shallow'
       slotsCharged = 0
     }
-    accessVia = 'pro_slots'
-    // Stash partial meta for the queue consumer (no dedicated columns yet).
+  } else if (isFacePro) {
+    if (!devQuotaBypass) {
+      if (isDeepOutput) {
+        const deep = await checkAndConsumeFaceoracleDeepRead(db, userId)
+        if (!deep.granted) {
+          return c.json(
+            {
+              error: 'deep_quota_exhausted',
+              used: deep.used,
+              limit: deep.limit,
+              upsell: 'faceoracle_reading',
+            },
+            402
+          )
+        }
+        accessVia = 'pro_deep'
+        slotsCharged = 1
+      } else {
+        // period_brief — Face shallow daily
+        const shallow = await checkAndConsumeFaceoracleShallowDaily(db, userId)
+        if (!shallow.granted) {
+          return c.json(
+            {
+              error: 'shallow_daily_exhausted',
+              used: shallow.used,
+              limit: shallow.limit,
+              day: shallow.day,
+              upsell: 'faceoracle_pro',
+            },
+            402
+          )
+        }
+        accessVia = 'pro_shallow'
+        slotsCharged = 1
+      }
+    } else {
+      accessVia = isDeepOutput ? 'pro_deep' : 'pro_shallow'
+      slotsCharged = 0
+    }
     if (effectiveUpdateKind === 'partial' && effectivePartialParts) {
       creditSource = `partial:${effectivePartialParts.join(',')}`
     }
   } else {
+    // Consumable oneshot — always deep; require three modalities.
+    const hasL = Boolean(body.palmLeftFeatureId || ephemeralKeys?.palm_l)
+    const hasR = Boolean(body.palmRightFeatureId || ephemeralKeys?.palm_r)
+    const hasF = Boolean(body.faceFeatureId || ephemeralKeys?.face)
+    if (!hasF || !hasL || !hasR) {
+      throw new HTTPException(400, { message: 'oneshot_requires_three_photos' })
+    }
+    effectiveOutputKind = 'oneshot'
     const access = await resolveEpisodicAccess(db, userId, 'face')
     if (!access.granted) {
       return c.json(
@@ -378,7 +425,7 @@ physiognomyJobsRoutes.post('/', async (c) => {
     stage: needsExtract ? 'extracting' : 'queued',
     progress: needsExtract ? 5 : 10,
     locale: body.locale,
-    outputKind: body.outputKind,
+    outputKind: effectiveOutputKind,
     horizonMonths: body.horizonMonths,
     faceFeatureId: body.faceFeatureId ?? null,
     palmLeftFeatureId: body.palmLeftFeatureId ?? null,

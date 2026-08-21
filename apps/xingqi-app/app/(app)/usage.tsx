@@ -1,8 +1,8 @@
 /**
- * Usage — period refresh cadence + Pro monthly meters (not on the home chrome).
+ * Usage — period refresh cadence + Pro deep/shallow meters (not on the home chrome).
  *
  * - Date / Nd: last reading age and recommended ~25-day refresh (product cadence).
- * - Photos / Regen: UTC-month meters (separate from the 25-day reminder).
+ * - Deep: UTC-month meter. Shallow Face brief: UTC calendar day.
  */
 
 import { useTheme } from '@zhop/core-ui'
@@ -71,8 +71,8 @@ export default function UsageScreen() {
 
   const [latest, setLatest] = useState<PortfolioReadingItem | null>(null)
   const [quota, setQuota] = useState<{
-    photos: { used: number; limit: number; remaining: number }
-    reports: { used: number; limit: number; remaining: number }
+    deep: { used: number; limit: number; remaining: number }
+    shallow: { used: number; limit: number; remaining: number; day?: string }
   } | null>(null)
 
   useFocusEffect(
@@ -138,10 +138,10 @@ export default function UsageScreen() {
 
         <Text style={{ color: colors.dim, fontSize: 13, lineHeight: 19 }}>
           {s(
-            '「日期 / Nd」是最近一次形气解读距今的天数，以及约 25 天更新建议——不是额度重置日。照片与重生成额度按 UTC 自然月重置。',
-            '「日期 / Nd」是最近一次形氣解讀距今的天數，以及約 25 天更新建議——不是額度重置日。照片與重新生成額度按 UTC 自然月重置。',
-            'The date / Nd line is days since your last form-qi reading and a ~25-day refresh reminder — not when quotas reset. Photo and regen meters reset on the UTC calendar month.',
-            '「日付 / Nd」は直近の形気リーディングからの日数と、約25日ごとの更新の目安です。枠のリセット日ではありません。写真と再生成の枠は UTC の暦月でリセットされます。'
+            '「日期 / Nd」是最近一次形气解读距今的天数，以及约 25 天更新建议——不是额度重置日。深度解读按 UTC 自然月重置；浅读按 UTC 自然日。',
+            '「日期 / Nd」是最近一次形氣解讀距今的天數，以及約 25 天更新建議——不是額度重置日。深度解讀按 UTC 自然月重置；淺讀按 UTC 自然日。',
+            'The date / Nd line is days since your last form-qi reading and a ~25-day refresh reminder — not when quotas reset. Deep readings reset on the UTC month; Face briefs on the UTC day.',
+            '「日付 / Nd」は直近の形気リーディングからの日数と、約25日ごとの更新の目安です。枠のリセット日ではありません。深度は UTC 暦月、浅読は UTC 暦日でリセットされます。'
           )}
         </Text>
 
@@ -163,28 +163,28 @@ export default function UsageScreen() {
 
         {isPro ? (
           <SettingsSection
-            title={s('本月额度 (UTC)', '本月額度 (UTC)', 'MONTHLY QUOTA (UTC)', '今月の枠 (UTC)')}
+            title={s('Pro 额度', 'Pro 額度', 'PRO QUOTA', 'Pro 枠')}
           >
             <SettingsCard>
               <MeterRow
-                label={s('照片额度', '照片額度', 'Photo slots', '写真枠')}
-                value={quota ? `${quota.photos.used}/${quota.photos.limit}` : '—'}
+                label={s('深度解读（本月 UTC）', '深度解讀（本月 UTC）', 'Deep readings (UTC month)', '深度解読（UTC月）')}
+                value={quota ? `${quota.deep.used}/${quota.deep.limit}` : '—'}
                 hint={s(
-                  '完整解读扣 3 格（左掌+右掌+面）。UTC 月初重置。',
-                  '完整解讀扣 3 格（左掌＋右掌＋面）。UTC 月初重置。',
-                  'Full form-qi reading uses 3 slots (L+R+face). Resets at UTC month start.',
-                  '形気リーディング1回で3枠（左掌＋右掌＋顔）。UTC月初にリセット。'
+                  '首封与「下次深度」各扣 1 次。用尽可买单次深读。',
+                  '首封與「下次深度」各扣 1 次。用盡可買單次深讀。',
+                  'First seal and Deep-next each use 1. When exhausted, buy a one-shot deep reading.',
+                  '初回と「次回深度」は各1回。枠切れは単発の深度解読を購入。'
                 )}
                 colors={colors}
               />
               <MeterRow
-                label={s('报告重生成', '報告重新生成', 'Report regenerations', 'レポート再生成')}
-                value={quota ? `${quota.reports.used}/${quota.reports.limit}` : '—'}
+                label={s('Face 浅读（今日 UTC）', 'Face 淺讀（今日 UTC）', 'Face brief (UTC day)', 'Face 浅読（UTC日）')}
+                value={quota ? `${quota.shallow.used}/${quota.shallow.limit}` : '—'}
                 hint={s(
-                  '同照片换语言/重写正文扣 1 次。UTC 月初重置。',
-                  '同照片換語言／重寫正文扣 1 次。UTC 月初重置。',
-                  'Same photos, new locale/body uses 1. Resets at UTC month start.',
-                  '同じ写真で言語変更・本文書き直しは1回。UTC月初にリセット。'
+                  '首封之后的日常期更。每天 1 次；至少需要新的面部照片。',
+                  '首封之後的日常期更。每天 1 次；至少需要新的面部照片。',
+                  'Period briefs after the first seal. 1 per day; needs a new face photo.',
+                  '初回以降の短簡。1日1回。新しい顔写真が必要です。'
                 )}
                 colors={colors}
               />
@@ -193,18 +193,17 @@ export default function UsageScreen() {
         ) : (
           <Text style={{ color: colors.dim, fontSize: 13, lineHeight: 19 }}>
             {s(
-              '订阅 Pro 后可查看本月照片与重生成额度。',
-              '訂閱 Pro 後可查看本月照片與重新生成額度。',
-              'Subscribe to Pro to see monthly photo and regen meters.',
-              'Pro に加入すると、今月の写真・再生成枠を確認できます。'
+              '订阅 Pro 后可查看深度与浅读额度。',
+              '訂閱 Pro 後可查看深度與淺讀額度。',
+              'Subscribe to Pro to see deep and Face-brief meters.',
+              'Pro に加入すると、深度・浅読の枠を確認できます。'
             )}
           </Text>
         )}
 
         {__DEV__ ? (
           <Text style={{ color: colors.dim, fontSize: 11, lineHeight: 16 }}>
-            DEV: monthly meters are bypassed when the API has ALLOW_DEV_PRO=1 (no charge on
-            enqueue).
+            DEV: meters are bypassed when the API has ALLOW_DEV_PRO=1 (no charge on enqueue).
           </Text>
         ) : null}
       </ScrollView>

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'bun:test'
 import {
+  FACEORACLE_LIST_PRICE_USD,
+  FACEORACLE_PRO_DEEP_READS_PER_MONTH,
   FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH,
   FACEORACLE_PRO_REPORT_REGENS_PER_MONTH,
+  FACEORACLE_PRO_SHALLOW_PER_DAY,
   getProduct,
   isConsumableProduct,
   isSubscriptionProduct,
@@ -33,6 +36,11 @@ describe('episodic consumable catalog (ADR-0013 P2.2)', () => {
     }
     expect(FACEORACLE_PRO_PHOTO_SLOTS_PER_MONTH).toBe(6)
     expect(FACEORACLE_PRO_REPORT_REGENS_PER_MONTH).toBe(3)
+    expect(FACEORACLE_PRO_DEEP_READS_PER_MONTH).toBe(3)
+    expect(FACEORACLE_PRO_SHALLOW_PER_DAY).toBe(1)
+    expect(FACEORACLE_LIST_PRICE_USD.reading).toBe(9.99)
+    expect(FACEORACLE_LIST_PRICE_USD.proMonthly).toBe(14.99)
+    expect(FACEORACLE_LIST_PRICE_USD.proAnnual).toBe(99.99)
   })
 
   it('routes only the new packs to the ledger; legacy kinds stay column-backed', () => {
