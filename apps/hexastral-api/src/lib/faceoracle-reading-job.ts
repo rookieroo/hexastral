@@ -12,7 +12,7 @@ import {
   buildComplianceInstructionBlock,
   buildForbiddenRewriteSuffix,
 } from '@zhop/portfolio-voice'
-import { and, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import {
   faceoracleJobs,
@@ -67,6 +67,7 @@ import {
   faceoracleCautionObservations,
   faceoracleDensityGaps,
   faceoracleSoftObservations,
+  filterFutureFacingEvents,
 } from './prompts/faceoracle'
 import {
   buildFaceoracleLanguageReminder,
@@ -312,6 +313,57 @@ async function loadFeatureJson(
   }
 }
 
+/** Compact prior sealed brief for period_brief change narrative (token-bounded). */
+export function formatPreviousBriefBlock(resultJson: string): string | null {
+  const parsed = safeJsonParse<Record<string, unknown>>(resultJson)
+  if (!parsed) return null
+  const raw = parsed.brief
+  if (!raw || typeof raw !== 'object') return null
+  const b = raw as Record<string, unknown>
+  const clip = (s: unknown, n: number) =>
+    typeof s === 'string' ? s.trim().slice(0, n) : ''
+  const title = clip(b.title, 40)
+  const excerpt = clip(b.excerpt, 60)
+  const summary = clip(b.summary, 220)
+  const points = Array.isArray(b.points)
+    ? b.points
+        .filter((p): p is string => typeof p === 'string' && p.trim().length > 0)
+        .slice(0, 4)
+        .map((p) => p.trim().slice(0, 80))
+    : []
+  const themes: string[] = []
+  if (Array.isArray(parsed.events)) {
+    for (const row of parsed.events.slice(0, 3)) {
+      if (!row || typeof row !== 'object') continue
+      const theme = clip((row as Record<string, unknown>).theme, 40)
+      if (theme) themes.push(theme)
+    }
+  }
+  if (!title && !summary) return null
+  const parts = [
+    title ? `title=${title}` : '',
+    excerpt ? `excerpt=${excerpt}` : '',
+    summary ? `summary=${summary}` : '',
+    points.length ? `points=${points.join(' | ')}` : '',
+    themes.length ? `windows=${themes.join(' | ')}` : '',
+  ].filter(Boolean)
+  return parts.join('; ').slice(0, 900)
+}
+
+async function loadPreviousBriefBlock(db: AppDb, userId: string): Promise<string | null> {
+  const row = await db
+    .select({ resultJson: portfolioReadings.resultJson })
+    .from(portfolioReadings)
+    .where(
+      and(eq(portfolioReadings.userId, userId), eq(portfolioReadings.targetApp, 'faceoracle'))
+    )
+    .orderBy(desc(portfolioReadings.createdAt))
+    .limit(1)
+    .get()
+  if (!row?.resultJson) return null
+  return formatPreviousBriefBlock(row.resultJson)
+}
+
 async function loadLandmarksJson(
   db: AppDb,
   userId: string,
@@ -407,7 +459,8 @@ function parseChapter(raw: unknown): ChapterPayload | null {
 /** Normalize AI JSON → chapters[] + flat mirrors + loci[]. */
 export function normalizeFaceoracleInterpretation(
   parsed: Record<string, unknown>,
-  locale: string
+  locale: string,
+  opts?: { horizonMonths?: 3 | 6 }
 ): {
   chapters: ChapterPayload[]
   flat: Record<string, unknown>
@@ -494,7 +547,9 @@ export function normalizeFaceoracleInterpretation(
     advice: flatAdvice ?? horizon?.remedy ?? horizon?.dynamic ?? '',
     chapters,
     loci,
-    events: Array.isArray(parsed.events) ? parsed.events : [],
+    events: Array.isArray(parsed.events)
+      ? filterFutureFacingEvents(parsed.events, undefined, opts?.horizonMonths ?? 3)
+      : [],
   }
   if (palms && !flatLeft && !flatRight) {
     flat.palmLeftSection = palms.evidence
@@ -1091,6 +1146,10 @@ export async function runFaceoracleReadingJob(
     sample: suggested.slice(0, 8).map((s) => `${s.part}/${s.featureKey}:${s.reason}`),
   })
 
+  const previousBriefBlock = isShortBrief
+    ? await loadPreviousBriefBlock(db, job.userId)
+    : null
+
   const promptParams = {
     faceFeatures: compactFeatures(face),
     palmLeftFeatures: compactFeatures(palmL),
@@ -1101,8 +1160,15 @@ export async function runFaceoracleReadingJob(
     outputKind,
     suggestedLociBlock,
     partialUpdate: partialParts ?? undefined,
+    previousBriefBlock: previousBriefBlock ?? undefined,
   } as const
 
+  if (previousBriefBlock) {
+    console.info('[faceoracle-job] previousBrief injected', {
+      jobId,
+      chars: previousBriefBlock.length,
+    })
+  }
   // ── Pass 1: curated loci only ───────────────────────────────────────────
   await setJobStage(db, jobId, 'interpreting', 50)
   const lociPrompt = buildFaceOracleLociPrompt(promptParams)
@@ -1254,7 +1320,8 @@ export async function runFaceoracleReadingJob(
           periodDiff: null,
           events: eventsRaw,
         },
-        job.locale
+        job.locale,
+        { horizonMonths }
       )
     }
   } else {
@@ -1267,7 +1334,7 @@ export async function runFaceoracleReadingJob(
       })
       const merged = ai.parsed ? { ...ai.parsed, loci: lociParsed.loci } : null
       if (merged) {
-        normalized = normalizeFaceoracleInterpretation(merged, job.locale)
+        normalized = normalizeFaceoracleInterpretation(merged, job.locale, { horizonMonths })
       }
       if (!normalized || !interpretationHasBody(normalized)) {
         console.warn('[faceoracle-job] chapters pass miss — compact retry', {
@@ -1291,7 +1358,7 @@ export async function runFaceoracleReadingJob(
           )
           return
         }
-        normalized = normalizeFaceoracleInterpretation(mergedRetry, job.locale)
+        normalized = normalizeFaceoracleInterpretation(mergedRetry, job.locale, { horizonMonths })
       }
     }
   }
@@ -1374,7 +1441,8 @@ export async function runFaceoracleReadingJob(
             periodDiff: null,
             events: normalized.flat.events,
           },
-          job.locale
+          job.locale,
+          { horizonMonths }
         )
         if (again && interpretationHasBody(again)) {
           normalized = again
@@ -1397,7 +1465,8 @@ export async function runFaceoracleReadingJob(
       if (langRetry.parsed) {
         const again = normalizeFaceoracleInterpretation(
           { ...langRetry.parsed, loci: lociParsed.loci },
-          job.locale
+          job.locale,
+          { horizonMonths }
         )
         if (again && interpretationHasBody(again)) {
           normalized = again
@@ -1487,7 +1556,8 @@ export async function runFaceoracleReadingJob(
               periodDiff: null,
               events: normalized.flat.events,
             },
-            job.locale
+            job.locale,
+            { horizonMonths }
           )
           if (forbidAgain && interpretationHasBody(forbidAgain)) {
             normalized = forbidAgain
@@ -1498,7 +1568,8 @@ export async function runFaceoracleReadingJob(
       } else {
         const forbidAgain = normalizeFaceoracleInterpretation(
           { ...forbidRetry.parsed, loci: lociParsed.loci },
-          job.locale
+          job.locale,
+          { horizonMonths }
         )
         if (forbidAgain && interpretationHasBody(forbidAgain)) {
           normalized = forbidAgain

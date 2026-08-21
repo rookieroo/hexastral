@@ -120,14 +120,14 @@ export default function BriefScreen() {
     }, 700)
   }
 
-  const windowLine = useMemo(() => {
+  const windowMeta = useMemo(() => {
     return (ev: ReadingBriefEvent) => {
       const range =
         ev.startMonth && ev.endMonth
           ? `${ev.startMonth}–${ev.endMonth}`
           : ev.startMonth || ''
       const axis = ev.axis ? axes[ev.axis] : ''
-      return [range, axis, ev.theme].filter(Boolean).join(' · ')
+      return [range, axis].filter(Boolean).join(' · ')
     }
   }, [axes])
 
@@ -275,7 +275,19 @@ export default function BriefScreen() {
                     gap: 4,
                   }}
                 >
-                  <Text style={{ color: colors.secondary, fontSize: 13 }}>{windowLine(ev)}</Text>
+                  <View style={{ gap: 2 }}>
+                    {windowMeta(ev) ? (
+                      <Text style={{ color: colors.secondary, fontSize: 13 }}>{windowMeta(ev)}</Text>
+                    ) : null}
+                    {ev.theme ? (
+                      <TermAwareText
+                        text={ev.theme}
+                        locale={locale}
+                        colors={termColors}
+                        style={{ color: colors.secondary, fontSize: 13, lineHeight: 18 }}
+                      />
+                    ) : null}
+                  </View>
                   {ev.note ? (
                     <TermAwareText
                       text={ev.note}

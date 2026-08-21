@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'bun:test'
 import {
+  buildFaceOracleBriefPrompt,
   buildFaceOracleChaptersPrompt,
   buildFaceOracleLociPrompt,
   buildFaceOraclePrompt,
   faceoracleCautionObservations,
   faceoracleDensityGaps,
   faceoracleSoftObservations,
+  filterFutureFacingEvents,
 } from './faceoracle'
 import {
   buildFaceoracleLanguageBlock,
@@ -82,8 +84,10 @@ describe('buildFaceOraclePrompt (ADR-0028 craft)', () => {
     const chapters = buildFaceOracleChaptersPrompt(base, '[]')
     expect(loci).toContain('Pass 1')
     expect(loci).toContain('16–20')
+    expect(loci).toContain('vernacular gloss')
     expect(loci).not.toContain('"chapters"')
     expect(chapters).toContain('Pass 2')
+    expect(chapters).toContain('vernacular gloss')
     expect(chapters).toContain('Inference chain')
     expect(chapters).toContain('Crutch phrases BANNED')
     expect(chapters).toContain('会发生什么')
@@ -120,12 +124,26 @@ describe('faceoracleDensityGaps', () => {
   })
 
   it('flags thin event fuel under curated floors (events<3)', () => {
-    const gaps = faceoracleDensityGaps({ events: [{ axis: 'career', startMonth: '2030-01' }] }, [
+    const gaps = faceoracleDensityGaps({ events: [{ axis: 'career', startMonth: '2020-01' }] }, [
       { kind: 'face', evidence: 'x', dynamic: 'y', reef: null, remedy: null, citations: [] },
     ])
     expect(gaps).toContain('events<3')
     expect(gaps).toContain('events.near<1')
     expect(gaps).toContain('events.axis<2')
+  })
+
+  it('counts future startMonth as near (not past years)', () => {
+    const gaps = faceoracleDensityGaps(
+      {
+        events: [
+          { axis: 'career', startMonth: '2030-01' },
+          { axis: 'love', startMonth: '2030-06' },
+          { axis: 'health', startMonth: '2031-01' },
+        ],
+      },
+      []
+    )
+    expect(gaps).not.toContain('events.near<1')
   })
 
   it('flags missing other-hand palm loci without a <4 face coverage floor', () => {
@@ -457,6 +475,76 @@ describe('faceoracleDensityGaps', () => {
       [{ kind: 'face', evidence: 'x', dynamic: 'y', reef: null, remedy: null }]
     )
     expect(gaps.some((g) => g.startsWith('cite.caution'))).toBe(false)
+  })
+})
+
+describe('filterFutureFacingEvents', () => {
+  it('drops windows that already ended', () => {
+    const kept = filterFutureFacingEvents(
+      [
+        { startMonth: '2020-01', endMonth: '2020-06', theme: 'past' },
+        { startMonth: '2030-01', endMonth: null, theme: 'future' },
+        { startMonth: '2024-01', endMonth: '2099-12', theme: 'ongoing' },
+      ],
+      '2026-08',
+      3
+    )
+    expect(kept).toHaveLength(0)
+  })
+
+  it('keeps only windows within HorizonMonths (3) from today', () => {
+    const kept = filterFutureFacingEvents(
+      [
+        { startMonth: '2026-08', endMonth: '2026-10', theme: 'near' },
+        { startMonth: '2026-11', endMonth: '2027-02', theme: 'far' },
+        { startMonth: '2027-03', endMonth: '2027-05', theme: 'farther' },
+      ],
+      '2026-08',
+      3
+    )
+    expect(kept).toHaveLength(1)
+    expect((kept[0] as { theme: string }).theme).toBe('near')
+  })
+})
+
+describe('buildFaceOracleBriefPrompt future windows', () => {
+  it('nails TodayUTC, HorizonEndUTC, classics paren, and future-only event constraint', () => {
+    const prompt = buildFaceOracleBriefPrompt(
+      {
+        faceFeatures: '{}',
+        palmLeftFeatures: '{}',
+        palmRightFeatures: '{}',
+        natalSummary: 'x',
+        locale: 'zh',
+        horizonMonths: 6,
+        outputKind: 'period_brief',
+      },
+      '[]'
+    )
+    expect(prompt).toMatch(/TodayUTC: \d{4}-\d{2}/)
+    expect(prompt).toMatch(/HorizonEndUTC: \d{4}-\d{2}/)
+    expect(prompt).toContain('NEVER extend past HorizonEndUTC')
+    expect(prompt).toContain('藤萝系甲（甲木得通根')
+    expect(prompt).toContain('vernacular gloss')
+  })
+
+  it('injects PreviousBrief change constraints when provided', () => {
+    const prompt = buildFaceOracleBriefPrompt(
+      {
+        faceFeatures: '{}',
+        palmLeftFeatures: '{}',
+        palmRightFeatures: '{}',
+        natalSummary: 'x',
+        locale: 'zh',
+        horizonMonths: 3,
+        outputKind: 'period_brief',
+        previousBriefBlock: 'title=旧卡; summary=旧摘要',
+      },
+      '[]'
+    )
+    expect(prompt).toContain('PreviousBrief')
+    expect(prompt).toContain('title=旧卡')
+    expect(prompt).toContain('Vs previous')
   })
 })
 

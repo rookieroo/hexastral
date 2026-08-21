@@ -25,6 +25,21 @@ export type ReadingBriefLocusHighlight = {
   part?: string
 }
 
+/** Current UTC calendar month as YYYY-MM. */
+export function currentUtcMonth(): string {
+  const d = new Date()
+  const y = d.getUTCFullYear()
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
+  return `${y}-${m}`
+}
+
+export function addUtcMonths(ym: string, delta: number): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(ym.trim())
+  if (!m) return ym
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1 + delta, 1))
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+}
+
 function asStr(v: unknown): string {
   return typeof v === 'string' ? v.trim() : ''
 }
@@ -70,10 +85,43 @@ export function parseReadingBrief(output: Record<string, unknown> | null | undef
   }
 }
 
+/**
+ * Keep windows that have not ended and stay within horizonMonths ahead of today
+ * (inclusive: today + horizonMonths - 1).
+ */
+export function isInBriefHorizon(
+  ev: Pick<ReadingBriefEvent, 'startMonth' | 'endMonth'>,
+  todayUtcMonth: string = currentUtcMonth(),
+  horizonMonths: 3 | 6 = 3
+): boolean {
+  const end = ev.endMonth || ev.startMonth
+  if (!end) return false
+  if (end < todayUtcMonth) return false
+  const horizonEnd = addUtcMonths(todayUtcMonth, horizonMonths - 1)
+  if (ev.startMonth && ev.startMonth > horizonEnd) return false
+  if (end > horizonEnd) return false
+  return true
+}
+
+/** @deprecated use isInBriefHorizon */
+export function isFutureOrCurrentBriefEvent(
+  ev: Pick<ReadingBriefEvent, 'startMonth' | 'endMonth'>,
+  todayUtcMonth: string = currentUtcMonth()
+): boolean {
+  return isInBriefHorizon(ev, todayUtcMonth, 3)
+}
+
 export function parseReadingBriefEvents(
-  output: Record<string, unknown> | null | undefined
+  output: Record<string, unknown> | null | undefined,
+  todayUtcMonth: string = currentUtcMonth(),
+  horizonMonths: 3 | 6 = 3
 ): ReadingBriefEvent[] {
   if (!output || !Array.isArray(output.events)) return []
+  const fromPayload =
+    typeof output.horizonMonths === 'number' &&
+    (output.horizonMonths === 3 || output.horizonMonths === 6)
+      ? output.horizonMonths
+      : horizonMonths
   const out: ReadingBriefEvent[] = []
   for (const row of output.events) {
     if (!row || typeof row !== 'object') continue
@@ -85,19 +133,22 @@ export function parseReadingBriefEvents(
     const axisRaw = asStr(e.axis)
     const axis =
       axisRaw === 'career' || axisRaw === 'love' || axisRaw === 'health' ? axisRaw : null
-    out.push({
+    const endMonth = asStr(e.endMonth) || null
+    const ev: ReadingBriefEvent = {
       startMonth,
-      endMonth: asStr(e.endMonth) || null,
+      endMonth,
       theme,
       note,
       axis,
-    })
-    if (out.length >= 3) break
+    }
+    if (!isInBriefHorizon(ev, todayUtcMonth, fromPayload)) continue
+    out.push(ev)
   }
-  return out
+  out.sort((a, b) => (a.startMonth || '').localeCompare(b.startMonth || ''))
+  return out.slice(0, 3)
 }
 
-/** Up to 4 loci highlights for the brief card. */
+/** Up to 4 loci highlights for the brief card — full reading text (no hard ellipsis). */
 export function parseReadingBriefLoci(
   output: Record<string, unknown> | null | undefined
 ): ReadingBriefLocusHighlight[] {
@@ -111,7 +162,7 @@ export function parseReadingBriefLoci(
     if (!locus || !reading) continue
     out.push({
       locus,
-      reading: reading.length > 90 ? `${reading.slice(0, 90).trimEnd()}…` : reading,
+      reading,
       part: asStr(L.part) || undefined,
     })
     if (out.length >= 4) break

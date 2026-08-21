@@ -34,10 +34,18 @@ export interface FaceOraclePromptParams {
   horizonMonths: 3 | 6
   outputKind: FaceOracleOutputKind
   previousFeaturesJson?: string
+  /** Compact prior period_brief card for change-focused shallow reads. */
+  previousBriefBlock?: string
   partialUpdate?: Array<'face' | 'palm_l' | 'palm_r'>
   /** Pass 0 shortlist block (already formatted). */
   suggestedLociBlock?: string
 }
+
+const CLASSICS_PAREN = [
+  'Classical quotes / obscure 典故: always append a short vernacular gloss in parentheses, e.g. 藤萝系甲（甲木得通根、有所依附）. One clause only; no nested parens.',
+  'Common terms already known to readers (日主/用神/山根/大运…) need no paren. Never dump a classical phrase without（白话）.',
+  'Non-zh output: keep the classical token if useful, but paren gloss MUST be in the output language.',
+].join(' ')
 
 const LOCI_CRAFT = [
   '## Pass 1 — loci only（不要章节、不要 events）',
@@ -48,6 +56,7 @@ const LOCI_CRAFT = [
   'featureKey must match VLM keys. locus = classical name (天庭/生命线/金星丘…), never bare part enum.',
   'Mount keys: mountJupiter, mountSaturn, mountApollo, mountMercury, mountVenus, mountMoon, mountMars (from mounts prose or per-mount fields).',
   'Inference chain: 形/纹/柱 → 机理 → 具体判断. Honesty over flattery.',
+  CLASSICS_PAREN,
 ].join('\n')
 
 const CHAPTERS_CRAFT = [
@@ -59,6 +68,7 @@ const CHAPTERS_CRAFT = [
   'Field roles: goldenLine ≤36字; evidence=形+机理; dynamic=one scene; reef/remedy unique or null.',
   'overview = SHORT HOOK (≠ face dump). Prefer null reef/remedy over reused sentences.',
   'One sentence, one owner across chapters. Crutch phrases banned.',
+  CLASSICS_PAREN,
 ].join('\n')
 
 const CHAPTER_SPEC = [
@@ -148,7 +158,7 @@ export function buildFaceOracleChaptersPrompt(
     '    "sources": Array<"face"|"palm_l"|"palm_r"|"bazi">',
     '  }>',
     '}',
-    'Emit all 5 chapter kinds. citations prefer []. events: 3–5 soft (career/love/health if possible).',
+    'Emit all 5 chapter kinds. citations prefer []. events: 3–5 soft FUTURE windows (career/love/health if possible); startMonth >= current UTC month; do not invent past seasons.',
     'Also fill flat keys mirroring chapter bodies (periodDiff + advice mirror horizon).',
     'Loci-first: sheet consumes FixedLoci; chapters do NOT re-author per-locus notes.',
     'Age anchor / palmLiunianHint / currentAge / 已走段 / 下一窗口 still apply in palms+natal prose.',
@@ -170,13 +180,18 @@ export function buildFaceOracleBriefPrompt(
   params: FaceOraclePromptParams,
   lociJson: string
 ): string {
+  const todayUtc = utcYm()
+  const horizonEndUtc = addUtcMonths(todayUtc, params.horizonMonths - 1)
   const lines = [
     'Role: Folk East-Asian 算命 interpreter — period brief card (Syel Pass 2 short).',
     'Write a SHORT sealed card: form loci × BaZi timing. No five-chapter essay.',
     'Voice: 警示/预告 — visible form + chart cue; no 铁口 census claims; no medical diagnosis.',
     'Keep the mild caution tone, but fill the card: name 1–2 concrete loci + one natal/dayun window.',
     `OutputKind: period_brief`,
+    `TodayUTC: ${todayUtc}`,
     `HorizonMonths: ${params.horizonMonths}`,
+    `HorizonEndUTC: ${horizonEndUtc}`,
+    CLASSICS_PAREN,
     ...sharedInputBlocks(params),
     '',
     `FixedLoci (cite lightly in summary; do not dump raw VLM): ${lociJson}`,
@@ -201,9 +216,16 @@ export function buildFaceOracleBriefPrompt(
     '  }>',
     '}',
     'Constraints: title ≤24 chars; excerpt ≤42 (home-list hook); summary 180–280 chars with ≥1 locus name + ≥1 chart cue; points = 2–4 short 宜留意 lines; suggestion = 1–3 practical steps (newlines ok) mirroring points.',
-    'events: 1–3 soft windows preferred (0 ok if thin). Prefer null axis over inventing.',
+    `events: 1–3 soft FUTURE windows preferred (0 ok if thin). Each startMonth MUST be >= TodayUTC (${todayUtc}) and endMonth (or start if null) MUST be <= HorizonEndUTC (${horizonEndUtc}). endMonth >= startMonth. NEVER backfill a season that already ended. NEVER extend past HorizonEndUTC. Prefer null axis over inventing.`,
     'Honesty over flattery. Crutch phrases BANNED. Do NOT expand into five chapters.',
   ]
+  if (params.previousBriefBlock?.trim()) {
+    lines.push(
+      '',
+      `PreviousBrief (prior sealed card — do NOT copy wholesale): ${params.previousBriefBlock.trim()}`,
+      'Vs previous: summary/points MUST emphasize what changed (气色、位点张力、近窗主题). If form-qi looks similar, say so honestly and name what to watch. Ban paragraph-level echo of PreviousBrief.'
+    )
+  }
   if (params.partialUpdate?.length) {
     lines.push(
       `PartialUpdateParts: ${params.partialUpdate.join(',')} — emphasize what changed this period; carried palms may be quieter.`
@@ -270,6 +292,43 @@ function locusName(l: LocusLike): string {
   return (typeof l.locus === 'string' ? l.locus : '').trim()
 }
 
+function utcYm(d: Date = new Date()): string {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+}
+
+/** Add months to a YYYY-MM key (UTC calendar). */
+export function addUtcMonths(ym: string, delta: number): string {
+  const m = /^(\d{4})-(\d{2})$/.exec(ym.trim())
+  if (!m) return ym
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1 + delta, 1))
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+}
+
+/**
+ * Keep events whose window has not ended and stays within the forward horizon.
+ * Drops past windows and any window that starts or ends after HorizonEnd.
+ */
+export function filterFutureFacingEvents(
+  events: unknown[],
+  todayUtc: string = utcYm(),
+  horizonMonths: 3 | 6 = 3
+): unknown[] {
+  const horizonEnd = addUtcMonths(todayUtc, horizonMonths - 1)
+  const out: unknown[] = []
+  for (const row of events) {
+    if (!row || typeof row !== 'object') continue
+    const e = row as Record<string, unknown>
+    const start = typeof e.startMonth === 'string' ? e.startMonth.trim() : ''
+    const endRaw = typeof e.endMonth === 'string' ? e.endMonth.trim() : ''
+    const end = endRaw || start
+    if (!end || end < todayUtc) continue
+    if (start && start > horizonEnd) continue
+    if (end > horizonEnd) continue
+    out.push(row)
+  }
+  return out
+}
+
 /**
  * Structural quality gaps (NO char floors). Enforces field distinctness,
  * cross-chapter non-repetition, loci[] coverage, both-hands palm reading,
@@ -282,6 +341,7 @@ export function faceoracleDensityGaps(
   const gaps: string[] = []
   const byKind = new Map(chapters.map((c) => [c.kind, c]))
   const norm = (s: string) => s.replace(/\s+/g, '').trim()
+  const todayUtc = utcYm()
   const nowYear = new Date().getUTCFullYear()
   const loci = parseLociFromParsed(parsed)
 
@@ -294,9 +354,8 @@ export function faceoracleDensityGaps(
     if (!ev || typeof ev !== 'object') continue
     const e = ev as Record<string, unknown>
     if (typeof e.axis === 'string' && e.axis.trim()) axes.add(e.axis.trim())
-    const sm = typeof e.startMonth === 'string' ? e.startMonth : ''
-    const m = /^(\d{4})-(\d{2})$/.exec(sm)
-    if (m && Number(m[1]) <= nowYear + 1) nearCount += 1
+    const sm = typeof e.startMonth === 'string' ? e.startMonth.trim() : ''
+    if (/^\d{4}-\d{2}$/.test(sm) && sm >= todayUtc) nearCount += 1
   }
   if (events.length > 0 && nearCount < 1) gaps.push('events.near<1')
   if (events.length > 0 && axes.size < 2) gaps.push('events.axis<2')

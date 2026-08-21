@@ -38,7 +38,7 @@ On-device period sandbox remains for viewing drafts; VLM extract runs in the que
 | Mode | Input | Output | Billing |
 |---|---|---|---|
 | **Seal / oneshot** (consumable or Pro first seal / deep-next) | Deep: three photos (first seal / consumable); period deep may reuse palm featureIds | Dense **5-chapter** report + loci | Consumable: 1 credit. Pro: **1 deep / month** unit |
-| **Period brief** (Pro refresh after first seal) | ≥1 **new** Face photo; palms may reuse **featureIds** | Short **`brief`** schema + shorter loci | Pro: **1 Face shallow / UTC day** |
+| **Period brief** (Pro refresh after first seal) | ≥1 **new** Face photo; palms may reuse **featureIds** | Short **`brief`** schema + shorter loci; **near windows ≤ HorizonMonths (default 3)**; narrative emphasizes **vs prior brief** when one exists | Pro: **1 Face shallow / UTC day** |
 | **Regen** (discouraged for deep) | Zero new photos | Same photos, new body/locale | Counts as **deep** if deep body; prefer new capture |
 
 **New period:** Same fan → capture UX as first seal (empty slots, no photo carry). After the first oneshot, **Face required**; empty palm slots reuse previous featureIds.

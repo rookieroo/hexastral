@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test'
-import { normalizeFaceoracleInterpretation } from '../lib/faceoracle-reading-job'
+import {
+  formatPreviousBriefBlock,
+  normalizeFaceoracleInterpretation,
+} from './faceoracle-reading-job'
 
 describe('normalizeFaceoracleInterpretation', () => {
   test('accepts layered chapters', () => {
@@ -51,5 +54,47 @@ describe('normalizeFaceoracleInterpretation', () => {
   test('rejects empty body', () => {
     const out = normalizeFaceoracleInterpretation({ overview: '短', events: [] }, 'zh')
     expect(out).toBeNull()
+  })
+
+  test('drops events past horizonMonths', () => {
+    const out = normalizeFaceoracleInterpretation(
+      {
+        overview: '本期形气总体平和，宜留意作息节奏与情绪边界。',
+        faceSection: '面部特征显示沉稳内敛的气质线索，适合对照八字理解。',
+        advice: '重要决定可多留观察窗口，不必急于断语。',
+        events: [
+          { startMonth: '2099-01', endMonth: '2099-03', theme: 'far' },
+          { startMonth: '2020-01', endMonth: '2020-03', theme: 'past' },
+        ],
+      },
+      'zh',
+      { horizonMonths: 3 }
+    )
+    expect(out).not.toBeNull()
+    expect(out!.flat.events).toEqual([])
+  })
+})
+
+describe('formatPreviousBriefBlock', () => {
+  test('compacts prior brief fields', () => {
+    const block = formatPreviousBriefBlock(
+      JSON.stringify({
+        brief: {
+          title: '旧标题',
+          excerpt: '旧摘录',
+          summary: '旧摘要一二三',
+          points: ['点1', '点2'],
+        },
+        events: [{ theme: '旧窗' }],
+      })
+    )
+    expect(block).toContain('title=旧标题')
+    expect(block).toContain('summary=旧摘要')
+    expect(block).toContain('points=点1')
+    expect(block).toContain('windows=旧窗')
+  })
+
+  test('returns null without brief', () => {
+    expect(formatPreviousBriefBlock(JSON.stringify({ chapters: [] }))).toBeNull()
   })
 })

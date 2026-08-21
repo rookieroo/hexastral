@@ -230,17 +230,17 @@ export function axisLabels(locale: Locale): { career: string; love: string; heal
 /** Fullscreen locus viewer chrome — actions layered on top of the shared explorer copy. */
 export function locusViewerCopy(locale: Locale): {
   openChapter: string
-  recapture: string
+  newPeriod: string
 } {
   switch (locale) {
     case 'zh':
-      return { openChapter: '打开报告本章', recapture: '重拍此张' }
+      return { openChapter: '打开报告本章', newPeriod: '新一期' }
     case 'zh-Hant':
-      return { openChapter: '打開報告本章', recapture: '重拍此張' }
+      return { openChapter: '打開報告本章', newPeriod: '新一期' }
     case 'ja':
-      return { openChapter: '該当章を開く', recapture: '撮り直す' }
+      return { openChapter: '該当章を開く', newPeriod: '新しい一期' }
     default:
-      return { openChapter: 'Open report chapter', recapture: 'Retake' }
+      return { openChapter: 'Open report chapter', newPeriod: 'New period' }
   }
 }
 

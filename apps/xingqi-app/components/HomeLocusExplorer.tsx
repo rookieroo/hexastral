@@ -158,6 +158,7 @@ export function HomeLocusExplorer({
   )
 
   const pinch = Gesture.Pinch()
+    .enabled(!sheetOpen)
     .onUpdate((e) => {
       const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, savedScale.value * e.scale))
       scale.value = next
@@ -175,6 +176,7 @@ export function HomeLocusExplorer({
     })
 
   const pan = Gesture.Pan()
+    .enabled(!sheetOpen)
     .manualActivation(true)
     .averageTouches(true)
     .onTouchesMove((_e, state) => {
@@ -225,44 +227,46 @@ export function HomeLocusExplorer({
         </Text>
       </View>
 
-      <View
-        style={{
-          flexDirection: 'row',
-          borderWidth: 0.5,
-          borderColor: colors.separator,
-        }}
-      >
-        {segments.map((seg, i) => {
-          const active = seg.part === part
-          return (
-            <Pressable
-              key={seg.part}
-              onPress={() => void selectPart(seg.part)}
-              accessibilityRole='button'
-              accessibilityState={{ selected: active }}
-              style={{
-                flex: 1,
-                paddingVertical: 11,
-                alignItems: 'center',
-                backgroundColor: active ? colors.separator : 'transparent',
-                borderLeftWidth: i === 0 ? 0 : 0.5,
-                borderLeftColor: colors.separator,
-              }}
-            >
-              <Text
+      {segments.length > 1 ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            borderWidth: 0.5,
+            borderColor: colors.separator,
+          }}
+        >
+          {segments.map((seg, i) => {
+            const active = seg.part === part
+            return (
+              <Pressable
+                key={seg.part}
+                onPress={() => void selectPart(seg.part)}
+                accessibilityRole='button'
+                accessibilityState={{ selected: active }}
                 style={{
-                  color: active ? colors.text : colors.dim,
-                  fontSize: 12,
-                  letterSpacing: 0.6,
-                  fontWeight: active ? '600' : '400',
+                  flex: 1,
+                  paddingVertical: 11,
+                  alignItems: 'center',
+                  backgroundColor: active ? colors.separator : 'transparent',
+                  borderLeftWidth: i === 0 ? 0 : 0.5,
+                  borderLeftColor: colors.separator,
                 }}
               >
-                {seg.label}
-              </Text>
-            </Pressable>
-          )
-        })}
-      </View>
+                <Text
+                  style={{
+                    color: active ? colors.text : colors.dim,
+                    fontSize: 12,
+                    letterSpacing: 0.6,
+                    fontWeight: active ? '600' : '400',
+                  }}
+                >
+                  {seg.label}
+                </Text>
+              </Pressable>
+            )
+          })}
+        </View>
+      ) : null}
 
       <View
         onLayout={onStageLayout}

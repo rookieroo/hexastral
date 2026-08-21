@@ -43,6 +43,7 @@ import {
 } from '@/lib/locus-data'
 import { openReadingScreen } from '@/lib/open-reading'
 import { ALL_CAPTURE_PARTS } from '@/lib/photo-parts'
+import { setHomeCaptureHandoff } from '@/lib/home-capture-handoff'
 import { shouldOpenBriefCard } from '@/lib/reading-brief'
 import { resolveReadingPhotoUri } from '@/lib/reading-photos'
 import {
@@ -233,6 +234,7 @@ export default function LocusViewerScreen() {
   }, [])
 
   const pinch = Gesture.Pinch()
+    .enabled(!sheetOpen)
     .onUpdate((e) => {
       scale.value = Math.min(MAX_SCALE, Math.max(MIN_SCALE, savedScale.value * e.scale))
     })
@@ -249,6 +251,7 @@ export default function LocusViewerScreen() {
     })
 
   const pan = Gesture.Pan()
+    .enabled(!sheetOpen)
     .manualActivation(true)
     .averageTouches(true)
     .onTouchesMove((_e, state) => {
@@ -296,8 +299,9 @@ export default function LocusViewerScreen() {
     } as never)
   }
 
-  const recapture = () => {
-    router.push({ pathname: '/capture', params: { mode: 'slot', part } } as never)
+  const startNewPeriod = () => {
+    setHomeCaptureHandoff()
+    router.replace('/(app)' as never)
   }
 
   return (
@@ -323,45 +327,47 @@ export default function LocusViewerScreen() {
         </Pressable>
       </View>
 
-      <View
-        style={{
-          flexDirection: 'row',
-          marginHorizontal: spacing.xl,
-          borderWidth: 0.5,
-          borderColor: colors.separator,
-        }}
-      >
-        {segments.map((seg, i) => {
-          const active = seg.part === part
-          return (
-            <Pressable
-              key={seg.part}
-              onPress={() => void selectPart(seg.part)}
-              accessibilityRole='button'
-              accessibilityState={{ selected: active }}
-              style={{
-                flex: 1,
-                paddingVertical: 11,
-                alignItems: 'center',
-                backgroundColor: active ? colors.separator : 'transparent',
-                borderLeftWidth: i === 0 ? 0 : 0.5,
-                borderLeftColor: colors.separator,
-              }}
-            >
-              <Text
+      {segments.length > 1 ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            marginHorizontal: spacing.xl,
+            borderWidth: 0.5,
+            borderColor: colors.separator,
+          }}
+        >
+          {segments.map((seg, i) => {
+            const active = seg.part === part
+            return (
+              <Pressable
+                key={seg.part}
+                onPress={() => void selectPart(seg.part)}
+                accessibilityRole='button'
+                accessibilityState={{ selected: active }}
                 style={{
-                  color: active ? colors.text : colors.dim,
-                  fontSize: 13,
-                  letterSpacing: 0.6,
-                  fontWeight: active ? '600' : '400',
+                  flex: 1,
+                  paddingVertical: 11,
+                  alignItems: 'center',
+                  backgroundColor: active ? colors.separator : 'transparent',
+                  borderLeftWidth: i === 0 ? 0 : 0.5,
+                  borderLeftColor: colors.separator,
                 }}
               >
-                {seg.label}
-              </Text>
-            </Pressable>
-          )
-        })}
-      </View>
+                <Text
+                  style={{
+                    color: active ? colors.text : colors.dim,
+                    fontSize: 13,
+                    letterSpacing: 0.6,
+                    fontWeight: active ? '600' : '400',
+                  }}
+                >
+                  {seg.label}
+                </Text>
+              </Pressable>
+            )
+          })}
+        </View>
+      ) : null}
 
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         {loading ? (
@@ -401,7 +407,7 @@ export default function LocusViewerScreen() {
           </View>
         ) : (
           <Pressable
-            onPress={recapture}
+            onPress={startNewPeriod}
             style={{
               width: stageSide,
               height: stageSide,
@@ -444,7 +450,7 @@ export default function LocusViewerScreen() {
         pointerEvents={sheetOpen ? 'none' : 'auto'}
       >
         <Pressable
-          onPress={recapture}
+          onPress={startNewPeriod}
           accessibilityRole='button'
           style={{
             flex: 1,
@@ -455,7 +461,7 @@ export default function LocusViewerScreen() {
           }}
         >
           <Text style={{ color: colors.secondary, fontSize: 13, letterSpacing: 0.4 }}>
-            {viewerCopy.recapture}
+            {viewerCopy.newPeriod}
           </Text>
         </Pressable>
         <Pressable
@@ -488,6 +494,10 @@ export default function LocusViewerScreen() {
         index={-1}
         snapPoints={snapPoints}
         enablePanDownToClose
+        enableHandlePanningGesture
+        enableContentPanningGesture
+        enableOverDrag={false}
+        animateOnMount
         enableDynamicSizing={false}
         onClose={closeSheet}
         backdropComponent={LocusPassThroughBackdrop}

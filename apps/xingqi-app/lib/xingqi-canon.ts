@@ -130,6 +130,8 @@ export const XINGQI_TERM_ALIASES: Record<string, string> = {
   火炎土燥之象: '火炎土燥',
   貴人運: '贵人运',
   面色黃赤: '面色',
+  藤萝击甲: '藤萝系甲',
+  藤蘿擊甲: '藤萝系甲',
 }
 
 // Re-export glyph map consistency check helper for tests / primer

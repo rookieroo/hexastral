@@ -27,14 +27,20 @@ export const XINGQI_ASTRO_TERMS = [
   '通关',
   '比肩',
   '劫财',
+  '比劫',
   '食神',
   '伤官',
+  '食伤',
   '偏财',
   '正财',
   '七杀',
   '正官',
+  '官杀',
   '偏印',
   '正印',
+  '印绶',
+  '伤官见官',
+  '岁运并临',
   '大运',
   '流年',
   '流月',
@@ -531,6 +537,34 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     {
       short: '貴人の助け',
       long: '贵人运（きじんうん）：人の助け・引き立ての「象」。文化的対照であり、人事の鉄口予言ではない。',
+    }
+  ),
+  t(
+    'xq_shuangrenshengshen',
+    '双壬生身',
+    'shuāng rén shēng shēn',
+    'meta',
+    '两壬水生扶日主',
+    'Twin Ren nourishing the self',
+    '双壬生身：八字里多见两壬水生扶日主的意象——得水气滋养、根基较润；文化对照，非铁口命断。',
+    'Two Ren Water supporting the Day Master — nourished roots as imagery, not ironclad fate.',
+    {
+      short: '双壬が身を生む',
+      long: '双壬生身：二つの壬水が日主を生扶する象。水気に養われ根が潤うイメージ。鉄口の断命ではない。',
+    }
+  ),
+  t(
+    'xq_tengluoxijia',
+    '藤萝系甲',
+    'téng luó xì jiǎ',
+    'meta',
+    '甲木得通根依附',
+    'Jia wood with clinging roots',
+    '藤萝系甲：甲木得寅卯一类通根、有所依附的古典意象——如藤萝依木，宜有根基与依靠；非植物学或铁口预言。',
+    'Classical image: Jia wood clinging to roots (like vines on a tree) — support and foundation, not prophecy.',
+    {
+      short: '藤萝が甲に系る',
+      long: '藤萝系甲：甲木が寅卯などの通根に依る古典象。支えと根基のイメージ。予言ではない。',
     }
   ),
   t(
@@ -1437,7 +1471,7 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
 
 export const XINGQI_VOCAB_PROMPT = [
   'Vocabulary (prefer these tokens when relevant so the client can gloss them):',
-  '形气, 气机, 宜留意, 气色, 面色, 气血, 气血外浮, 骨相, 肉相, 脏腑之象, 敛, 浮阳, 浮阳外越, 敛浮阳, 肝阳, 痰瘀, 斑, 火炎土燥, 贵人运, 形气依据,',
+  '形气, 气机, 宜留意, 气色, 面色, 气血, 气血外浮, 骨相, 肉相, 脏腑之象, 敛, 浮阳, 浮阳外越, 敛浮阳, 肝阳, 痰瘀, 斑, 火炎土燥, 贵人运, 双壬生身, 藤萝系甲, 形气依据,',
   '面相, 三停, 五岳, 五官, 十二宫, 额宽,',
   '命宫, 财帛宫, 兄弟宫, 田宅宫, 男女宫, 奴仆宫, 夫妻宫, 疾厄宫, 迁移宫, 官禄宫, 福德宫, 父母宫,',
   '天庭, 印堂, 山根, 年寿, 准头, 人中, 地阁, 承浆, 颧骨,',
@@ -1446,8 +1480,9 @@ export const XINGQI_VOCAB_PROMPT = [
   '生命线, 智慧线, 感情线, 事业线, 婚姻线, 健康线, 太阳线,',
   '金星丘, 木星丘, 土星丘, 太阳丘, 水星丘, 月丘, 火星丘, 指节,',
   '日主, 用神, 通关, 相生, 相克, 比和, 金, 木, 水, 火, 土,',
-  '大运, 流年, 流月, 正印, 偏印, 正官, 七杀, 食神, 伤官, 正财, 偏财, 比肩, 劫财.',
-  'Prefer 三停 over 三庭; 智慧线 / 感情线 / 事业线 over 头脑线 / 心脏线 / 命运线.',
+  '大运, 流年, 流月, 正印, 偏印, 印绶, 正官, 七杀, 官杀, 食神, 伤官, 食伤,',
+  '正财, 偏财, 比肩, 劫财, 比劫, 伤官见官, 岁运并临.',
+  'Prefer 三停 over 三庭; 智慧线 / 感情线 / 事业线 over 头脑线 / 心脏线 / 命运线; 藤萝系甲 over 藤萝击甲.',
   'Do not invent obscure jargon outside this list plus plain language.',
 ].join(' ')
 
@@ -1514,6 +1549,49 @@ export function segmentXingqiTerms(text: string): XingqiTermSegment[] {
   return out.length > 0 ? out : [{ text, termZh: null }]
 }
 
+/** Local glosses for Syel compounds not in astro-i18n TERMS. */
+const ASTRO_LOCAL_GLOSS: Record<
+  string,
+  { short: string; long: string; shortEn: string; longEn: string }
+> = {
+  比劫: {
+    short: '比肩与劫财合称',
+    long: '比劫：比肩与劫财的合称，同气伙伴与资源争夺并存。',
+    shortEn: 'Peer + rival stars',
+    longEn: 'Bijie: peer (比肩) and rival (劫财) together — allies and resource tension.',
+  },
+  食伤: {
+    short: '食神与伤官合称',
+    long: '食伤：食神与伤官的合称，才华与表达、泄秀之象。',
+    shortEn: 'Output stars (食神+伤官)',
+    longEn: 'Shishang: talent and sharp expression as a pair.',
+  },
+  官杀: {
+    short: '正官与七杀合称',
+    long: '官杀：正官与七杀的合称，约束、职分与压力之象。',
+    shortEn: 'Authority stars (正官+七杀)',
+    longEn: 'Guansha: duty and pressure from authority stars.',
+  },
+  印绶: {
+    short: '正印与偏印合称',
+    long: '印绶：正印与偏印的合称，庇护、学养与接受之象。',
+    shortEn: 'Resource stars (印)',
+    longEn: 'Yinshou: shelter, learning, and receptivity from print stars.',
+  },
+  伤官见官: {
+    short: '伤官与官星同现',
+    long: '伤官见官：伤官与正官同现，易见顶撞规范、口舌或职场摩擦。',
+    shortEn: 'Hurt Officer meets Officer',
+    longEn: 'Shangguan jian guan: sharp expression meeting authority — friction risk.',
+  },
+  岁运并临: {
+    short: '流年与大运叠合',
+    long: '岁运并临：流年与大运同气叠合，该段气候更集中、起伏更明显。',
+    shortEn: 'Year + luck pillar overlap',
+    longEn: 'Suiyun binglin: annual and decade luck stack — denser climate.',
+  },
+}
+
 /** Thin JA glosses for Syel BaZi subset (astro-i18n has no meaning.ja yet). */
 const ASTRO_JA_GLOSS: Record<string, { short: string; long: string }> = {
   相生: {
@@ -1538,14 +1616,38 @@ const ASTRO_JA_GLOSS: Record<string, { short: string; long: string }> = {
   通关: { short: '相争を橋渡しする五行', long: '通关：相克のあいだを仲介し、衝突を流通へ導く。' },
   比肩: { short: '日主と同気の仲間', long: '比肩：日主と同じ陰陽五行。自立と競合の象。' },
   劫财: { short: '日主と同気の奪い合い', long: '劫财：比肩の対。資源の取り合い・決断の揺れ。' },
+  比劫: {
+    short: '比肩と劫财の総称',
+    long: '比劫：比肩と劫财をまとめた呼び方。仲間と奪い合いが同居する。',
+  },
   食神: { short: '表現と余力', long: '食神：日主が泄す穏やかな才と楽しみ。' },
   伤官: { short: '鋭い表現と反骨', long: '伤官：食神より鋭く、型を破る表現。' },
+  食伤: {
+    short: '食神と伤官の総称',
+    long: '食伤：食神と伤官をまとめた呼び方。才と表現・泄秀の象。',
+  },
   偏财: { short: '流動する財縁', long: '偏财：機を見て動く財・対人の縁。' },
   正财: { short: '安定した財と実務', long: '正财：着実な収入と義務の象。' },
   七杀: { short: '圧と突破の力', long: '七杀：強い制約と突破欲。使い方次第。' },
   正官: { short: '規範と職分', long: '正官：秩序・肩書・責任の枠。' },
+  官杀: {
+    short: '正官と七杀の総称',
+    long: '官杀：正官と七杀をまとめた呼び方。制約・職分・圧力の象。',
+  },
   偏印: { short: '偏った学び・直感', long: '偏印：型にはまらぬ受容と着想。' },
   正印: { short: '保護と正統の学び', long: '正印：庇護・資格・正統な知。' },
+  印绶: {
+    short: '正印と偏印の総称',
+    long: '印绶：正印と偏印をまとめた呼び方。庇護・学養・受け入れの象。',
+  },
+  伤官见官: {
+    short: '伤官と官星が同現',
+    long: '伤官见官：伤官と正官が同時に現れる。規範との摩擦や口舌が出やすい。',
+  },
+  岁运并临: {
+    short: '流年と大运の重なり',
+    long: '岁运并临：流年と大运が同気で重なり、その時期の起伏がより集中する。',
+  },
   大运: { short: '十年ごとの人生章', long: '大运：約十年ごとに替わる大きな気候。' },
   流年: { short: 'その年の気場', long: '流年：一年単位の天候のように盤へ重なる。' },
   流月: { short: 'その月の起伏', long: '流月：年の中の月次の潮。時機の手がかり。' },
@@ -1560,6 +1662,40 @@ function hantifyAstroTerm(term: ResolvedTerm): ResolvedTerm {
     zh: toZhHant(term.zh),
     short: toZhHant(term.short),
     long: toZhHant(term.long),
+  }
+}
+
+function resolveAstroLocalTerm(canonical: string, locale: TermLocale): ResolvedTerm | null {
+  const local = ASTRO_LOCAL_GLOSS[canonical]
+  if (!local) return null
+  const ja = ASTRO_JA_GLOSS[canonical]
+  if (locale.startsWith('ja') && ja) {
+    return {
+      id: `xingqi-astro-${canonical}`,
+      zh: canonical,
+      pinyin: '',
+      category: 'relation' as TermCategory,
+      short: ja.short,
+      long: ja.long,
+    }
+  }
+  if (locale.startsWith('en')) {
+    return {
+      id: `xingqi-astro-${canonical}`,
+      zh: canonical,
+      pinyin: '',
+      category: 'relation' as TermCategory,
+      short: local.shortEn,
+      long: local.longEn,
+    }
+  }
+  return {
+    id: `xingqi-astro-${canonical}`,
+    zh: isZhHant(locale) ? toZhHant(canonical) : canonical,
+    pinyin: '',
+    category: 'relation' as TermCategory,
+    short: isZhHant(locale) ? toZhHant(local.short) : local.short,
+    long: isZhHant(locale) ? toZhHant(local.long) : local.long,
   }
 }
 
@@ -1581,15 +1717,15 @@ export function resolveXingqiTerm(zh: string, locale: TermLocale): ResolvedTerm 
 
   if (locale.startsWith('ja')) {
     const ja = ASTRO_JA_GLOSS[canonical]
-    const base = getTermByZh(canonical, 'en')
+    const base = getTermByZh(canonical, 'en') ?? resolveAstroLocalTerm(canonical, 'en')
     if (ja && base) {
       return { ...base, short: ja.short, long: ja.long }
     }
   }
 
   const fromAstro = getTermByZh(canonical, locale)
-  if (!fromAstro) return null
-  return isZhHant(locale) ? hantifyAstroTerm(fromAstro) : fromAstro
+  if (fromAstro) return isZhHant(locale) ? hantifyAstroTerm(fromAstro) : fromAstro
+  return resolveAstroLocalTerm(canonical, locale)
 }
 
 export type XingqiGlossaryGroup = {

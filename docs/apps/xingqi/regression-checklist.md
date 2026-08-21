@@ -19,6 +19,9 @@ Run after co-deploying **svc-astro + hexastral-api + Syel client** (VLM/`skinTon
 - [ ] Hant deep read: tap `浮陽` / `浮陽外越` → gloss opens (not dead text)
 - [ ] Face-only period update: home / processing stack has **no empty palm ghosts** (`hideEmpty`)
 - [ ] New shallow brief: `points[]` + near-window events when model returns them; first open shows虚线 tip → Terms
+- [ ] Shallow near windows stay within **≤ HorizonMonths (default 3)** from TodayUTC (no 6–8 month span); second shallow injects **PreviousBrief** change narrative when a prior faceoracle reading exists
+- [ ] Locus fullscreen: single photo part → **no** lone「面」tab; left CTA is **新一期** (not 重拍此张) → home capture handoff
+- [ ] Classical phrases in new body: obscure 典故 followed by `（白话）` paren gloss
 - [ ] New extract → locus (face **and** palm): marker ink follows face `skinTone` contrast, not only theme accent
 - [ ] Symbol glossary: seven mount seals distinct at ~28px (see [mount-glyphs-mock.html](./mount-glyphs-mock.html))
 
