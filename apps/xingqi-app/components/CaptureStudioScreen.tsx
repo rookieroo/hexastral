@@ -15,6 +15,7 @@ import { pickUi } from '@/lib/locale-zh'
 import { persistPeriodPhoto } from '@/lib/period-photos'
 import {
   type CapturePart,
+  clearReadingDraftSlot,
   draftAllowsPartial,
   draftChangedParts,
   draftHasAnyPhoto,
@@ -25,6 +26,7 @@ import {
   hydrateReadingDraft,
   patchReadingDraft,
   syncPartialMetaFromChanged,
+  undiscardCarryPart,
 } from '@/lib/reading-draft'
 import { startReadingJob } from '@/lib/reading-job'
 import { alertIfPhotosUnchanged } from '@/lib/reading-preflight'
@@ -104,6 +106,7 @@ async function ensureLibraryPermission(locale: string): Promise<'ok' | 'denied'>
 }
 
 function patchPart(part: CapturePart, uri: string): void {
+  undiscardCarryPart(part)
   if (part === 'palm_l') {
     patchReadingDraft({ palmLeftUri: uri, palmLeftFeatureId: undefined })
     return
@@ -476,10 +479,54 @@ export function CaptureStudioScreen({
 
   const hasActive = activePart ? Boolean(uris[activePart]) : false
   const draftNow = getReadingDraft()
+  const hasActiveCarry =
+    activePart === 'palm_l'
+      ? Boolean(draftNow.palmLeftFeatureId)
+      : activePart === 'palm_r'
+        ? Boolean(draftNow.palmRightFeatureId)
+        : activePart === 'face'
+          ? Boolean(draftNow.faceFeatureId)
+          : false
+  const canClearSlot = Boolean(activePart) && (hasActive || hasActiveCarry)
   const periodMode = draftAllowsPartial(draftNow)
   const canCarryPalms = Boolean(draftNow.palmLeftFeatureId && draftNow.palmRightFeatureId)
   // Face JPEG unlocks primary CTA (palms optional at this gate).
   const submitReady = draftPhotoReadyForReading(draftNow)
+
+  const clearActiveSlot = () => {
+    const part = activePart
+    if (!part || busy) return
+    Alert.alert(
+      s('清除此张？', '清除此張？', 'Clear this slot?', 'この枠を消しますか？'),
+      s(
+        '将删除本机草稿图，并取消沿用上次特征。需要时可再拍。',
+        '將刪除本機草稿圖，並取消沿用上次特徵。需要時可再拍。',
+        'Deletes the on-device draft and stops reusing the last extract. You can capture again anytime.',
+        '端末の下書きを消し、前回特徴の引き継ぎをやめます。また撮影できます。'
+      ),
+      [
+        { text: s('取消', '取消', 'Cancel', 'キャンセル'), style: 'cancel' },
+        {
+          text: s('清除', '清除', 'Clear', '削除'),
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              setBusy(true)
+              try {
+                await clearReadingDraftSlot(part)
+                setUris(urisFromDraft())
+                setBust(Date.now())
+                refreshChanged()
+                onPhotosChanged?.()
+              } finally {
+                setBusy(false)
+              }
+            })()
+          },
+        },
+      ]
+    )
+  }
 
   const onPrimary = () => {
     const part = activePart ?? firstEmpty(urisFromDraft())
@@ -647,12 +694,14 @@ export function CaptureStudioScreen({
           paddingHorizontal: spacing.xl,
         }}
       >
-        <View style={{ width: POLAROID_FAN_W, height: POLAROID_STACK_H }}>
+        <View style={{ width: POLAROID_FAN_W, height: POLAROID_STACK_H, overflow: 'visible' }}>
           <OffsetPhotoStack
             uris={displayUris}
             labels={labels}
             activePart={activePart}
             onPressPart={(part) => setActivePart(part)}
+            onClearActive={canClearSlot && !busy ? clearActiveSlot : undefined}
+            clearAccessibilityLabel={copy.clearSlot}
             spread={1}
             ritual={1}
             compact

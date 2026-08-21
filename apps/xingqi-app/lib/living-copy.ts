@@ -580,6 +580,7 @@ export function captureStudioCopy(locale: Locale): {
   privacy: string
   camera: string
   retake: string
+  clearSlot: string
   library: string
   replaceLibrary: string
   done: string
@@ -598,6 +599,7 @@ export function captureStudioCopy(locale: Locale): {
         privacy: '本机保留可查看草稿；提取时短暂上传，处理后删除原图。',
         camera: '拍照',
         retake: '重拍',
+        clearSlot: '清除',
         library: '相册',
         replaceLibrary: '从相册替换',
         done: '完成',
@@ -615,6 +617,7 @@ export function captureStudioCopy(locale: Locale): {
         privacy: '本機保留可查看草稿；提取時短暫上傳，處理後刪除原圖。',
         camera: '拍照',
         retake: '重拍',
+        clearSlot: '清除',
         library: '相簿',
         replaceLibrary: '從相簿替換',
         done: '完成',
@@ -632,6 +635,7 @@ export function captureStudioCopy(locale: Locale): {
         privacy: '端末に下書きを保持。抽出のため短時間アップロードし、処理後に原画像を削除します。',
         camera: 'カメラ',
         retake: '撮り直す',
+        clearSlot: '削除',
         library: 'アルバム',
         replaceLibrary: 'アルバムから差し替え',
         done: '完了',
@@ -649,6 +653,7 @@ export function captureStudioCopy(locale: Locale): {
         privacy: 'Drafts stay on device for viewing; briefly uploaded for extract, then deleted.',
         camera: 'Camera',
         retake: 'Retake',
+        clearSlot: 'Clear',
         library: 'Library',
         replaceLibrary: 'Replace from library',
         done: 'Done',

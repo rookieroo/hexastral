@@ -4,7 +4,7 @@
 
 import { useTheme } from '@zhop/core-ui'
 import { useEffect, useState } from 'react'
-import { Text, View } from 'react-native'
+import { Text, View, Pressable } from 'react-native'
 import Animated, {
   Easing,
   type SharedValue,
@@ -12,6 +12,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
+import { Trash2 } from 'lucide-react-native'
 
 import { LocalPhoto } from '@/components/LocalPhoto'
 import { PolaroidChrome, polaroidLift } from '@/components/PolaroidChrome'
@@ -50,6 +51,8 @@ function StackCard({
   showLabels,
   photoCache,
   onPressPart,
+  onClearActive,
+  clearAccessibilityLabel,
 }: {
   part: CapturePart
   uri?: string
@@ -67,6 +70,9 @@ function StackCard({
   showLabels: boolean
   photoCache: 'memory-disk' | 'none'
   onPressPart?: (part: CapturePart, hasPhoto: boolean) => void
+  /** Shown under the active card when the slot can be cleared. */
+  onClearActive?: () => void
+  clearAccessibilityLabel?: string
 }) {
   const lift = useSharedValue(0)
   // Always start unselected so auto-focus (Face) and tap both ease in — never snap.
@@ -99,6 +105,8 @@ function StackCard({
     opacity: showLabels ? ritual.value : 0,
     transform: [{ translateY: (1 - ritual.value) * 8 }],
   }))
+
+  const clearTop = cardH + (showLabels ? 24 : 10)
 
   return (
     <Animated.View
@@ -142,6 +150,24 @@ function StackCard({
           <Text style={{ color: labelColor, fontSize: 11, letterSpacing: 2 }}>{label}</Text>
         </Animated.View>
       ) : null}
+      {active && onClearActive ? (
+        <Pressable
+          onPress={onClearActive}
+          hitSlop={14}
+          accessibilityRole='button'
+          accessibilityLabel={clearAccessibilityLabel ?? label}
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: clearTop,
+            alignItems: 'center',
+            paddingVertical: 6,
+          }}
+        >
+          <Trash2 size={18} color={labelColor} strokeWidth={1.6} />
+        </Pressable>
+      ) : null}
     </Animated.View>
   )
 }
@@ -168,6 +194,8 @@ export function OffsetPhotoStack({
   /** When true, omit parts with no URI (archive / annotation). Capture keeps false. */
   hideEmpty = false,
   onPressPart,
+  onClearActive,
+  clearAccessibilityLabel,
 }: {
   readingId?: string
   uris?: Partial<Record<CapturePart, string>>
@@ -184,6 +212,9 @@ export function OffsetPhotoStack({
   photoCache?: 'memory-disk' | 'none'
   hideEmpty?: boolean
   onPressPart?: (part: CapturePart, hasPhoto: boolean) => void
+  /** Trash under the active card when the slot can be cleared. */
+  onClearActive?: () => void
+  clearAccessibilityLabel?: string
 }) {
   const { isDark, colors } = useTheme()
   const [boxW, setBoxW] = useState(POLAROID_FAN_W)
@@ -271,6 +302,8 @@ export function OffsetPhotoStack({
           showLabels={compact}
           photoCache={photoCache}
           onPressPart={onPressPart}
+          onClearActive={activePart === part ? onClearActive : undefined}
+          clearAccessibilityLabel={clearAccessibilityLabel}
         />
       ))}
     </View>

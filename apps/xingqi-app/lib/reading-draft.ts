@@ -23,6 +23,8 @@ export interface ReadingDraft {
   palmLeftFeatureId?: string
   palmRightFeatureId?: string
   faceFeatureId?: string
+  /** Parts the user cleared — hydrate must not restore featureIds from last seal. */
+  discardedCarryParts?: CapturePart[]
   solarDate?: string
   timeIndex?: number
   gender?: '男' | '女'
@@ -45,6 +47,64 @@ export function patchReadingDraft(patch: Partial<ReadingDraft>): ReadingDraft {
   return getReadingDraft()
 }
 
+function isDiscardedCarry(part: CapturePart, d: ReadingDraft = draft): boolean {
+  return Boolean(d.discardedCarryParts?.includes(part))
+}
+
+function withDiscardedCarry(part: CapturePart, d: ReadingDraft): CapturePart[] {
+  const prev = d.discardedCarryParts ?? []
+  return prev.includes(part) ? prev : [...prev, part]
+}
+
+function withoutDiscardedCarry(part: CapturePart, d: ReadingDraft): CapturePart[] | undefined {
+  const next = (d.discardedCarryParts ?? []).filter((p) => p !== part)
+  return next.length > 0 ? next : undefined
+}
+
+/**
+ * Clear one capture slot: delete local JPEG + featureId, and mark carry discarded
+ * so hydrate won't restore the last seal's palm/face featureId.
+ */
+export async function clearReadingDraftSlot(part: CapturePart): Promise<ReadingDraft> {
+  const { deletePeriodPhoto } = await import('./period-photos')
+  await deletePeriodPhoto(part)
+  const discarded = withDiscardedCarry(part, draft)
+  if (part === 'palm_l') {
+    draft = {
+      ...draft,
+      palmLeftUri: undefined,
+      palmLeftFeatureId: undefined,
+      discardedCarryParts: discarded,
+    }
+  } else if (part === 'palm_r') {
+    draft = {
+      ...draft,
+      palmRightUri: undefined,
+      palmRightFeatureId: undefined,
+      discardedCarryParts: discarded,
+    }
+  } else {
+    draft = {
+      ...draft,
+      faceUri: undefined,
+      faceFeatureId: undefined,
+      discardedCarryParts: discarded,
+    }
+  }
+  try {
+    await AsyncStorage.setItem(KEY, JSON.stringify(draft))
+  } catch {
+    // ignore
+  }
+  return getReadingDraft()
+}
+
+/** Call after a new JPEG is saved for a slot — allow carry again if they re-shoot later. */
+export function undiscardCarryPart(part: CapturePart): void {
+  if (!draft.discardedCarryParts?.includes(part)) return
+  patchReadingDraft({ discardedCarryParts: withoutDiscardedCarry(part, draft) })
+}
+
 /**
  * Clear funnel draft. By default keeps on-device period photos so home icons
  * can still open view/replace. Pass wipePhotos after sign-out / consent revoke.
@@ -65,13 +125,20 @@ export async function clearReadingDraft(opts?: { wipePhotos?: boolean }): Promis
       faceUri: photos.face,
       faceFeatureId: photos.face
         ? prev.faceFeatureId
-        : (snap?.faceFeatureId ?? prev.faceFeatureId),
+        : isDiscardedCarry('face', prev)
+          ? undefined
+          : (snap?.faceFeatureId ?? prev.faceFeatureId),
       palmLeftFeatureId: photos.palm_l
         ? prev.palmLeftFeatureId
-        : (snap?.palmLeftFeatureId ?? prev.palmLeftFeatureId),
+        : isDiscardedCarry('palm_l', prev)
+          ? undefined
+          : (snap?.palmLeftFeatureId ?? prev.palmLeftFeatureId),
       palmRightFeatureId: photos.palm_r
         ? prev.palmRightFeatureId
-        : (snap?.palmRightFeatureId ?? prev.palmRightFeatureId),
+        : isDiscardedCarry('palm_r', prev)
+          ? undefined
+          : (snap?.palmRightFeatureId ?? prev.palmRightFeatureId),
+      discardedCarryParts: prev.discardedCarryParts,
       solarDate: prev.solarDate,
       timeIndex: prev.timeIndex,
       gender: prev.gender,
@@ -120,10 +187,16 @@ export async function hydrateReadingDraft(): Promise<ReadingDraft> {
     palmLeftUri: await pickUri(draft.palmLeftUri, photos.palm_l),
     palmRightUri: await pickUri(draft.palmRightUri, photos.palm_r),
     faceUri: await pickUri(draft.faceUri, photos.face),
-    // Backfill featureIds from last seal when missing (Face-only update carries palms).
-    faceFeatureId: draft.faceFeatureId ?? snap?.faceFeatureId,
-    palmLeftFeatureId: draft.palmLeftFeatureId ?? snap?.palmLeftFeatureId,
-    palmRightFeatureId: draft.palmRightFeatureId ?? snap?.palmRightFeatureId,
+    // Backfill featureIds from last seal when missing — unless user cleared that slot.
+    faceFeatureId: isDiscardedCarry('face', draft)
+      ? undefined
+      : (draft.faceFeatureId ?? snap?.faceFeatureId),
+    palmLeftFeatureId: isDiscardedCarry('palm_l', draft)
+      ? undefined
+      : (draft.palmLeftFeatureId ?? snap?.palmLeftFeatureId),
+    palmRightFeatureId: isDiscardedCarry('palm_r', draft)
+      ? undefined
+      : (draft.palmRightFeatureId ?? snap?.palmRightFeatureId),
   }
   // Replacing a slot clears that featureId in patchPart; do not wipe here on hydrate.
 
@@ -157,6 +230,7 @@ export async function prepareNewPeriodCapture(opts?: {
       outputKind: 'period_brief',
       updateKind: 'partial',
       partialParts: [],
+      discardedCarryParts: undefined,
       faceFeatureId: snap?.faceFeatureId,
       palmLeftFeatureId: snap?.palmLeftFeatureId,
       palmRightFeatureId: snap?.palmRightFeatureId,
@@ -183,13 +257,21 @@ export async function prepareNewPeriodCapture(opts?: {
     faceUri: onDisk.face,
     outputKind: 'period_brief',
     updateKind: 'partial',
-    faceFeatureId: onDisk.face ? draft.faceFeatureId : (snap?.faceFeatureId ?? draft.faceFeatureId),
+    faceFeatureId: onDisk.face
+      ? draft.faceFeatureId
+      : isDiscardedCarry('face', draft)
+        ? undefined
+        : (snap?.faceFeatureId ?? draft.faceFeatureId),
     palmLeftFeatureId: onDisk.palm_l
       ? draft.palmLeftFeatureId
-      : (snap?.palmLeftFeatureId ?? draft.palmLeftFeatureId),
+      : isDiscardedCarry('palm_l', draft)
+        ? undefined
+        : (snap?.palmLeftFeatureId ?? draft.palmLeftFeatureId),
     palmRightFeatureId: onDisk.palm_r
       ? draft.palmRightFeatureId
-      : (snap?.palmRightFeatureId ?? draft.palmRightFeatureId),
+      : isDiscardedCarry('palm_r', draft)
+        ? undefined
+        : (snap?.palmRightFeatureId ?? draft.palmRightFeatureId),
   }
   const changed = await draftChangedParts(getReadingDraft())
   if (changed.length === 0) {
