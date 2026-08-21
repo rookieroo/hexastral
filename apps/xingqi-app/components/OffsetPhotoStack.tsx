@@ -17,6 +17,7 @@ import { LocalPhoto } from '@/components/LocalPhoto'
 import { PolaroidChrome, polaroidLift } from '@/components/PolaroidChrome'
 import { PolaroidGhost } from '@/components/PolaroidGhost'
 import type { CapturePart } from '@/lib/reading-draft'
+import { ALL_CAPTURE_PARTS, partsWithPhotoUris } from '@/lib/photo-parts'
 import { resolveReadingPhotoUri } from '@/lib/reading-photos'
 import {
   POLAROID_CARD_H,
@@ -29,7 +30,6 @@ import {
   polaroidPoses,
 } from '@/lib/stack-layout'
 
-const PARTS: CapturePart[] = ['palm_l', 'palm_r', 'face']
 /** Ease-in-out — fan, ritual, and selection share one curve. */
 const STACK_EASE = Easing.inOut(Easing.cubic)
 
@@ -165,6 +165,8 @@ export function OffsetPhotoStack({
   instantPose = false,
   interactive,
   photoCache = 'memory-disk',
+  /** When true, omit parts with no URI (archive / annotation). Capture keeps false. */
+  hideEmpty = false,
   onPressPart,
 }: {
   readingId?: string
@@ -180,6 +182,7 @@ export function OffsetPhotoStack({
   interactive?: boolean
   /** Period sandbox reuses paths — pass `none` with a busted URI. */
   photoCache?: 'memory-disk' | 'none'
+  hideEmpty?: boolean
   onPressPart?: (part: CapturePart, hasPhoto: boolean) => void
 }) {
   const { isDark, colors } = useTheme()
@@ -189,6 +192,11 @@ export function OffsetPhotoStack({
   const cardW = compact ? POLAROID_CARD_W : Math.min(124, Math.round(boxW * 0.34))
   const cardH = compact ? POLAROID_CARD_H : Math.round(cardW * (POLAROID_CARD_H / POLAROID_CARD_W))
   const uris = urisProp ?? loaded
+  const visibleParts = hideEmpty
+    ? partsWithPhotoUris(uris).length > 0
+      ? partsWithPhotoUris(uris)
+      : (['face'] as CapturePart[])
+    : ALL_CAPTURE_PARTS
   const spreadSv = useSharedValue(spread)
   const ritualSv = useSharedValue(ritual)
 
@@ -216,7 +224,7 @@ export function OffsetPhotoStack({
     let cancelled = false
     void (async () => {
       const next: Partial<Record<CapturePart, string>> = {}
-      for (const part of PARTS) {
+      for (const part of ALL_CAPTURE_PARTS) {
         const uri = await resolveReadingPhotoUri(readingId, part, { fallbackLive: true })
         if (uri) next[part] = uri
       }
@@ -244,7 +252,7 @@ export function OffsetPhotoStack({
         overflow: 'visible',
       }}
     >
-      {PARTS.map((part) => (
+      {visibleParts.map((part) => (
         <StackCard
           key={part}
           part={part}

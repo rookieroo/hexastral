@@ -53,8 +53,9 @@ On-device period sandbox remains for viewing drafts; VLM extract runs in the que
 brief: {
   title: string       // ≤24
   excerpt: string     // ≤42, home-wheel hook
-  summary: string     // 120–220, form × BaZi
+  summary: string     // 180–280, form × BaZi
   suggestion: string  // 1–3 practical steps
+  points?: string[]   // 2–4 宜留意 lines (fallback: split suggestion)
   axis?: 'career' | 'love' | 'health'
 }
 ```
@@ -107,7 +108,7 @@ See [lantai/demand.md](../lantai/demand.md).
 - **Reading job (Pass 0 → 1 → 2):** **Pass 0** (code) ranks clear VLM keys into **`SuggestedLoci`**. **Pass 1** writes `loci[]`. **Pass 2** is selected by job `outputKind`: `oneshot`/`deep` → five chapters; `period_brief` → `brief` schema. Soft events weave FixedLoci. Soft observations for secondary gaps remain log-only.
 - **Client display safety net:** `adaptReadingChapters` nulls out `reef`/`remedy`/`counterpoint` that merely repeat an earlier chapter (keeps first).
 - **描点 → 章节打通 (loci-first):** `loci[]` = `{featureKey, part, locus, reading}` SSOT. Sheet note = `loci[].reading`. **Never** paste raw VLM feature text.
-- **Landmarks:** **face + palm** coords from Moondream 3.1 `point` (+ VLM midpoint fallback; clustered / fingertip palm points dropped). Client prefers `landmarksJson`; missing keys interpolate relative to detected mounts when coverage is thin — avoid absolute canonical mix that misaligns with the photo (`FACEORACLE_VLM_SCHEMA_VERSION=xingqi-vlm-v9`).
+- **Landmarks:** **face + palm** coords from Moondream 3.1 `point` (+ VLM midpoint fallback; clustered / fingertip palm points dropped). Client prefers `landmarksJson`; missing keys interpolate relative to detected mounts when coverage is thin — avoid absolute canonical mix that misaligns with the photo (`FACEORACLE_VLM_SCHEMA_VERSION=xingqi-vlm-v11`). Face VLM also emits structured **`skinTone`** (`fair|light|medium|tan|deep|unknown`) so photo-annotation markers use skin contrast, not theme accent.
 - **Close UX:** top-right X on result (no bottom Done).
 - **Capture:** HD full face + full palms; blurry/cropped → weak VLM → thin report.
 

@@ -2,7 +2,7 @@
 
 > **Status**: next after Yuel（`com.hexastral.syel` · `apps/xingqi-app`）。
 > 正式 Submit：**Yuun + Yuel 过审之后单独提**，不要与 Yuel 同日塞队。Kanyu / Yaul / Lantai 让路。
-> 首页视觉样板：[home-ui-mock.html](./home-ui-mock.html)。代码侧可并行准备控制台（见 [publish/README.md](../../publish/README.md)）。
+> 首页视觉样板：[home-ui-mock.html](./home-ui-mock.html)。七丘印章 HTML 先行：[mount-glyphs-mock.html](./mount-glyphs-mock.html)。代码侧可并行准备控制台（见 [publish/README.md](../../publish/README.md)）。
 
 **产品**：面相/手相三源（L/R 掌 + 脸）+ 生辰必填（ADR-0028）。产品脊柱见 [product.md](./product.md)。
 

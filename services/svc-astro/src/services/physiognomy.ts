@@ -45,6 +45,11 @@ export interface FaceFeatures {
   earLobes: string
   /** 气色 */
   complexion: string
+  /**
+   * Structured skin tone for locus marker contrast (not medical).
+   * fair | light | medium | tan | deep | unknown
+   */
+  skinTone: string
   /** 骨相 */
   boneStructure: string
   /** 面相整体简评（3句内） */
@@ -125,6 +130,7 @@ const FACE_FEATURES_SYSTEM_PROMPT = `你是一位精通中国传统面相学的�
 - 刘海/眼镜遮挡时：仍按解剖位置估计坐标（发际下天庭中点、印堂两眉间、山根鼻梁根等），不要把点标在刘海外缘或省略
 - 优先给出 tianTing / yinTang / shanGen / eyeType / noseShape / mouthType / chin 的 landmarks；仅完全不可见时才省略
 - complexion / boneStructure / overallAssessment 不需要 landmarks
+- skinTone 必须为枚举之一：fair / light / medium / tan / deep / unknown（按可见肤色深浅估计；光线极差时用 unknown）
 - 如某部位在图片中不清晰，features 标注值为 "unclear"，landmarks 可省略该 key
 - 绝对不要包含对用户外貌的主观美丑评价
 - 不要做命运断语，只描述可见形气特征`
@@ -148,6 +154,10 @@ const FACE_FEATURES_SCHEMA = {
         chin: { type: 'string' },
         earLobes: { type: 'string' },
         complexion: { type: 'string' },
+        skinTone: {
+          type: 'string',
+          enum: ['fair', 'light', 'medium', 'tan', 'deep', 'unknown'],
+        },
         boneStructure: { type: 'string' },
         overallAssessment: { type: 'string' },
       },
@@ -165,6 +175,7 @@ const FACE_FEATURES_SCHEMA = {
         'chin',
         'earLobes',
         'complexion',
+        'skinTone',
         'boneStructure',
         'overallAssessment',
       ],

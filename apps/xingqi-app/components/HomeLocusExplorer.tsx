@@ -16,6 +16,11 @@ import { isCjkZh, pickZh } from '@/lib/locale-zh'
 import type { LocusExplorerData, LocusPart, LocusStar } from '@/lib/locus-data'
 import { starsForPart } from '@/lib/locus-data'
 import { resolveReadingPhotoUri } from '@/lib/reading-photos'
+import { ALL_CAPTURE_PARTS } from '@/lib/photo-parts'
+import {
+  locusMarkerAccentForSkinTone,
+  parseFaceSkinTone,
+} from '@/lib/skin-tone-marker'
 
 const STAGE_MAX = 280
 const MIN_SCALE = 1
@@ -60,21 +65,19 @@ export function HomeLocusExplorer({
   onOpenReport: (chapter?: 'face' | 'palms') => void
   onCapturePart: (part: LocusPart) => void
 }) {
-  const segments: Segment[] = useMemo(
-    () => [
-      { part: 'palm_l', label: copy.palmL },
-      { part: 'palm_r', label: copy.palmR },
-      { part: 'face', label: copy.face },
-    ],
-    [copy]
-  )
-
+  const [availableParts, setAvailableParts] = useState<LocusPart[]>(['face'])
   const [part, setPart] = useState<LocusPart>('face')
   const [photoUri, setPhotoUri] = useState<string | undefined>()
   const photoSize = usePhotoImageSize(photoUri)
   const [stageSize, setStageSize] = useState({ w: 0, h: 0 })
   const [selected, setSelected] = useState<LocusStar | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
+
+  const segments: Segment[] = useMemo(() => {
+    const label = (p: LocusPart) =>
+      p === 'palm_l' ? copy.palmL : p === 'palm_r' ? copy.palmR : copy.face
+    return availableParts.map((p) => ({ part: p, label: label(p) }))
+  }, [availableParts, copy])
 
   const scale = useSharedValue(1)
   const savedScale = useSharedValue(1)
@@ -84,6 +87,10 @@ export function HomeLocusExplorer({
   const savedTy = useSharedValue(0)
 
   const stars = useMemo(() => starsForPart(data, part), [data, part])
+  const markerAccent = useMemo(
+    () => locusMarkerAccentForSkinTone(parseFaceSkinTone(data.features.face.skinTone)),
+    [data.features.face.skinTone]
+  )
 
   const resetZoom = useCallback(() => {
     scale.value = withTiming(1, { duration: 180 })
@@ -93,6 +100,24 @@ export function HomeLocusExplorer({
     savedTx.value = 0
     savedTy.value = 0
   }, [scale, savedScale, tx, ty, savedTx, savedTy])
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const found: LocusPart[] = []
+      for (const p of ALL_CAPTURE_PARTS) {
+        const uri = await resolveReadingPhotoUri(data.readingId, p, { fallbackLive: true })
+        if (uri) found.push(p)
+      }
+      if (cancelled) return
+      const next = found.length > 0 ? found : (['face'] as LocusPart[])
+      setAvailableParts(next)
+      if (!next.includes(part)) setPart(next[0] ?? 'face')
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [data.readingId])
 
   useEffect(() => {
     let cancelled = false
@@ -266,7 +291,7 @@ export function HomeLocusExplorer({
                   stageW={stageSize.w}
                   stageH={stageSize.h}
                   imageSize={photoSize}
-                  accent={colors.accent}
+                  accent={markerAccent}
                   selectedKey={sheetOpen ? selected?.featureKey : null}
                   onSelect={(s) => void openStar(s)}
                 />

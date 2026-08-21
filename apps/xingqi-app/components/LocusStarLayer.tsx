@@ -174,6 +174,7 @@ export function LocusStarLayer({
   stageW: number
   stageH: number
   imageSize?: ImageSize | null
+  /** Marker color — prefer skin-tone contrast over theme accent. */
   accent: string
   selectedKey?: string | null
   /** __DEV__: featureKey → photo|canon */

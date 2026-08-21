@@ -42,8 +42,13 @@ import {
   starsForPart,
 } from '@/lib/locus-data'
 import { openReadingScreen } from '@/lib/open-reading'
+import { ALL_CAPTURE_PARTS } from '@/lib/photo-parts'
 import { shouldOpenBriefCard } from '@/lib/reading-brief'
 import { resolveReadingPhotoUri } from '@/lib/reading-photos'
+import {
+  locusMarkerAccentForSkinTone,
+  parseFaceSkinTone,
+} from '@/lib/skin-tone-marker'
 
 const MIN_SCALE = 1
 const MAX_SCALE = 4
@@ -88,6 +93,7 @@ export default function LocusViewerScreen() {
   const [resultJson, setResultJson] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [part, setPart] = useState<LocusPart>(initialPart)
+  const [availableParts, setAvailableParts] = useState<LocusPart[]>(['face'])
   const [photoUri, setPhotoUri] = useState<string | undefined>()
   const photoSize = usePhotoImageSize(photoUri)
   const [selected, setSelected] = useState<LocusStar | null>(null)
@@ -97,6 +103,11 @@ export default function LocusViewerScreen() {
   const snapPoints = useMemo(() => ['32%', '52%', '74%'], [])
 
   const stageSide = useMemo(() => Math.min(width, Math.max(240, height * 0.58)), [width, height])
+
+  const markerAccent = useMemo(() => {
+    if (!data) return colors.accent
+    return locusMarkerAccentForSkinTone(parseFaceSkinTone(data.features.face.skinTone))
+  }, [data, colors.accent])
 
   const scale = useSharedValue(1)
   const savedScale = useSharedValue(1)
@@ -134,6 +145,28 @@ export default function LocusViewerScreen() {
       } finally {
         if (!cancelled) setLoading(false)
       }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [readingId])
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      if (!readingId) {
+        setAvailableParts(['face'])
+        return
+      }
+      const found: LocusPart[] = []
+      for (const p of ALL_CAPTURE_PARTS) {
+        const uri = await resolveReadingPhotoUri(readingId, p, { fallbackLive: true })
+        if (uri) found.push(p)
+      }
+      if (cancelled) return
+      const next = found.length > 0 ? found : (['face'] as LocusPart[])
+      setAvailableParts(next)
+      if (!next.includes(part)) setPart(next[0] ?? 'face')
     })()
     return () => {
       cancelled = true
@@ -237,11 +270,11 @@ export default function LocusViewerScreen() {
     transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }],
   }))
 
-  const segments: Array<{ part: LocusPart; label: string }> = [
-    { part: 'palm_l', label: copy.palmL },
-    { part: 'palm_r', label: copy.palmR },
-    { part: 'face', label: copy.face },
-  ]
+  const segments: Array<{ part: LocusPart; label: string }> = useMemo(() => {
+    const label = (p: LocusPart) =>
+      p === 'palm_l' ? copy.palmL : p === 'palm_r' ? copy.palmR : copy.face
+    return availableParts.map((p) => ({ part: p, label: label(p) }))
+  }, [availableParts, copy])
 
   const openChapter = () => {
     if (!readingId) return
@@ -357,7 +390,7 @@ export default function LocusViewerScreen() {
                     stageW={stageSide}
                     stageH={stageSide}
                     imageSize={photoSize}
-                    accent={colors.accent}
+                    accent={markerAccent}
                     selectedKey={sheetOpen ? selected?.featureKey : null}
                     debugSources={debugSources}
                     onSelect={(star) => void openStar(star)}

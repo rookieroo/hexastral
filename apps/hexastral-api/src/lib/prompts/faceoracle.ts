@@ -174,6 +174,7 @@ export function buildFaceOracleBriefPrompt(
     'Role: Folk East-Asian 算命 interpreter — period brief card (Syel Pass 2 short).',
     'Write a SHORT sealed card: form loci × BaZi timing. No five-chapter essay.',
     'Voice: 警示/预告 — visible form + chart cue; no 铁口 census claims; no medical diagnosis.',
+    'Keep the mild caution tone, but fill the card: name 1–2 concrete loci + one natal/dayun window.',
     `OutputKind: period_brief`,
     `HorizonMonths: ${params.horizonMonths}`,
     ...sharedInputBlocks(params),
@@ -187,6 +188,7 @@ export function buildFaceOracleBriefPrompt(
     '    "excerpt": string,',
     '    "summary": string,',
     '    "suggestion": string,',
+    '    "points": string[],',
     '    "axis": "career"|"love"|"health"|null',
     '  },',
     '  "events": Array<{',
@@ -198,9 +200,9 @@ export function buildFaceOracleBriefPrompt(
     '    "sources": Array<"face"|"palm_l"|"palm_r"|"bazi">',
     '  }>',
     '}',
-    'Constraints: title ≤24 chars; excerpt ≤42 (home-list hook); summary 120–220 chars; suggestion 1–3 practical steps (newlines ok).',
-    'events: 0–3 soft optional. Prefer null axis over inventing.',
-    'Honesty over flattery. Crutch phrases BANNED.',
+    'Constraints: title ≤24 chars; excerpt ≤42 (home-list hook); summary 180–280 chars with ≥1 locus name + ≥1 chart cue; points = 2–4 short 宜留意 lines; suggestion = 1–3 practical steps (newlines ok) mirroring points.',
+    'events: 1–3 soft windows preferred (0 ok if thin). Prefer null axis over inventing.',
+    'Honesty over flattery. Crutch phrases BANNED. Do NOT expand into five chapters.',
   ]
   if (params.partialUpdate?.length) {
     lines.push(

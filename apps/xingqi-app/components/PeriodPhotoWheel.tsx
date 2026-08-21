@@ -19,6 +19,7 @@ import { PolaroidChrome, polaroidLift } from '@/components/PolaroidChrome'
 import { PolaroidGhost } from '@/components/PolaroidGhost'
 import { periodPhotoMap } from '@/lib/period-photos'
 import type { CapturePart } from '@/lib/reading-draft'
+import { ALL_CAPTURE_PARTS, partsWithPhotoUris } from '@/lib/photo-parts'
 import { resolveReadingPhotoUri } from '@/lib/reading-photos'
 import {
   POLAROID_CARD_H,
@@ -31,8 +32,6 @@ import {
   wheelSpread,
 } from '@/lib/stack-layout'
 
-const PARTS: CapturePart[] = ['palm_l', 'palm_r', 'face']
-/** Left time-scale column; dates stay readable while stacks scroll. */
 const DATE_RAIL_W = 76
 
 export type WheelItem = {
@@ -142,7 +141,7 @@ function WheelRow({
         if (map.palm_r) next.palm_r = `${map.palm_r}?${bust}`
         if (map.face) next.face = `${map.face}?${bust}`
       } else {
-        for (const part of PARTS) {
+        for (const part of ALL_CAPTURE_PARTS) {
           const uri = await resolveReadingPhotoUri(item.id, part, { fallbackLive: false })
           if (uri) next[part] = uri
         }
@@ -215,7 +214,12 @@ function WheelRow({
 
       <View style={{ flex: 1, alignItems: 'center' }}>
         <View pointerEvents='box-none' style={{ width: fanW, height: cardH + 28 }}>
-          {PARTS.map((part) => (
+          {(draft
+            ? ALL_CAPTURE_PARTS
+            : partsWithPhotoUris(uris).length > 0
+              ? partsWithPhotoUris(uris)
+              : (['face'] as CapturePart[])
+          ).map((part) => (
             <Polaroid
               key={part}
               part={part}

@@ -9,7 +9,7 @@ import { Modal, Pressable, Text, View } from 'react-native'
 import type { Locale } from '@/lib/i18n'
 import { primerCopy } from '@/lib/living-copy'
 
-const KEY = 'xingqi_reading_primer_v3'
+const KEY = 'xingqi_reading_primer_v4'
 
 export async function hasSeenReadingPrimer(): Promise<boolean> {
   try {

@@ -13,7 +13,7 @@ export const FACEORACLE_VLM_MODEL = 'vlm-cascade-v2'
 // v6: Moondream face point. v7: palm mounts/marks prose. v8: palm landmarks
 // dropped (client canonical). v9: palm per-mount + Moondream. v10: palm phrase
 // tighten + outlier sanitize + contain-aligned client plotting.
-export const FACEORACLE_VLM_SCHEMA_VERSION = 'xingqi-vlm-v10'
+export const FACEORACLE_VLM_SCHEMA_VERSION = 'xingqi-vlm-v11'
 
 export type FaceoracleFeatureType = 'face' | 'palm' | 'palm_l' | 'palm_r'
 

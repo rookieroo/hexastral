@@ -116,10 +116,20 @@ export const XINGQI_TERM_ALIASES: Record<string, string> = {
   心脏线: '感情线',
   命运线: '事业线',
   三庭: '三停',
+  上停: '三停',
+  中停: '三停',
+  下停: '三停',
   子女宫: '男女宫',
   妻妾宫: '夫妻宫',
   法令: '法令纹',
   颧: '颧骨',
+  浮阳外越: '浮阳',
+  浮陽外越: '浮阳',
+  浮陽: '浮阳',
+  氣血外浮: '气血外浮',
+  火炎土燥之象: '火炎土燥',
+  貴人運: '贵人运',
+  面色黃赤: '面色',
 }
 
 // Re-export glyph map consistency check helper for tests / primer

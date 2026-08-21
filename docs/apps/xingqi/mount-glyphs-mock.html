@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Syel — mount glyphs mock</title>
+  <style>
+    :root {
+      --bg: #f4f1ea; --fg: #1c1b19; --muted: #6b6862;
+      --line: rgba(28, 27, 25, 0.14); --tile: #2c2a27; --ink: #f4f1ea;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; min-height: 100%; background: #2a2a28; color: #eceae4;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Songti SC", serif;
+    }
+    .page { max-width: 980px; margin: 0 auto; padding: 28px 20px 64px; }
+    h1 { font-size: 20px; margin: 0 0 8px; color: #f4f1ea; }
+    .lede { margin: 0 0 24px; font-size: 13px; line-height: 1.55; color: #b5b2aa; max-width: 52em; }
+    .lbl {
+      font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+      color: #8a877f; font-family: ui-sans-serif, system-ui, sans-serif; margin: 28px 0 10px;
+    }
+    .grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--bg); color: var(--fg); border: 0.5px solid rgba(255,255,255,0.08);
+      padding: 12px 10px 14px; cursor: pointer; text-align: center;
+    }
+    .card.active { outline: 2px solid #d8d4cb; outline-offset: 2px; }
+    .seal {
+      width: 72px; height: 72px; margin: 0 auto 10px; background: var(--tile);
+      display: grid; place-items: center;
+    }
+    .seal svg { width: 58px; height: 58px; }
+    .seal.sm { width: 28px; height: 28px; margin: 8px auto 0; }
+    .seal.sm svg { width: 22px; height: 22px; }
+    .name { font-size: 14px; font-weight: 600; }
+    .en { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: ui-sans-serif, system-ui, sans-serif; }
+    .intent { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.35; }
+    .preview {
+      display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;
+      background: var(--bg); color: var(--fg); padding: 20px; border: 0.5px solid rgba(255,255,255,0.08);
+    }
+    .preview .big {
+      width: 160px; height: 160px; background: var(--tile); display: grid; place-items: center; flex-shrink: 0;
+    }
+    .preview .big svg { width: 128px; height: 128px; }
+    .preview .meta { flex: 1; min-width: 200px; }
+    .preview h2 { margin: 0 0 6px; font-size: 22px; }
+    .preview p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--muted); }
+    .sizes { display: flex; gap: 16px; align-items: flex-end; margin-top: 14px; }
+    .sizes figure { margin: 0; text-align: center; }
+    .sizes figcaption {
+      font-size: 10px; color: var(--muted); margin-top: 4px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+    }
+    code.path {
+      display: block; margin-top: 12px; font-size: 10px; line-height: 1.4;
+      color: #8a877f; word-break: break-all;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Syel mount glyphs — HTML mock</h1>
+    <p class="lede">
+      七丘印章需一眼可分（含 ~28px 缩略）。路径与 RN <code>ancient-glyphs.ts</code> 同构
+      <code>viewBox="0 0 100 130"</code>。定稿后把下方 path 同步回 TypeScript。
+      点击卡片可放大预览。
+    </p>
+
+    <div class="lbl">Strip · 72px</div>
+    <div class="grid" id="grid"></div>
+
+    <div class="lbl">Preview</div>
+    <div class="preview" id="preview"></div>
+  </div>
+
+  <script>
+    /** Distinctive paths — refined for small-size legibility */
+    const MOUNTS = [
+      {
+        id: 'loc_mountJupiter',
+        zh: '木星丘', en: 'Jupiter', intent: '芽形 — 上指萌发',
+        fills: ['M50,92 C60,92 64,80 58,66 L50,28 L42,66 C36,80 40,92 50,92 Z'],
+        strokes: ['M50,28 L50,16', 'M50,40 L36,30', 'M50,40 L64,30'],
+      },
+      {
+        id: 'loc_mountSaturn',
+        zh: '土星丘', en: 'Saturn', intent: '平台 — 沉稳台基',
+        fills: ['M22,86 L78,86 L70,62 L30,62 Z'],
+        strokes: ['M30,62 L50,46 L70,62', 'M38,86 L38,94', 'M62,86 L62,94'],
+      },
+      {
+        id: 'loc_mountApollo',
+        zh: '太阳丘', en: 'Apollo', intent: '日轮 — 圆核 + 射线',
+        fills: ['M50,50 C58,50 64,56 64,64 C64,72 58,78 50,78 C42,78 36,72 36,64 C36,56 42,50 50,50 Z'],
+        strokes: [
+          'M50,30 L50,40', 'M50,88 L50,98', 'M22,64 L32,64', 'M68,64 L78,64',
+          'M32,42 L38,48', 'M62,80 L68,86', 'M32,86 L38,80', 'M62,48 L68,42',
+        ],
+      },
+      {
+        id: 'loc_mountMercury',
+        zh: '水星丘', en: 'Mercury', intent: '水纹 — 双波',
+        fills: [],
+        strokes: [
+          'M16,54 C30,40 40,68 54,54 C68,40 78,68 92,54',
+          'M16,74 C30,60 40,88 54,74 C68,60 78,88 92,74',
+        ],
+      },
+      {
+        id: 'loc_mountVenus',
+        zh: '金星丘', en: 'Venus', intent: '丰丘 — 饱满圆丘',
+        fills: ['M50,44 C72,48 78,76 60,96 L40,96 C22,76 28,48 50,44 Z'],
+        strokes: ['M40,70 Q50,62 60,70'],
+      },
+      {
+        id: 'loc_mountMoon',
+        zh: '月丘', en: 'Moon', intent: '弦月 — 缺月之形',
+        fills: [
+          'M64,34 C44,38 30,56 32,78 C34,98 54,110 72,102 C52,106 38,90 40,70 C42,52 52,38 64,34 Z',
+        ],
+        strokes: [],
+      },
+      {
+        id: 'loc_mountMars',
+        zh: '火星丘', en: 'Mars', intent: '尖焰 — 上尖下阔',
+        fills: ['M50,22 L68,88 C62,104 38,104 32,88 Z'],
+        strokes: ['M50,40 L44,72', 'M50,40 L56,72', 'M50,22 L50,14'],
+      },
+    ]
+
+    function svgMarkup(m, sizeClass) {
+      const paths = [
+        ...(m.fills || []).map((d) => `<path d="${d}" fill="var(--ink)" stroke="none"/>`),
+        ...(m.strokes || []).map(
+          (d) =>
+            `<path d="${d}" fill="none" stroke="var(--ink)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`
+        ),
+      ].join('')
+      return `<div class="seal ${sizeClass || ''}"><svg viewBox="0 0 100 130" aria-hidden="true">${paths}</svg></div>`
+    }
+
+    function pathDump(m) {
+      const bits = []
+      if (m.fills?.length) bits.push(`fills: ${JSON.stringify(m.fills)}`)
+      if (m.strokes?.length) bits.push(`strokes: ${JSON.stringify(m.strokes)}`)
+      return `${m.id} { ${bits.join('; ')} }`
+    }
+
+    let active = 0
+    const grid = document.getElementById('grid')
+    const preview = document.getElementById('preview')
+
+    function render() {
+      grid.innerHTML = MOUNTS.map(
+        (m, i) => `
+        <button type="button" class="card ${i === active ? 'active' : ''}" data-i="${i}">
+          ${svgMarkup(m)}
+          <div class="name">${m.zh}</div>
+          <div class="en">${m.en}</div>
+          <div class="intent">${m.intent}</div>
+          ${svgMarkup(m, 'sm')}
+        </button>`
+      ).join('')
+
+      const m = MOUNTS[active]
+      preview.innerHTML = `
+        <div class="big">${svgMarkup(m).replace('class="seal "', 'class="seal "').replace('<div class="seal "', '<div class="seal" style="width:100%;height:100%;margin:0">').replace('58px', '128px')}</div>
+        <div class="meta">
+          <h2>${m.zh} · ${m.en}</h2>
+          <p>${m.intent}</p>
+          <div class="sizes">
+            <figure>${svgMarkup(m)}<figcaption>72</figcaption></figure>
+            <figure>${svgMarkup(m, 'sm')}<figcaption>28</figcaption></figure>
+          </div>
+          <code class="path">${pathDump(m)}</code>
+        </div>`
+      // fix big seal
+      preview.querySelector('.big').innerHTML = `<svg viewBox="0 0 100 130" width="128" height="128">${[
+        ...(m.fills || []).map((d) => `<path d="${d}" fill="#f4f1ea"/>`),
+        ...(m.strokes || []).map(
+          (d) =>
+            `<path d="${d}" fill="none" stroke="#f4f1ea" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`
+        ),
+      ].join('')}</svg>`
+    }
+
+    grid.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-i]')
+      if (!btn) return
+      active = Number(btn.dataset.i)
+      render()
+    })
+
+    render()
+  </script>
+</body>
+</html>

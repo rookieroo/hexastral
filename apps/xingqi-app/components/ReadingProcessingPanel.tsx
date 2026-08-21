@@ -102,6 +102,7 @@ export function ReadingProcessingPanel({
             instantPose
             interactive={false}
             photoCache='none'
+            hideEmpty
           />
         </View>
 

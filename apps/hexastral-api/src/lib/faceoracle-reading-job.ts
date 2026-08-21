@@ -106,6 +106,7 @@ export type FaceoracleBrief = {
   excerpt: string
   summary: string
   suggestion: string
+  points: string[]
   axis: 'career' | 'love' | 'health' | null
 }
 
@@ -113,6 +114,25 @@ function clampChars(s: string, max: number): string {
   const t = s.replace(/\s+/g, ' ').trim()
   if (t.length <= max) return t
   return `${t.slice(0, max).trimEnd()}…`
+}
+
+function parseBriefPoints(raw: unknown, suggestion: string): string[] {
+  const fromArr: string[] = []
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      if (typeof item !== 'string') continue
+      const t = item.trim()
+      if (t) fromArr.push(t.slice(0, 120))
+      if (fromArr.length >= 4) break
+    }
+  }
+  if (fromArr.length >= 2) return fromArr
+  const fromSug = suggestion
+    .split(/\n+/)
+    .map((l) => l.replace(/^\d+[.)、．]\s*/, '').trim())
+    .filter(Boolean)
+    .slice(0, 4)
+  return fromSug.length > 0 ? fromSug : fromArr
 }
 
 export function parseFaceoracleBrief(raw: unknown): FaceoracleBrief | null {
@@ -133,8 +153,9 @@ export function parseFaceoracleBrief(raw: unknown): FaceoracleBrief | null {
   return {
     title: clampChars(title, 24),
     excerpt: clampChars(excerpt, 42),
-    summary: clampChars(summary, 280),
+    summary: clampChars(summary, 320),
     suggestion: suggestion.slice(0, 600),
+    points: parseBriefPoints(b.points, suggestion),
     axis,
   }
 }

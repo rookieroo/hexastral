@@ -78,30 +78,64 @@ export function primerCopy(locale: Locale): {
     case 'zh':
       return {
         title: '如何阅读本期形气',
-        body: '左右滑动切换五章。点虚线术语看释义（含拼音）。长按句子可复制、追问或高亮。右下角进入人生时间线 / 假如 / 追问。首页「本期」是最近一次形气；「档案」收纳往期。人生时间线是大运主轴。',
+        body: '正文里带虚线的词可点开释义（含拼音）——先点一两个再通读。左右滑动切换五章。长按句子可复制、追问或高亮。右下角进入人生时间线 / 假如 / 追问。首页「本期」是最近一次形气；「档案」收纳往期。人生时间线是大运主轴。',
         glossary: '查看符号说明',
         begin: '开始阅读',
       }
     case 'zh-Hant':
       return {
         title: '如何閱讀本期形氣',
-        body: '左右滑動切換五章。點虛線術語看釋義（含拼音）。長按句子可複製、追問或高亮。右下角進入人生時間線 / 假如 / 追問。首頁「本期」是最近一次形氣；「檔案」收納往期。人生時間線是大運主軸。',
+        body: '正文裡帶虛線的詞可點開釋義（含拼音）——先點一兩個再通讀。左右滑動切換五章。長按句子可複製、追問或高亮。右下角進入人生時間線 / 假如 / 追問。首頁「本期」是最近一次形氣；「檔案」收納往期。人生時間線是大運主軸。',
         glossary: '查看符號說明',
         begin: '開始閱讀',
       }
     case 'ja':
       return {
         title: '読み方',
-        body: '左右スワイプで五章を切替。点線の用語をタップしてかな付きの解説を見る。長押しでコピー・質問・ハイライト。右下から人生タイムライン / もしも / 質問へ。ホームの「今回」は直近の形気、「アーカイブ」に過去分。人生タイムラインは大運の軸です。',
+        body: '点線の用語をタップするとかな付きの解説が開きます——まず一つ試してから通読を。左右スワイプで五章を切替。長押しでコピー・質問・ハイライト。右下から人生タイムライン / もしも / 質問へ。ホームの「今回」は直近の形気、「アーカイブ」に過去分。人生タイムラインは大運の軸です。',
         glossary: '記号の説明',
         begin: '読む',
       }
     default:
       return {
         title: 'How to read this',
-        body: 'Swipe five chapters. Tap dotted terms for glosses (face form 面相 / palm form 掌相 terms with pinyin where shown). Long-press to copy, chat, or highlight. Corner FAB opens life axis / what-if / chat. Home “Latest” is the current form-qi reading; History holds older ones. Life axis is the DaYun trunk.',
+        body: 'Dotted words are tappable glosses (with pinyin where shown)—tap one or two before you skim. Swipe five chapters. Long-press to copy, chat, or highlight. Corner FAB opens life axis / what-if / chat. Home “Latest” is the current form-qi reading; History holds older ones. Life axis is the DaYun trunk.',
         glossary: 'Symbol glossary',
         begin: 'Begin',
+      }
+  }
+}
+
+/** One-line first-open hint on shallow brief (deep uses ReadingPrimer). */
+export function glossTapHintCopy(locale: Locale): {
+  body: string
+  terms: string
+  dismiss: string
+} {
+  switch (locale) {
+    case 'zh':
+      return {
+        body: '虚线词可点开释义；完整词表在设置 · 术语。',
+        terms: '术语表',
+        dismiss: '知道了',
+      }
+    case 'zh-Hant':
+      return {
+        body: '虛線詞可點開釋義；完整詞表在設定 · 術語。',
+        terms: '術語表',
+        dismiss: '知道了',
+      }
+    case 'ja':
+      return {
+        body: '点線の語をタップで解説。用語一覧は設定へ。',
+        terms: '用語一覧',
+        dismiss: '了解',
+      }
+    default:
+      return {
+        body: 'Dotted words open glosses. Full list: Settings → Terms.',
+        terms: 'Terms',
+        dismiss: 'Got it',
       }
   }
 }
@@ -331,6 +365,9 @@ export function readingBriefCopy(locale: Locale): {
   chaptersCta: string
   suggestionLabel: string
   summaryLabel: string
+  pointsLabel: string
+  windowsLabel: string
+  lociLabel: string
 } {
   switch (locale) {
     case 'zh':
@@ -339,6 +376,9 @@ export function readingBriefCopy(locale: Locale): {
         chaptersCta: '完整五章',
         suggestionLabel: '宜留意',
         summaryLabel: '摘要',
+        pointsLabel: '宜留意',
+        windowsLabel: '近窗',
+        lociLabel: '本期位点',
       }
     case 'zh-Hant':
       return {
@@ -346,6 +386,9 @@ export function readingBriefCopy(locale: Locale): {
         chaptersCta: '完整五章',
         suggestionLabel: '宜留意',
         summaryLabel: '摘要',
+        pointsLabel: '宜留意',
+        windowsLabel: '近窗',
+        lociLabel: '本期位點',
       }
     case 'ja':
       return {
@@ -353,6 +396,9 @@ export function readingBriefCopy(locale: Locale): {
         chaptersCta: '五章を開く',
         suggestionLabel: '留意',
         summaryLabel: '要約',
+        pointsLabel: '留意',
+        windowsLabel: '近い窓',
+        lociLabel: '今期の部位',
       }
     default:
       return {
@@ -360,6 +406,9 @@ export function readingBriefCopy(locale: Locale): {
         chaptersCta: 'Full five chapters',
         suggestionLabel: 'Suggestion',
         summaryLabel: 'Summary',
+        pointsLabel: 'Worth noting',
+        windowsLabel: 'Near windows',
+        lociLabel: 'This period’s loci',
       }
   }
 }

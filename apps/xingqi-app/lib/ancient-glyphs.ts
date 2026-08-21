@@ -219,6 +219,62 @@ export const XINGQI_GLYPHS = {
     box: [100, 130],
     fills: ['M50,52 C62,58 64,72 58,82 L42,82 C36,72 38,58 50,52 Z'],
   },
+  /** 木星丘 — sprout under index */
+  loc_mountJupiter: {
+    box: [100, 130],
+    fills: ['M50,92 C60,92 64,80 58,66 L50,28 L42,66 C36,80 40,92 50,92 Z'],
+    strokes: ['M50,28 L50,16', 'M50,40 L36,30', 'M50,40 L64,30'],
+  },
+  /** 土星丘 — flat earth platform */
+  loc_mountSaturn: {
+    box: [100, 130],
+    fills: ['M22,86 L78,86 L70,62 L30,62 Z'],
+    strokes: ['M30,62 L50,46 L70,62', 'M38,86 L38,94', 'M62,86 L62,94'],
+  },
+  /** 太阳丘 — sun disc + rays */
+  loc_mountApollo: {
+    box: [100, 130],
+    fills: [
+      'M50,50 C58,50 64,56 64,64 C64,72 58,78 50,78 C42,78 36,72 36,64 C36,56 42,50 50,50 Z',
+    ],
+    strokes: [
+      'M50,30 L50,40',
+      'M50,88 L50,98',
+      'M22,64 L32,64',
+      'M68,64 L78,64',
+      'M32,42 L38,48',
+      'M62,80 L68,86',
+      'M32,86 L38,80',
+      'M62,48 L68,42',
+    ],
+  },
+  /** 水星丘 — double wave */
+  loc_mountMercury: {
+    box: [100, 130],
+    strokes: [
+      'M16,54 C30,40 40,68 54,54 C68,40 78,68 92,54',
+      'M16,74 C30,60 40,88 54,74 C68,60 78,88 92,74',
+    ],
+  },
+  /** 金星丘 — fuller thenar mound */
+  loc_mountVenus: {
+    box: [100, 130],
+    fills: ['M50,44 C72,48 78,76 60,96 L40,96 C22,76 28,48 50,44 Z'],
+    strokes: ['M40,70 Q50,62 60,70'],
+  },
+  /** 月丘 — crescent */
+  loc_mountMoon: {
+    box: [100, 130],
+    fills: [
+      'M64,34 C44,38 30,56 32,78 C34,98 54,110 72,102 C52,106 38,90 40,70 C42,52 52,38 64,34 Z',
+    ],
+  },
+  /** 火星丘 — pointed flame */
+  loc_mountMars: {
+    box: [100, 130],
+    fills: ['M50,22 L68,88 C62,104 38,104 32,88 Z'],
+    strokes: ['M50,40 L44,72', 'M50,40 L56,72', 'M50,22 L50,14'],
+  },
   loc_specialMarks: {
     box: [100, 130],
     strokes: ['M42,48 L58,72', 'M58,48 L42,72'],
@@ -290,6 +346,13 @@ export const CHAPTER_GLYPH_BLURB: Record<XingqiGlyphKey, { zh: string; en: strin
   loc_heartLine: { zh: '感情线', en: 'Heart line' },
   loc_fateLine: { zh: '事业线', en: 'Career line' },
   loc_mounts: { zh: '丘位', en: 'Mounts' },
+  loc_mountJupiter: { zh: '木星丘 — 芽形', en: 'Jupiter mount — sprout' },
+  loc_mountSaturn: { zh: '土星丘 — 平丘', en: 'Saturn mount — flat mound' },
+  loc_mountApollo: { zh: '太阳丘 — 日轮', en: 'Apollo mount — sun disc' },
+  loc_mountMercury: { zh: '水星丘 — 水纹', en: 'Mercury mount — waves' },
+  loc_mountVenus: { zh: '金星丘 — 丰丘', en: 'Venus mount — full mound' },
+  loc_mountMoon: { zh: '月丘 — 弦月', en: 'Moon mount — crescent' },
+  loc_mountMars: { zh: '火星丘 — 尖焰', en: 'Mars mount — flame' },
   loc_specialMarks: { zh: '纹记', en: 'Special marks' },
 }
 
@@ -313,13 +376,13 @@ export const LOCUS_GLYPH: Record<string, XingqiGlyphKey> = {
   heartLine: 'loc_heartLine',
   fateLine: 'loc_fateLine',
   mounts: 'loc_mounts',
-  mountJupiter: 'loc_mounts',
-  mountSaturn: 'loc_mounts',
-  mountApollo: 'loc_mounts',
-  mountMercury: 'loc_mounts',
-  mountVenus: 'loc_mounts',
-  mountMoon: 'loc_mounts',
-  mountMars: 'loc_mounts',
+  mountJupiter: 'loc_mountJupiter',
+  mountSaturn: 'loc_mountSaturn',
+  mountApollo: 'loc_mountApollo',
+  mountMercury: 'loc_mountMercury',
+  mountVenus: 'loc_mountVenus',
+  mountMoon: 'loc_mountMoon',
+  mountMars: 'loc_mountMars',
   specialMarks: 'loc_specialMarks',
 }
 
@@ -564,7 +627,7 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
   },
   {
     featureKey: 'mountJupiter',
-    glyph: 'loc_mounts',
+    glyph: 'loc_mountJupiter',
     group: 'palm',
     titleZh: '木星丘',
     titleZhHant: '木星丘',
@@ -577,7 +640,7 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
   },
   {
     featureKey: 'mountSaturn',
-    glyph: 'loc_mounts',
+    glyph: 'loc_mountSaturn',
     group: 'palm',
     titleZh: '土星丘',
     titleZhHant: '土星丘',
@@ -590,7 +653,7 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
   },
   {
     featureKey: 'mountApollo',
-    glyph: 'loc_mounts',
+    glyph: 'loc_mountApollo',
     group: 'palm',
     titleZh: '太阳丘',
     titleZhHant: '太陽丘',
@@ -603,7 +666,7 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
   },
   {
     featureKey: 'mountMercury',
-    glyph: 'loc_mounts',
+    glyph: 'loc_mountMercury',
     group: 'palm',
     titleZh: '水星丘',
     titleZhHant: '水星丘',
@@ -616,7 +679,7 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
   },
   {
     featureKey: 'mountVenus',
-    glyph: 'loc_mounts',
+    glyph: 'loc_mountVenus',
     group: 'palm',
     titleZh: '金星丘',
     titleZhHant: '金星丘',
@@ -629,7 +692,7 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
   },
   {
     featureKey: 'mountMoon',
-    glyph: 'loc_mounts',
+    glyph: 'loc_mountMoon',
     group: 'palm',
     titleZh: '月丘',
     titleZhHant: '月丘',
@@ -642,7 +705,7 @@ export const XINGQI_LOCUS_CANON: readonly LocusCanon[] = [
   },
   {
     featureKey: 'mountMars',
-    glyph: 'loc_mounts',
+    glyph: 'loc_mountMars',
     group: 'palm',
     titleZh: '火星丘',
     titleZhHant: '火星丘',

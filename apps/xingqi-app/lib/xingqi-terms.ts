@@ -167,6 +167,11 @@ const HANT_CHARS: Record<string, string> = {
   风: '風',
   阳: '陽',
   阴: '陰',
+  杀: '殺',
+  财: '財',
+  伤: '傷',
+  寿: '壽',
+  阁: '閣',
   术: '術',
   识: '識',
   认: '認',
@@ -364,11 +369,11 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     'meta',
     '阳气上浮',
     'Floating yang',
-    '浮阳：阳气偏于上浮（易热、浅眠、目赤等「象」）；宜留意下沉与收敛的节奏，非诊断。',
-    'Yang rising too high (heat, light sleep…) — cue to settle; not a diagnosis.',
+    '浮阳：阳气偏于上浮的「象」（易热、浅眠、目赤）；气色上斑点加深常与熬夜、燥热同窗并读——是节奏警示，不是「斑=病」或医学诊断。',
+    'Floating yang: yang rising too high (heat, light sleep, red eyes). Spots darkening often read with late nights / dry heat as a pacing cue — not “spots = disease” or a medical diagnosis.',
     {
       short: '陽気の上昇',
-      long: '浮阳（ふよう）：陽気が上に偏る「象」（熱感・浅い眠り・目の充血など）。沈めるリズムの手がかりであり、診断ではない。',
+      long: '浮阳（ふよう）：陽気が上に偏る「象」（熱感・浅い眠り・目の充血）。斑が濃くなるのも徹夜・燥熱と同じ窓で読むことが多く、リズムの手がかりであり、「斑＝病気」や診断ではない。',
     }
   ),
   t(
@@ -411,6 +416,76 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
     {
       short: '痰と瘀の意象',
       long: '痰瘀（たんう）：形・色・痣などの「滞り」の意象。可視の痕跡を説明するもので、病理検査ではない。',
+    }
+  ),
+  t(
+    'xq_ban',
+    '斑',
+    'bān',
+    'meta',
+    '形气色斑',
+    'Form spots',
+    '斑：面色上的斑点痕迹，常与气色、浮阳、痰瘀并读——说明可见形色，不作皮肤病或病理诊断。',
+    'Spots on the complexion, often read with qi-color / floating yang — visible form cues, not dermatology.',
+    {
+      short: '气色の斑',
+      long: '斑（はん）：顔色の斑点。气色・浮阳・痰瘀と並読し、見える形色の手がかり。皮膚病や病理の診断ではない。',
+    }
+  ),
+  t(
+    'xq_huoyantuzhao',
+    '火炎土燥',
+    'huǒ yán tǔ zào',
+    'meta',
+    '火旺土燥之象',
+    'Fire flaming, earth dry',
+    '火炎土燥：形气上火气偏旺、土性偏燥的对照意象（易见黄赤、口干、急躁等「象」）；宜留意收敛与润养节奏，非体质化验。',
+    'Flaming fire / dry earth imagery — heat and dryness cues in form-qi; pacing, not a lab constitution test.',
+    {
+      short: '火旺・土燥の象',
+      long: '火炎土燥（かえんどそう）：火が偏り土が燥く形気の意象。黄赤・渇き・焦燥などの「象」。収斂と潤いのリズムの手がかりであり、体質検査ではない。',
+    }
+  ),
+  t(
+    'xq_qixuewaifu',
+    '气血外浮',
+    'qì xuè wài fú',
+    'meta',
+    '气血浮于表',
+    'Qi–blood floating outward',
+    '气血外浮：气血之象偏于表层外散（面色黄赤、斑点显露等），常与浮阳并读；提示宜敛不宜耗，非验血结论。',
+    'Qi–blood seeming to float outward (ruddy tone, visible spots) — often with floating yang; gather, don’t deplete — not a blood-test result.',
+    {
+      short: '気血が表に浮く',
+      long: '气血外浮（きけつがいふ）：気血の「象」が表層に偏る（黄赤・斑が目立つなど）。浮阳と並読し、斂めて耗らさぬ手がかり。血液検査の結論ではない。',
+    }
+  ),
+  t(
+    'xq_mianse',
+    '面色',
+    'miàn sè',
+    'face',
+    '面部气色',
+    'Facial complexion',
+    '面色：面部可见的色泽与神采，属气色下位线索；与斑、浮阳等并读，不作医学肤色诊断。',
+    'Visible facial tone under complexion — read with spots / floating yang; not a medical skin diagnosis.',
+    {
+      short: '顔の气色',
+      long: '面色（めんしょく）：顔に見える色調・神采。气色の下位手がかり。斑・浮阳と並読するが、医学的な肌診断ではない。',
+    }
+  ),
+  t(
+    'xq_guirenyun',
+    '贵人运',
+    'guì rén yùn',
+    'meta',
+    '贵人助力意象',
+    'Benefactor luck',
+    '贵人运：古典用语，指人际助力、提携的「象」——文化对照，非铁口人事预言。',
+    'Classical “benefactor luck”: interpersonal help as cultural imagery — not ironclad HR prophecy.',
+    {
+      short: '貴人の助け',
+      long: '贵人运（きじんうん）：人の助け・引き立ての「象」。文化的対照であり、人事の鉄口予言ではない。',
     }
   ),
   t(
@@ -1317,7 +1392,7 @@ export const XINGQI_FORM_TERMS: readonly XingqiLocalTerm[] = [
 
 export const XINGQI_VOCAB_PROMPT = [
   'Vocabulary (prefer these tokens when relevant so the client can gloss them):',
-  '形气, 气机, 宜留意, 气色, 气血, 骨相, 肉相, 脏腑之象, 敛, 浮阳, 敛浮阳, 肝阳, 痰瘀, 形气依据,',
+  '形气, 气机, 宜留意, 气色, 面色, 气血, 气血外浮, 骨相, 肉相, 脏腑之象, 敛, 浮阳, 浮阳外越, 敛浮阳, 肝阳, 痰瘀, 斑, 火炎土燥, 贵人运, 形气依据,',
   '面相, 三停, 五岳, 五官, 十二宫, 额宽,',
   '命宫, 财帛宫, 兄弟宫, 田宅宫, 男女宫, 奴仆宫, 夫妻宫, 疾厄宫, 迁移宫, 官禄宫, 福德宫, 父母宫,',
   '天庭, 印堂, 山根, 年寿, 准头, 人中, 地阁, 承浆, 颧骨,',
@@ -1337,15 +1412,39 @@ function escapeRegExp(s: string): string {
 
 const LOCAL_BY_ZH = new Map(XINGQI_FORM_TERMS.map((x) => [x.zh, x]))
 
+/** Hans → Hant token reverse map so Traditional prose can resolve. */
+const HANT_TO_HANS = (() => {
+  const m = new Map<string, string>()
+  for (const term of XINGQI_FORM_TERMS) {
+    const hant = toZhHant(term.zh)
+    if (hant !== term.zh) m.set(hant, term.zh)
+  }
+  for (const hans of XINGQI_ASTRO_TERMS) {
+    const hant = toZhHant(hans)
+    if (hant !== hans) m.set(hant, hans)
+  }
+  for (const [alias, canon] of Object.entries(XINGQI_TERM_ALIASES)) {
+    const hant = toZhHant(alias)
+    if (hant !== alias) m.set(hant, canon)
+  }
+  return m
+})()
+
 function canonicalizeTermZh(zh: string): string {
-  return XINGQI_TERM_ALIASES[zh] ?? zh
+  if (XINGQI_TERM_ALIASES[zh]) return XINGQI_TERM_ALIASES[zh]
+  if (HANT_TO_HANS.has(zh)) return HANT_TO_HANS.get(zh)!
+  return zh
 }
 
 const PROSE_TOKENS = Array.from(
   new Set([
     ...XINGQI_FORM_TERMS.map((x) => x.zh),
+    ...XINGQI_FORM_TERMS.map((x) => toZhHant(x.zh)),
     ...Object.keys(XINGQI_TERM_ALIASES),
+    ...Object.keys(XINGQI_TERM_ALIASES).map((k) => toZhHant(k)),
     ...XINGQI_ASTRO_TERMS,
+    ...XINGQI_ASTRO_TERMS.map((t) => toZhHant(t)),
+    ...HANT_TO_HANS.keys(),
   ])
 ).sort((a, b) => b.length - a.length)
 

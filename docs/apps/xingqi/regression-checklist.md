@@ -1,12 +1,26 @@
 # Xingqi reading regression checklist
 
-Run after deploying `hexastral-api` (prompt density, compliance, VLM gates, `natalFacts`, push Hant).
+Run after co-deploying **svc-astro + hexastral-api + Syel client** (VLM/`skinTone`, brief `points`, deep/shallow meters, glossary UX). Do not ship client-only against an old API or half-migrated D1.
+
+## Co-deploy order (same window)
+
+1. [ ] `cd services/svc-astro && bun run deploy` — face extract includes `skinTone` (schema `xingqi-vlm-v11`+)
+2. [ ] `cd apps/hexastral-api` — if not applied: `bun db:migrate:prod` for `0044_*` (deep/shallow meters), then `bun run deploy` (brief `points[]`, quota 402s)
+3. [ ] Syel client build with matching glossary / hideEmpty / marker / brief UI
+4. [ ] Smoke below before calling the rollout done
 
 ## Preflight
 
-- [ ] `cd apps/hexastral-api && bun deploy` succeeded
-- [ ] Device/simulator on latest client build with these changes
+- [ ] Device/simulator on the **new** client against the **new** API
 - [ ] DEV: `setXingqiDevLocale` for `zh` then `zh-Hant` if needed
+
+## Glossary / annotation smoke (this follow-up)
+
+- [ ] Hant deep read: tap `浮陽` / `浮陽外越` → gloss opens (not dead text)
+- [ ] Face-only period update: home / processing stack has **no empty palm ghosts** (`hideEmpty`)
+- [ ] New shallow brief: `points[]` + near-window events when model returns them; first open shows虚线 tip → Terms
+- [ ] New extract → locus (face **and** palm): marker ink follows face `skinTone` contrast, not only theme accent
+- [ ] Symbol glossary: seven mount seals distinct at ~28px (see [mount-glyphs-mock.html](./mount-glyphs-mock.html))
 
 ## Capture / VLM gates
 

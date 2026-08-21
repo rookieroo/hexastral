@@ -1,21 +1,31 @@
 /**
- * Period brief card — title / excerpt / summary / suggestion → locus CTA.
+ * Period brief card — title / excerpt / summary / points / events / loci → locus CTA.
  */
 
 import { Button, useTheme } from '@zhop/core-ui'
 import { fetchReadingById } from '@zhop/portfolio-client'
 import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { X } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { TermAwareText } from '@/components/reading/TermAwareText'
+import { GlossTapHint, useGlossTapHint } from '@/components/reading/GlossTapHint'
 import { XingqiLoader } from '@/components/XingqiLoader'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { resolveLocale } from '@/lib/i18n'
 import { axisLabels, readingBriefCopy } from '@/lib/living-copy'
 import { pickUi } from '@/lib/locale-zh'
-import { parseReadingBrief, readingHasFiveChapters, type ReadingBrief } from '@/lib/reading-brief'
+import {
+  parseReadingBrief,
+  parseReadingBriefEvents,
+  parseReadingBriefLoci,
+  readingHasFiveChapters,
+  type ReadingBrief,
+  type ReadingBriefEvent,
+  type ReadingBriefLocusHighlight,
+} from '@/lib/reading-brief'
 
 export default function BriefScreen() {
   const { colors, spacing } = useTheme()
@@ -25,11 +35,22 @@ export default function BriefScreen() {
     pickUi(locale, hans, hant, en, ja)
   const copy = readingBriefCopy(locale)
   const axes = axisLabels(locale)
+  const termColors = useMemo(
+    () => ({
+      bg: colors.bg,
+      ink: colors.text,
+      muted: colors.dim,
+      accent: colors.accent,
+    }),
+    [colors]
+  )
   const params = useLocalSearchParams<{ readingId?: string; payload?: string }>()
   const readingId = typeof params.readingId === 'string' ? params.readingId : undefined
   const paramPayload = typeof params.payload === 'string' ? params.payload : undefined
 
   const [brief, setBrief] = useState<ReadingBrief | null>(null)
+  const [events, setEvents] = useState<ReadingBriefEvent[]>([])
+  const [loci, setLoci] = useState<ReadingBriefLocusHighlight[]>([])
   const [output, setOutput] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -51,6 +72,8 @@ export default function BriefScreen() {
         setOutput(next)
         const parsed = parseReadingBrief(next)
         setBrief(parsed)
+        setEvents(parseReadingBriefEvents(next))
+        setLoci(parseReadingBriefLoci(next))
         if (!parsed && readingHasFiveChapters(next) && readingId) {
           router.replace({ pathname: '/result', params: { readingId } } as never)
           return
@@ -69,6 +92,15 @@ export default function BriefScreen() {
     }
   }, [readingId, paramPayload, locale])
 
+  const showSuggestion =
+    brief != null &&
+    (brief.points.length === 0 ||
+      brief.suggestion.replace(/\s+/g, '') !== brief.points.join('').replace(/\s+/g, ''))
+
+  const { show: showGlossHint, dismiss: dismissGlossHint } = useGlossTapHint(
+    !loading && brief != null
+  )
+
   const goLocus = () => {
     if (!readingId) return
     router.push({ pathname: '/locus', params: { readingId, part: 'face' } } as never)
@@ -78,6 +110,17 @@ export default function BriefScreen() {
     if (!readingId) return
     router.push({ pathname: '/result', params: { readingId } } as never)
   }
+
+  const windowLine = useMemo(() => {
+    return (ev: ReadingBriefEvent) => {
+      const range =
+        ev.startMonth && ev.endMonth
+          ? `${ev.startMonth}–${ev.endMonth}`
+          : ev.startMonth || ''
+      const axis = ev.axis ? axes[ev.axis] : ''
+      return [range, axis, ev.theme].filter(Boolean).join(' · ')
+    }
+  }, [axes])
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -133,36 +176,131 @@ export default function BriefScreen() {
               {axes[brief.axis]}
             </Text>
           ) : null}
+          <GlossTapHint
+            visible={showGlossHint}
+            locale={locale}
+            colors={{
+              card: colors.card,
+              text: colors.text,
+              secondary: colors.secondary,
+              accent: colors.accent,
+              separator: colors.separator,
+            }}
+            onOpenTerms={() => router.push('/terms' as never)}
+            onDismiss={dismissGlossHint}
+          />
           <Text style={{ color: colors.text, fontSize: 24, fontWeight: '600', lineHeight: 32 }}>
             {brief.title}
           </Text>
-          <Text style={{ color: colors.secondary, fontSize: 16, lineHeight: 24 }}>
-            {brief.excerpt}
-          </Text>
+          <TermAwareText
+            text={brief.excerpt}
+            locale={locale}
+            colors={termColors}
+            style={{ color: colors.secondary, fontSize: 16, lineHeight: 24 }}
+          />
           <View style={{ gap: spacing.xs }}>
             <Text style={{ color: colors.dim, fontSize: 12, letterSpacing: 1 }}>
               {copy.summaryLabel}
             </Text>
-            <Text style={{ color: colors.text, fontSize: 15, lineHeight: 24 }}>
-              {brief.summary}
-            </Text>
+            <TermAwareText
+              text={brief.summary}
+              locale={locale}
+              colors={termColors}
+              style={{ color: colors.text, fontSize: 15, lineHeight: 24 }}
+            />
           </View>
-          <View
-            style={{
-              borderWidth: 0.5,
-              borderColor: colors.separator,
-              padding: spacing.lg,
-              backgroundColor: colors.card,
-              gap: spacing.xs,
-            }}
-          >
-            <Text style={{ color: colors.dim, fontSize: 12, letterSpacing: 1 }}>
-              {copy.suggestionLabel}
-            </Text>
-            <Text style={{ color: colors.text, fontSize: 15, lineHeight: 24 }}>
-              {brief.suggestion}
-            </Text>
-          </View>
+
+          {brief.points.length > 0 ? (
+            <View
+              style={{
+                borderWidth: 0.5,
+                borderColor: colors.separator,
+                padding: spacing.lg,
+                backgroundColor: colors.card,
+                gap: spacing.sm,
+              }}
+            >
+              <Text style={{ color: colors.dim, fontSize: 12, letterSpacing: 1 }}>
+                {copy.pointsLabel}
+              </Text>
+              {brief.points.map((p, i) => (
+                <View key={`${i}-${p.slice(0, 12)}`} style={{ flexDirection: 'row', gap: 8 }}>
+                  <Text style={{ color: colors.dim, fontSize: 14 }}>{i + 1}.</Text>
+                  <TermAwareText
+                    text={p}
+                    locale={locale}
+                    colors={termColors}
+                    style={{ color: colors.text, fontSize: 15, lineHeight: 22, flex: 1 }}
+                  />
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {showSuggestion ? (
+            <View style={{ gap: spacing.xs }}>
+              <Text style={{ color: colors.dim, fontSize: 12, letterSpacing: 1 }}>
+                {copy.suggestionLabel}
+              </Text>
+              <TermAwareText
+                text={brief.suggestion}
+                locale={locale}
+                colors={termColors}
+                style={{ color: colors.text, fontSize: 15, lineHeight: 24 }}
+              />
+            </View>
+          ) : null}
+
+          {events.length > 0 ? (
+            <View style={{ gap: spacing.sm }}>
+              <Text style={{ color: colors.dim, fontSize: 12, letterSpacing: 1 }}>
+                {copy.windowsLabel}
+              </Text>
+              {events.map((ev, i) => (
+                <View
+                  key={`${ev.startMonth}-${i}`}
+                  style={{
+                    borderWidth: 0.5,
+                    borderColor: colors.separator,
+                    padding: spacing.md,
+                    gap: 4,
+                  }}
+                >
+                  <Text style={{ color: colors.secondary, fontSize: 13 }}>{windowLine(ev)}</Text>
+                  {ev.note ? (
+                    <TermAwareText
+                      text={ev.note}
+                      locale={locale}
+                      colors={termColors}
+                      style={{ color: colors.text, fontSize: 14, lineHeight: 20 }}
+                    />
+                  ) : null}
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {loci.length > 0 ? (
+            <View style={{ gap: spacing.sm }}>
+              <Text style={{ color: colors.dim, fontSize: 12, letterSpacing: 1 }}>
+                {copy.lociLabel}
+              </Text>
+              {loci.map((L, i) => (
+                <View key={`${L.locus}-${i}`} style={{ gap: 4 }}>
+                  <Text style={{ color: colors.secondary, fontSize: 13, fontWeight: '600' }}>
+                    {L.locus}
+                  </Text>
+                  <TermAwareText
+                    text={L.reading}
+                    locale={locale}
+                    colors={termColors}
+                    style={{ color: colors.text, fontSize: 14, lineHeight: 20 }}
+                  />
+                </View>
+              ))}
+            </View>
+          ) : null}
+
           <Button variant='primary' onPress={goLocus} disabled={!readingId}>
             {copy.lociCta}
           </Button>
