@@ -1,10 +1,15 @@
 /**
  * Open a portfolio reading — brief card only when `brief` exists; else five chapters.
+ * Nav-locked so double-taps (wheel / archive / job done) cannot stack the same screen.
  */
 
 import { router } from 'expo-router'
 
+import { markReadingOpened } from '@/lib/reading-job'
 import { shouldOpenBriefCard } from '@/lib/reading-brief'
+
+let openLockUntil = 0
+let lastOpenKey = ''
 
 export function openReadingScreen(opts: {
   readingId: string
@@ -22,6 +27,13 @@ export function openReadingScreen(opts: {
     }
   }
   const pathname = useBrief ? '/brief' : '/result'
+  const key = `${opts.replace ? 'r' : 'p'}:${pathname}:${opts.readingId}`
+  const now = Date.now()
+  if (key === lastOpenKey && now < openLockUntil) return
+  lastOpenKey = key
+  openLockUntil = now + 800
+  markReadingOpened(opts.readingId)
+
   const nav = opts.replace ? router.replace : router.push
   const params: { readingId: string; payload?: string } = { readingId: opts.readingId }
   if (opts.resultJson?.trim()) {

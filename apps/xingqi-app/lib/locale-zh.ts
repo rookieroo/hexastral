@@ -10,7 +10,8 @@ export function isZhHant(locale: string): boolean {
     locale === 'zh-HK' ||
     locale.toLowerCase().startsWith('zh-hant') ||
     locale.toLowerCase().startsWith('zh-tw') ||
-    locale.toLowerCase().startsWith('zh-hk')
+    locale.toLowerCase().startsWith('zh-hk') ||
+    locale.toLowerCase().startsWith('zh-mo')
   )
 }
 

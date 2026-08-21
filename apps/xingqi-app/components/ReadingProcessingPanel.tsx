@@ -74,11 +74,13 @@ export function ReadingProcessingPanel({
   }, [])
 
   const dismissLabel =
-    locale === 'zh' || locale === 'zh-Hant'
-      ? '返回首页'
-      : locale === 'ja'
-        ? 'ホームに戻る'
-        : 'Back to home'
+    locale === 'zh-Hant'
+      ? '返回首頁'
+      : locale === 'zh'
+        ? '返回首页'
+        : locale === 'ja'
+          ? 'ホームに戻る'
+          : 'Back to home'
 
   return (
     <View

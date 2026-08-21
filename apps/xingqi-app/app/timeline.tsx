@@ -9,7 +9,7 @@ import { verdictColors } from '@zhop/hexastral-tokens/palette'
 import { fetchReadings } from '@zhop/portfolio-client'
 import { hasEntitlement, useEntitlements } from '@zhop/satellite-runtime'
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, Share, Text, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -113,10 +113,23 @@ export default function XingqiTimelineScreen() {
   const [events, setEvents] = useState<FaceEvent[]>([])
   const [explain, setExplain] = useState<string | null>(null)
   const [groundReadingId, setGroundReadingId] = useState<string | undefined>(paramReadingId)
+  const navLockRef = useRef(false)
+
+  const pushOnce = useCallback(
+    (href: string) => {
+      if (navLockRef.current) return
+      navLockRef.current = true
+      router.push(href as never)
+      setTimeout(() => {
+        navLockRef.current = false
+      }, 700)
+    },
+    [router]
+  )
 
   const openPaywall = useCallback(() => {
-    router.push('/(commerce)/paywall' as never)
-  }, [router])
+    pushOnce('/(commerce)/paywall')
+  }, [pushOnce])
 
   useFocusEffect(
     useCallback(() => {
@@ -300,7 +313,7 @@ export default function XingqiTimelineScreen() {
             <Text style={{ color: colors.secondary }}>
               {error === 'birth' ? t.needBirth : error}
             </Text>
-            <Button variant='secondary' onPress={() => router.push('/birth' as never)}>
+            <Button variant='secondary' onPress={() => pushOnce('/birth')}>
               {t.editBirth}
             </Button>
           </>
@@ -407,7 +420,7 @@ export default function XingqiTimelineScreen() {
                   events.slice(0, 6).map((e, i) => (
                     <Pressable
                       key={`${e.startMonth}-${i}`}
-                      onPress={() => router.push('/result' as never)}
+                      onPress={() => pushOnce('/result')}
                       style={{ gap: 2 }}
                     >
                       <Text style={{ color: colors.text, fontSize: 14 }}>

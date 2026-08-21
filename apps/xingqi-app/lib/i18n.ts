@@ -25,7 +25,7 @@ export function resolveLocale(): Locale {
   const first = locales[0]
   if (!first) return 'en'
   const tag = first.languageTag.toLowerCase()
-  if (tag.startsWith('zh-tw') || tag.startsWith('zh-hk') || tag.startsWith('zh-hant')) {
+  if (tag.startsWith('zh-tw') || tag.startsWith('zh-hk') || tag.startsWith('zh-mo') || tag.startsWith('zh-hant')) {
     return 'zh-Hant'
   }
   if (tag.startsWith('zh')) return 'zh'
@@ -82,6 +82,12 @@ export function privacyPolicyUrl(locale: Locale): string {
     locale === 'zh-Hant' ? 'tw' : locale === 'zh' ? 'zh' : locale === 'ja' ? 'ja' : 'en'
   if (segment === 'en') return 'https://www.hexastral.com/en/privacy/syel'
   return `https://www.hexastral.com/${segment}/privacy/syel`
+}
+
+export function termsOfServiceUrl(locale: Locale): string {
+  const segment =
+    locale === 'zh-Hant' ? 'tw' : locale === 'zh' ? 'zh' : locale === 'ja' ? 'ja' : 'en'
+  return `https://www.hexastral.com/${segment}/terms`
 }
 
 export function useI18n() {

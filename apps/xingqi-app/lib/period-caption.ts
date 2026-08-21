@@ -9,7 +9,7 @@ export const EXCERPT_MAX_CHARS = 42
 export function localeFromTag(tag: string | undefined): Locale {
   if (!tag) return 'en'
   const t = tag.toLowerCase()
-  if (t.startsWith('zh-tw') || t.startsWith('zh-hk') || t.startsWith('zh-hant')) return 'zh-Hant'
+  if (t.startsWith('zh-tw') || t.startsWith('zh-hk') || t.startsWith('zh-mo') || t.startsWith('zh-hant')) return 'zh-Hant'
   if (t.startsWith('zh')) return 'zh'
   if (t.startsWith('ja')) return 'ja'
   return 'en'

@@ -73,6 +73,7 @@ import {
   faceoracleBodyLooksWrongLocale,
   faceoracleFieldsLookWrongLocale,
   faceoracleZhLooksEnglishLeaky,
+  normalizeFaceoracleLocale,
 } from './prompts/faceoracle-locale'
 
 const CHAPTER_KINDS: FaceOracleChapterKind[] = ['overview', 'face', 'palms', 'natal', 'horizon']
@@ -905,6 +906,8 @@ export async function runFaceoracleReadingJob(
     })
     return
   }
+
+  job = { ...job, locale: normalizeFaceoracleLocale(job.locale) }
 
   if (job.ephemeralKeysJson || job.stage === 'extracting') {
     job = await extractEphemeralFeaturesForJob(env, db, job)

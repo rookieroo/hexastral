@@ -76,6 +76,15 @@ describe('getTermByZh — table + compound resolution', () => {
     expect(getTermByZh('土', 'en')?.short).toMatch(/steady|earth|ground/i)
   })
 
+  it('zh-Hant falls back to zh meaning, not English', () => {
+    const dayun = getTermByZh('大运', 'zh-Hant')
+    expect(dayun?.short).toContain('十年')
+    expect(dayun?.short).not.toMatch(/ten-year|chapter/i)
+    const mu = getTermByZh('木', 'zh-Hant')
+    expect(mu?.short).toContain('生长')
+    expect(mu?.short).not.toMatch(/growing|kind/i)
+  })
+
   it('③ day-master spelling 己土 → the stem 己 meaning, label kept as 己土', () => {
     const dm = getTermByZh('己土', 'en')
     const stem = getTermByZh('己', 'en')

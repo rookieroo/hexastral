@@ -37,6 +37,16 @@ Run after co-deploying **svc-astro + hexastral-api + Syel client** (VLM/`skinTon
 - [ ] Bottom CTA: **解锁档案与气机层 · Pro** (not “再解读”)
 - [ ] No Living FAB / chat for non-Pro
 
+## zh-Hant / i18n smoke (four locales)
+
+- [ ] Device Hant: tap `大運` / `流年` / `木` / `氣機` → gloss **繁体** short/long (not English, not 简体 `生长`/`运势`)
+- [ ] Settings → 術語表: headwords Traditional (`氣機`, `大運`); Settings → 服務條款 opens `…/tw/terms` (not always `/en/terms`)
+- [ ] New Hant deep read: five chapters mostly Traditional (spot-check 氣機 / 預告 / 這 vs 这); API may rewrite once if Hans-heavy
+- [ ] ja: tap 大运 / 木 → Japanese short gloss (not English “ten-year chapter” / “growing”)
+- [ ] en: tap BaZi terms → English gloss still works
+- [ ] Share caption under Hant uses `形氣` not `形气`
+- [ ] Processing dismiss under Hant: `返回首頁`
+
 ## zh-Hant chrome
 
 - [ ] Device locale Traditional → chapter titles / alerts / paywall in 繁体 (not Hans)

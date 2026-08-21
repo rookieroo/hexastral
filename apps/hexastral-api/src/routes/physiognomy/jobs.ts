@@ -32,6 +32,7 @@ import {
   sweepStaleFaceoracleJobs,
 } from '../../lib/faceoracle-reading-job'
 import { enqueueFaceoracleReadingJob } from '../../lib/faceoracle-reading-queue'
+import { normalizeFaceoracleLocale } from '../../lib/prompts/faceoracle-locale'
 import { hasActiveEntitlement } from '../../services/entitlements'
 import {
   checkAndConsumeFaceoracleDeepRead,
@@ -424,7 +425,7 @@ physiognomyJobsRoutes.post('/', async (c) => {
     userId,
     stage: needsExtract ? 'extracting' : 'queued',
     progress: needsExtract ? 5 : 10,
-    locale: body.locale,
+    locale: normalizeFaceoracleLocale(body.locale),
     outputKind: effectiveOutputKind,
     horizonMonths: body.horizonMonths,
     faceFeatureId: body.faceFeatureId ?? null,

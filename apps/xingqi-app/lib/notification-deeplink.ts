@@ -11,7 +11,16 @@ import { setHomeCaptureHandoff } from './home-capture-handoff'
 import { openReadingScreen } from './open-reading'
 import { markReadingOpened, wasReadingOpenedRecently } from './reading-job'
 
-type Kind = 'recapture' | 'event' | 'reading_ready' | 'reading_failed' | string
+type Kind = 'recapture' | 'event' | 'timeline' | 'observe' | 'reading_ready' | 'reading_failed' | string
+
+let timelineNavLockUntil = 0
+
+function pushTimelineOnce(router: { push: (href: never) => void }): void {
+  const now = Date.now()
+  if (now < timelineNavLockUntil) return
+  timelineNavLockUntil = now + 700
+  router.push('/timeline' as never)
+}
 
 function readKind(data: Record<string, unknown> | undefined): Kind | undefined {
   if (!data) return undefined
@@ -55,7 +64,7 @@ export function useXingqiNotificationDeepLink(): void {
       if (!kind) return
 
       if (kind === 'event' || kind === 'timeline' || kind === 'observe') {
-        router.push('/timeline' as never)
+        pushTimelineOnce(router)
         return
       }
 

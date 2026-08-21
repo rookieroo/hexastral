@@ -3,6 +3,8 @@
  * (Display brand Syel; API target stays faceoracle — ADR-0028.)
  */
 
+import { isZhHant } from '@/lib/locale-zh'
+
 /** Footer text under the card — human-readable brand host (no scheme). */
 export const XINGQI_BRAND_URL = 'syel.hexastral.com'
 
@@ -13,7 +15,7 @@ export const XINGQI_INSTALL_URL = 'https://syel.hexastral.com/'
  * Caption alongside the image on iOS (Android often drops it — QR carries the funnel).
  */
 export function xingqiShareCaption(locale: string, lead: string): string {
-  const cta = locale.startsWith('zh-Hant')
+  const cta = isZhHant(locale)
     ? 'Syel 上也可以看看你的形氣解讀。'
     : locale.startsWith('zh')
       ? 'Syel 上也可以看看你的形气解读。'

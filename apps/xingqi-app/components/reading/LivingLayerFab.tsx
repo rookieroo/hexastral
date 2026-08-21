@@ -11,7 +11,7 @@ import {
   RefreshCw,
   Timeline,
 } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Pressable, View } from 'react-native'
 import Animated, {
   Easing,
@@ -48,12 +48,23 @@ export function LivingLayerFab({
 }: LivingLayerFabProps) {
   const [open, setOpen] = useState(false)
   const progress = useSharedValue(0)
+  const pressLockRef = useRef(false)
   useEffect(() => {
     progress.value = withTiming(open ? 1 : 0, {
       duration: open ? 340 : 220,
       easing: open ? Easing.bezier(0.2, 0.9, 0.2, 1) : Easing.bezier(0.4, 0, 0.7, 0.2),
     })
   }, [open, progress])
+
+  const runAction = (onPress: () => void) => {
+    if (pressLockRef.current) return
+    pressLockRef.current = true
+    setOpen(false)
+    onPress()
+    setTimeout(() => {
+      pressLockRef.current = false
+    }, 700)
+  }
 
   const actions: Array<{ key: string; Icon: LucideIcon; label: string; onPress: () => void }> = [
     ...(onTimeline
@@ -89,10 +100,7 @@ export function LivingLayerFab({
           Icon={action.Icon}
           label={action.label}
           colors={colors}
-          onPress={() => {
-            setOpen(false)
-            action.onPress()
-          }}
+          onPress={() => runAction(action.onPress)}
         />
       ))}
       <Pressable

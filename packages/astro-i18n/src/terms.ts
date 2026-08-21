@@ -137,13 +137,13 @@ const CATEGORY_LABELS: Partial<Record<Locale, Record<TermCategory, string>>> = {
 const byId = new Map<string, TermEntry>(TERMS.map((t) => [t.id, t]))
 const byZh = new Map<string, TermEntry>(TERMS.map((t) => [t.zh, t]))
 
-/** Resolve a single entry's meaning for a locale: target → en → zh. */
+/** Resolve a single entry's meaning for a locale: target → (zh-Hant→zh) → en → zh. */
 export function resolveTermMeaning(entry: TermEntry, locale: Locale): TermMeaning {
-  return (
-    entry.meaning[locale] ??
-    entry.meaning.en ??
-    entry.meaning.zh ?? { short: entry.zh, long: entry.zh }
-  )
+  const direct = entry.meaning[locale]
+  if (direct) return direct
+  // terms-data authors zh + en; zh-Hant must not fall through to English.
+  if (locale === 'zh-Hant' && entry.meaning.zh) return entry.meaning.zh
+  return entry.meaning.en ?? entry.meaning.zh ?? { short: entry.zh, long: entry.zh }
 }
 
 function resolve(entry: TermEntry, locale: Locale): ResolvedTerm {

@@ -4,18 +4,39 @@
  * zh: no English leakage. en/ja: no romanization-as-primary.
  */
 
+export type FaceoracleLocale = 'zh' | 'zh-Hant' | 'ja' | 'en'
+
+/** Canonicalize client / DB locale tags before prompts + drift checks. */
+export function normalizeFaceoracleLocale(raw: string | null | undefined): FaceoracleLocale {
+  const t = (raw ?? '').trim().toLowerCase()
+  if (!t) return 'en'
+  if (
+    t.startsWith('zh-hant') ||
+    t.startsWith('zh-tw') ||
+    t.startsWith('zh-hk') ||
+    t.startsWith('zh-mo') ||
+    t === 'zh-hant'
+  ) {
+    return 'zh-Hant'
+  }
+  if (t.startsWith('zh')) return 'zh'
+  if (t.startsWith('ja')) return 'ja'
+  return 'en'
+}
+
 export function resolveFaceoracleOutputLang(locale: string): {
   code: 'zh-CN' | 'zh-TW' | 'ja' | 'en'
   name: string
   isCjkOutput: boolean
 } {
-  if (locale.startsWith('zh-Hant') || locale === 'zh-TW') {
+  const norm = normalizeFaceoracleLocale(locale)
+  if (norm === 'zh-Hant') {
     return { code: 'zh-TW', name: '繁體中文', isCjkOutput: true }
   }
-  if (locale.startsWith('zh')) {
+  if (norm === 'zh') {
     return { code: 'zh-CN', name: '简体中文', isCjkOutput: true }
   }
-  if (locale.startsWith('ja')) {
+  if (norm === 'ja') {
     return { code: 'ja', name: '日本語', isCjkOutput: false }
   }
   return { code: 'en', name: 'English', isCjkOutput: false }
@@ -90,7 +111,13 @@ export function buildFaceoracleLanguageBlock(locale: string): string {
       '',
       `## Output language — ${name} (${code})`,
       `所有面向用户的 JSON 文本字段必须使用${name}书写。JSON 字段名保持英文。`,
-      code === 'zh-TW' ? '使用繁體中文（台灣/港澳用字），不要輸出簡體字。' : '使用简体中文。',
+      code === 'zh-TW'
+        ? [
+            '使用繁體中文（台灣/港澳用字），不要輸出簡體字。',
+            '硬約束：chapters / brief / loci / events / advice 正文必須繁體漢字；簡體特徵字（这/个/为/发/门/国/会/说/还/对）不得成段出現。',
+            '形气術語可保留漢字原詞；首次可用白話承接。',
+          ].join('\n')
+        : '使用简体中文。',
       '禁止在任何中文文本字段中夹杂英文单词或英文句式（禁止 future / tension / palm / support / caution / main / reef 等）。',
       '禁止用英文标签起句（如 "Palm tension…"、"Future…"）。JSON 键名除外。',
       '术语可用原词（天庭、气机、用神…）；首次可用白话承接，勿堆砌不加解释的文言口号。',
@@ -151,9 +178,12 @@ export function buildFaceoracleLanguageReminder(locale: string): string {
     return [
       '',
       `【语言 — 严守】全部面向用户的 JSON 字符串必须用${name}。`,
+      code === 'zh-TW' ? '必須繁體；禁止成段簡體（这/个/为/发/门等）。' : '',
       '禁止夹杂英文词（future / tension / palm / support / caution / main / reef 等）。',
       '术语用汉字原词；白话承接含义。只输出纯 JSON。',
-    ].join('\n')
+    ]
+      .filter(Boolean)
+      .join('\n')
   }
   if (code === 'ja') {
     return [
@@ -233,15 +263,36 @@ export function faceoracleZhLooksEnglishLeaky(sampleText: string): boolean {
   return faceoracleLatinRatio(sampleText) > 0.08
 }
 
+/** Hans-only markers vs Hant markers — light heuristic, not full OpenCC. */
+const HANS_MARKERS = /[这为发门国会说还对个吗么书气机运势阶诊轴预]/g
+const HANT_MARKERS = /[這為發門國會說還對個嗎麼書氣機運勢階診軸預]/g
+
+/**
+ * True when Hant locale got mostly Simplified prose.
+ * Requires enough Hans hits and few Hant hits so mixed OK text does not false-positive.
+ */
+export function faceoracleHantLooksHansLeaky(sampleText: string): boolean {
+  if (!sampleText || sampleText.replace(/\s/g, '').length < 40) return false
+  const hans = sampleText.match(HANS_MARKERS)?.length ?? 0
+  const hant = sampleText.match(HANT_MARKERS)?.length ?? 0
+  if (hans < 6) return false
+  return hans >= hant * 2 + 3
+}
+
 /**
  * Whole-body locale drift. Language-split:
  * - zh: English token / Latin leakage
+ * - zh-Hant: English leakage OR Hans-script leakage
  * - en: CJK ratio too high → Chinese leakage
  * - ja: Latin-heavy (English) OR Han-heavy without kana (Chinese)
  */
 export function faceoracleBodyLooksWrongLocale(locale: string, sampleText: string): boolean {
   const { code, isCjkOutput } = resolveFaceoracleOutputLang(locale)
-  if (isCjkOutput) return faceoracleZhLooksEnglishLeaky(sampleText)
+  if (isCjkOutput) {
+    if (faceoracleZhLooksEnglishLeaky(sampleText)) return true
+    if (code === 'zh-TW' && faceoracleHantLooksHansLeaky(sampleText)) return true
+    return false
+  }
   if (code === 'ja') {
     const latin = faceoracleLatinRatio(sampleText)
     const cjk = faceoracleCjkRatio(sampleText)
@@ -256,7 +307,7 @@ export function faceoracleBodyLooksWrongLocale(locale: string, sampleText: strin
 /**
  * Per-field guard — a single Chinese goldenLine inside otherwise-English chapters
  * used to pass the whole-body ratio check. For ja, only flag Latin-dominant
- * fields. For zh, flag Latin-dominant fields / denylist hits.
+ * fields. For zh, flag Latin-dominant fields / denylist hits. For Hant, also Hans leak.
  */
 export function faceoracleFieldsLookWrongLocale(
   locale: string,
@@ -264,7 +315,14 @@ export function faceoracleFieldsLookWrongLocale(
 ): boolean {
   const { code, isCjkOutput } = resolveFaceoracleOutputLang(locale)
   if (isCjkOutput) {
-    return fields.some((f) => faceoracleZhLooksEnglishLeaky(f) || faceoracleFieldLooksLatin(f))
+    if (fields.some((f) => faceoracleZhLooksEnglishLeaky(f) || faceoracleFieldLooksLatin(f))) {
+      return true
+    }
+    if (code === 'zh-TW') {
+      const joined = fields.filter((f) => f.trim().length > 0).join('\n')
+      return faceoracleHantLooksHansLeaky(joined)
+    }
+    return false
   }
   if (code === 'ja') {
     return fields.some((f) => faceoracleFieldLooksLatin(f))

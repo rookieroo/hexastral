@@ -11,6 +11,8 @@ import {
   buildFaceoracleLanguageBlock,
   faceoracleBodyLooksWrongLocale,
   faceoracleFieldsLookWrongLocale,
+  normalizeFaceoracleLocale,
+  resolveFaceoracleOutputLang,
 } from './faceoracle-locale'
 
 describe('buildFaceOraclePrompt (ADR-0028 craft)', () => {
@@ -513,13 +515,29 @@ describe('faceoracle locale drift (language-split)', () => {
 
   it('flags English leakage in zh body; clean zh passes', () => {
     expect(faceoracleBodyLooksWrongLocale('zh-CN', zhSample)).toBe(false)
-    expect(faceoracleBodyLooksWrongLocale('zh-Hant', zhSample)).toBe(false)
+    expect(faceoracleBodyLooksWrongLocale('zh', zhSample)).toBe(false)
     expect(
       faceoracleBodyLooksWrongLocale(
         'zh-CN',
         '掌纹形气张力偏紧，future 大运带宜留意节奏，palm tension 不宜妄动。'
       )
     ).toBe(true)
+  })
+
+  it('normalizes zh-hk / lowercase to Hant output lang', () => {
+    expect(normalizeFaceoracleLocale('zh-HK')).toBe('zh-Hant')
+    expect(normalizeFaceoracleLocale('zh-hant-tw')).toBe('zh-Hant')
+    expect(resolveFaceoracleOutputLang('zh-hk').code).toBe('zh-TW')
+    expect(buildFaceoracleLanguageBlock('zh-HK')).toContain('繁體')
+  })
+
+  it('flags Simplified prose under Hant locale', () => {
+    const hansHeavy =
+      '这个阶段还说会为发门的机会对个气机运势阶诊轴预告，这是还说会为发门的机会对个气机运势阶诊轴预告，这是还说会为发门的机会对个气机。'
+    expect(faceoracleBodyLooksWrongLocale('zh-Hant', hansHeavy)).toBe(true)
+    const hantOk =
+      '形上可見天庭開闊印堂清亮，氣機上宜留意山根偏弱帶來的情緒波動，事業線在戊寅運前段轉清晰。'
+    expect(faceoracleBodyLooksWrongLocale('zh-Hant', hantOk)).toBe(false)
   })
 
   it('zh language block bans English craft tokens', () => {

@@ -198,9 +198,54 @@ const HANT_CHARS: Record<string, string> = {
   赋: '賦',
   写: '寫',
   双: '雙',
+  // BaZi / cycle glosses not already mapped above
+  诊: '診',
+  轴: '軸',
+  势: '勢',
+  阶: '階',
+  场: '場',
+  扩: '擴',
+  远: '遠',
+  温: '溫',
+  竞: '競',
+  争: '爭',
+  盖: '蓋',
+  覆: '覆',
+  笔: '筆',
+  乐: '樂',
+  带: '帶',
+  软: '軟',
+  坚: '堅',
+  韧: '韌',
+  护: '護',
+  决: '決',
+  则: '則',
+  规: '規',
+  驱: '驅',
+  彻: '徹',
+  渗: '滲',
+  适: '適',
+  载: '載',
+  托: '託',
+  桥: '橋',
+  导: '導',
+  键: '鍵',
+  转: '轉',
+  顺: '順',
+  盘: '盤',
+  围: '圍',
+  当: '當',
+  换: '換',
+  细: '細',
+  于: '於',
+  里: '裡',
+  冲: '衝',
+  劲: '勁',
+  纯: '純',
 }
 
-function toZhHant(hans: string): string {
+/** Hans → Hant for glosses / Terms headwords (Syel curated map, not full OpenCC). */
+export function toZhHant(hans: string): string {
   let out = ''
   for (const ch of hans) {
     out += HANT_CHARS[ch] ?? ch
@@ -1469,6 +1514,55 @@ export function segmentXingqiTerms(text: string): XingqiTermSegment[] {
   return out.length > 0 ? out : [{ text, termZh: null }]
 }
 
+/** Thin JA glosses for Syel BaZi subset (astro-i18n has no meaning.ja yet). */
+const ASTRO_JA_GLOSS: Record<string, { short: string; long: string }> = {
+  相生: {
+    short: '五行が生み養う関係',
+    long: '相生：ある五行が別の五行を生み養う巡り（例：水生木）。顺の助け合い。',
+  },
+  相克: {
+    short: '五行が制し合う関係',
+    long: '相克：ある五行が別の五行を制する力（例：木克土）。圧力でもバランス。',
+  },
+  比和: {
+    short: '同類の五行が出会う',
+    long: '比和：同じ五行が並び、響き合う／張り合う両方がありうる。',
+  },
+  金: { short: '果断・規範・境界', long: '金の気：決断と秩序、公正と洗練へ向かう。' },
+  木: { short: '成長・仁・上昇', long: '木の気：成長と先見、温かく拡げ育てる。' },
+  水: { short: '知恵・柔軟・浸透', long: '水の気：適応と浸透、深く流れる知。' },
+  火: { short: '情熱・明示・照らす', long: '火の気：熱と明るさ、顕して動かす。' },
+  土: { short: '安定・承载・中和', long: '土の気：支えと中庸、場を保つ。' },
+  日主: { short: '命盤の自己の核', long: '日主：あなた自身を表す一字。盤全体の中心。' },
+  用神: { short: '盤が最も要する五行', long: '用神：全局を顺へ転じる鍵となる五行。' },
+  通关: { short: '相争を橋渡しする五行', long: '通关：相克のあいだを仲介し、衝突を流通へ導く。' },
+  比肩: { short: '日主と同気の仲間', long: '比肩：日主と同じ陰陽五行。自立と競合の象。' },
+  劫财: { short: '日主と同気の奪い合い', long: '劫财：比肩の対。資源の取り合い・決断の揺れ。' },
+  食神: { short: '表現と余力', long: '食神：日主が泄す穏やかな才と楽しみ。' },
+  伤官: { short: '鋭い表現と反骨', long: '伤官：食神より鋭く、型を破る表現。' },
+  偏财: { short: '流動する財縁', long: '偏财：機を見て動く財・対人の縁。' },
+  正财: { short: '安定した財と実務', long: '正财：着実な収入と義務の象。' },
+  七杀: { short: '圧と突破の力', long: '七杀：強い制約と突破欲。使い方次第。' },
+  正官: { short: '規範と職分', long: '正官：秩序・肩書・責任の枠。' },
+  偏印: { short: '偏った学び・直感', long: '偏印：型にはまらぬ受容と着想。' },
+  正印: { short: '保護と正統の学び', long: '正印：庇護・資格・正統な知。' },
+  大运: { short: '十年ごとの人生章', long: '大运：約十年ごとに替わる大きな気候。' },
+  流年: { short: 'その年の気場', long: '流年：一年単位の天候のように盤へ重なる。' },
+  流月: { short: 'その月の起伏', long: '流月：年の中の月次の潮。時機の手がかり。' },
+  六冲: { short: '地支の強い衝突', long: '六冲：対冲する地支。動きと動揺の象。' },
+  三合: { short: '三支で一局を成す', long: '三合：三つの地支が結び、一つの気勢になる。' },
+  六合: { short: '二支の親和', long: '六合：地支どうしの寄り合い・結び。' },
+}
+
+function hantifyAstroTerm(term: ResolvedTerm): ResolvedTerm {
+  return {
+    ...term,
+    zh: toZhHant(term.zh),
+    short: toZhHant(term.short),
+    long: toZhHant(term.long),
+  }
+}
+
 export function resolveXingqiTerm(zh: string, locale: TermLocale): ResolvedTerm | null {
   const canonical = canonicalizeTermZh(zh)
   const local = LOCAL_BY_ZH.get(canonical)
@@ -1476,7 +1570,7 @@ export function resolveXingqiTerm(zh: string, locale: TermLocale): ResolvedTerm 
     const lang = glossLang(locale, local.short)
     return {
       id: local.id,
-      zh: local.zh,
+      zh: isZhHant(locale) ? toZhHant(local.zh) : local.zh,
       pinyin: local.pinyin,
       category: 'relation' as TermCategory,
       short: glossText(local.short, lang),
@@ -1484,7 +1578,18 @@ export function resolveXingqiTerm(zh: string, locale: TermLocale): ResolvedTerm 
     }
   }
   if (!(XINGQI_ASTRO_TERMS as readonly string[]).includes(canonical)) return null
-  return getTermByZh(canonical, locale)
+
+  if (locale.startsWith('ja')) {
+    const ja = ASTRO_JA_GLOSS[canonical]
+    const base = getTermByZh(canonical, 'en')
+    if (ja && base) {
+      return { ...base, short: ja.short, long: ja.long }
+    }
+  }
+
+  const fromAstro = getTermByZh(canonical, locale)
+  if (!fromAstro) return null
+  return isZhHant(locale) ? hantifyAstroTerm(fromAstro) : fromAstro
 }
 
 export type XingqiGlossaryGroup = {
@@ -1515,7 +1620,7 @@ function glossaryLabel(locale: TermLocale, hans: string, hant: string): string {
 
 export function getXingqiGlossaryGroups(locale: TermLocale): XingqiGlossaryGroup[] {
   const pick = (zs: string[]) =>
-    zs.map((z) => getTermByZh(z, locale)).filter((x): x is ResolvedTerm => x != null)
+    zs.map((z) => resolveXingqiTerm(z, locale)).filter((x): x is ResolvedTerm => x != null)
 
   const meta = XINGQI_FORM_TERMS.filter((x) => x.category === 'meta')
   const face = XINGQI_FORM_TERMS.filter((x) => x.category === 'face')

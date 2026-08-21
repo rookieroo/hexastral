@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { resolveLocale } from '@/lib/i18n'
 import { isCjkZh, isJa, isZhHant, pickUi } from '@/lib/locale-zh'
-import { getXingqiGlossaryGroups } from '@/lib/xingqi-terms'
+import { getXingqiGlossaryGroups, toZhHant } from '@/lib/xingqi-terms'
 
 function toTermLocale(locale: string): TermLocale {
   if (isZhHant(locale)) return 'zh-Hant'
@@ -130,7 +130,7 @@ export default function XingqiTermsScreen() {
                         lineHeight: termTitleSize + 4,
                       }}
                     >
-                      {t.zh}
+                      {isZhHant(locale) ? toZhHant(t.zh) : t.zh}
                     </Text>
                     {t.pinyin && !ja ? (
                       <Text

@@ -6,7 +6,7 @@ import { Button, useTheme } from '@zhop/core-ui'
 import { fetchReadingById } from '@zhop/portfolio-client'
 import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { X } from 'lucide-react-native'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -54,6 +54,7 @@ export default function BriefScreen() {
   const [output, setOutput] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const navLockRef = useRef(false)
 
   useEffect(() => {
     let cancelled = false
@@ -94,21 +95,29 @@ export default function BriefScreen() {
 
   const showSuggestion =
     brief != null &&
-    (brief.points.length === 0 ||
-      brief.suggestion.replace(/\s+/g, '') !== brief.points.join('').replace(/\s+/g, ''))
+    brief.points.length === 0 &&
+    brief.suggestion.trim().length > 0
 
   const { show: showGlossHint, dismiss: dismissGlossHint } = useGlossTapHint(
     !loading && brief != null
   )
 
   const goLocus = () => {
-    if (!readingId) return
+    if (!readingId || navLockRef.current) return
+    navLockRef.current = true
     router.push({ pathname: '/locus', params: { readingId, part: 'face' } } as never)
+    setTimeout(() => {
+      navLockRef.current = false
+    }, 700)
   }
 
   const goChapters = () => {
-    if (!readingId) return
+    if (!readingId || navLockRef.current) return
+    navLockRef.current = true
     router.push({ pathname: '/result', params: { readingId } } as never)
+    setTimeout(() => {
+      navLockRef.current = false
+    }, 700)
   }
 
   const windowLine = useMemo(() => {

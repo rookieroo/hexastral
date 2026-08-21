@@ -30,7 +30,7 @@ import { fetchBiometricConsent, revokeBiometricConsent } from '@/lib/api'
 import { cycleDevEntitlementOverride, devEntitlementLabel } from '@/lib/dev-pro-toggle'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
 import { setHomeCaptureHandoff } from '@/lib/home-capture-handoff'
-import { privacyPolicyUrl, resolveLocale } from '@/lib/i18n'
+import { privacyPolicyUrl, resolveLocale, termsOfServiceUrl } from '@/lib/i18n'
 import { restorePurchases } from '@/lib/iap'
 import {
   getIcloudPhotoSyncEnabled,
@@ -465,7 +465,7 @@ export default function SettingsScreen() {
             />
             <SettingsRow
               label={s('服务条款', '服務條款', 'Terms of service', '利用規約')}
-              onPress={() => void Linking.openURL('https://www.hexastral.com/en/terms')}
+              onPress={() => void Linking.openURL(termsOfServiceUrl(locale))}
             />
           </SettingsCard>
         </SettingsSection>
