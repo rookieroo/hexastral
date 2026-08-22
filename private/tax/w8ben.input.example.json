@@ -1,0 +1,40 @@
+{
+  "_readme": "Copy to w8ben.input.json and fill empty strings. Keys starting with _ are ignored. Never commit w8ben.input.json.",
+  "_formats": {
+    "line8_date_of_birth": "MM-DD-YYYY",
+    "signature_date": "MM-DD-YYYY",
+    "claim_treaty_line10": "false recommended for Apple App Store path; true only if claiming China–US royalty rate on Line 10",
+    "line7_reference": "e.g. UseONE, LLC / EIN XX-XXXXXXX",
+    "line6b_ftin_not_required": "leave false when line6a_china_id_number is filled"
+  },
+
+  "line1_name": "",
+  "line2_citizenship": "China",
+
+  "line3_street": "",
+  "line3_city_state_postal": "",
+  "line3_country": "China",
+
+  "line4_street": "",
+  "line4_city_state_postal": "",
+  "line4_country": "",
+
+  "line5_us_itin": "",
+  "line6a_china_id_number": "",
+  "line6b_ftin_not_required": false,
+
+  "line7_reference": "",
+  "line8_date_of_birth": "",
+
+  "line9_treaty_country": "China",
+  "claim_treaty_line10": false,
+  "line10_article": "11(2)",
+  "line10_rate_percent": "10",
+  "line10_income_type": "Royalties",
+  "line10_explanation": "Beneficial owner is a tax resident of China.",
+
+  "certify_part_iii": true,
+  "print_name_of_signer": "",
+  "signature_date": "",
+  "capacity": "Beneficial Owner / Sole Member"
+}

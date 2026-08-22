@@ -44,6 +44,13 @@ yarn-error.log*
 secrets.json
 secrets.jsonc
 
+# local tax / KYC PII (W-8BEN fill kit)
+private/tax/w8ben.input.json
+private/tax/out/
+private/tax/.venv/
+fw8ben.pdf
+fw8ben.filled.pdf
+
 # vercel
 .vercel
 
