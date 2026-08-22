@@ -21,16 +21,15 @@ export function clampExcerpt(text: string, maxChars = EXCERPT_MAX_CHARS): string
   return `${oneLine.slice(0, maxChars).trimEnd()}…`
 }
 
-export function formatChromeDate(iso: string, chromeLocale: Locale): string {
+export function formatChromeDate(iso: string, _chromeLocale: Locale): string {
   const ms = Date.parse(iso)
   if (!Number.isFinite(ms)) return ''
   const d = new Date(ms)
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
-  // Compact rail label (scrolls with the wheel). Locale only affects separators lightly.
-  if (chromeLocale === 'en') return `${y}\n${m}.${day}`
-  return `${y}\n${m}.${day}`
+  // Compact single-line rail label (reads as one stamp, year+month+day).
+  return `${y}.${m}.${day}`
 }
 
 function excerptFromResultJson(resultJson: string | undefined): string {

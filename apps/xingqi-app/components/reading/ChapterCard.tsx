@@ -4,12 +4,13 @@
  */
 
 import type { ReactNode } from 'react'
+import { useEffect, useRef } from 'react'
 import { Dimensions, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { CHAPTER_GLYPH, locusTitleForLocale } from '@/lib/ancient-glyphs'
 import { isCjkZh, isJa, isZhHant, okForReadingLocale, pickUi, pickZh } from '@/lib/locale-zh'
-import { chapterTitle, type XingqiChapter } from '@/lib/report-chapters'
+import { chapterTitle, type XingqiChapter, type XingqiChapterCitation } from '@/lib/report-chapters'
 import { isNearEcho } from '@/lib/text-echo'
 
 import { AncientNumeral } from './AncientNumeral'
@@ -68,6 +69,12 @@ function displayGoldenLine(locale: string, golden: string, evidence: string): st
   return ''
 }
 
+function citationMatchesPart(c: XingqiChapterCitation, part: 'face' | 'palm_l' | 'palm_r'): boolean {
+  if (c.part === part) return true
+  if (c.locus === part) return true
+  return false
+}
+
 export function ChapterCard({
   chapter,
   index,
@@ -77,6 +84,7 @@ export function ChapterCard({
   colors,
   onPickQuote,
   highlightedQuotes,
+  highlightCitationLocus,
   natalFacts,
   onShare,
 }: {
@@ -95,12 +103,18 @@ export function ChapterCard({
   }
   onPickQuote?: (quote: string) => void
   highlightedQuotes?: readonly string[]
+  /** Wheel deep-link: emphasize + scroll to the citation for this capture part. */
+  highlightCitationLocus?: 'face' | 'palm_l' | 'palm_r'
   natalFacts?: NatalFacts | null
   /** Host captures 9:16 share card — only when goldenLine is present. */
   onShare?: () => void
 }) {
   const insets = useSafeAreaInsets()
   const width = Dimensions.get('window').width
+  const scrollRef = useRef<ScrollView>(null)
+  const contentRef = useRef<View>(null)
+  const highlightRef = useRef<View>(null)
+  const scrolledHighlightRef = useRef(false)
   const title = chapterTitle(chapter.kind, locale)
   const s = (hans: string, hant: string, en: string, ja?: string) =>
     pickUi(locale, hans, hant, en, ja)
@@ -139,8 +153,31 @@ export function ChapterCard({
   const goldenDisplay = displayGoldenLine(locale, chapter.goldenLine, chapter.evidence)
   const canShare = Boolean(onShare && goldenDisplay.length > 0)
 
+  useEffect(() => {
+    scrolledHighlightRef.current = false
+  }, [highlightCitationLocus])
+
+  useEffect(() => {
+    if (!highlightCitationLocus || scrolledHighlightRef.current) return
+    const cite = highlightRef.current
+    const content = contentRef.current
+    if (!cite || !content) return
+    requestAnimationFrame(() => {
+      cite.measureLayout(
+        content,
+        (_x, y) => {
+          if (scrolledHighlightRef.current) return
+          scrolledHighlightRef.current = true
+          scrollRef.current?.scrollTo({ y: Math.max(0, y - 48), animated: true })
+        },
+        () => {}
+      )
+    })
+  }, [highlightCitationLocus, visibleCitations.length])
+
   return (
     <ScrollView
+      ref={scrollRef}
       style={{ width, flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={{
         paddingHorizontal: 28,
@@ -150,6 +187,7 @@ export function ChapterCard({
       }}
       showsVerticalScrollIndicator={false}
     >
+      <View ref={contentRef} collapsable={false}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
         <AncientSeal
           glyph={CHAPTER_GLYPH[chapter.kind]}
@@ -237,16 +275,38 @@ export function ChapterCard({
                     ? locusTitleForLocale(c.featureKey ?? c.locus, locale)
                     : c.locus
                 const citeText = `${locusLabel}  ${c.note}`.trim()
+                const isHighlight = Boolean(
+                  highlightCitationLocus && citationMatchesPart(c, highlightCitationLocus)
+                )
                 return (
-                  <TermAwareText
+                  <View
                     key={`${ci}-${c.locus}-${c.note.slice(0, 24)}`}
-                    text={citeText}
-                    locale={locale}
-                    colors={termColors}
-                    onPickQuote={onPickQuote}
-                    highlightedQuotes={highlightedQuotes}
-                    style={{ color: colors.secondary, fontSize: 13, lineHeight: 20 }}
-                  />
+                    ref={isHighlight ? highlightRef : undefined}
+                    collapsable={false}
+                    style={
+                      isHighlight
+                        ? {
+                            borderWidth: 0.5,
+                            borderColor: colors.accent,
+                            paddingHorizontal: 10,
+                            paddingVertical: 8,
+                          }
+                        : undefined
+                    }
+                  >
+                    <TermAwareText
+                      text={citeText}
+                      locale={locale}
+                      colors={termColors}
+                      onPickQuote={onPickQuote}
+                      highlightedQuotes={highlightedQuotes}
+                      style={{
+                        color: isHighlight ? colors.text : colors.secondary,
+                        fontSize: 13,
+                        lineHeight: 20,
+                      }}
+                    />
+                  </View>
                 )
               })}
             </View>
@@ -305,6 +365,7 @@ export function ChapterCard({
           <Text style={{ color: colors.dim, fontSize: 11 }}>/</Text>
           <AncientNumeral n={total} size={13} color={colors.dim} strokeWidth={3.4} />
         </View>
+      </View>
       </View>
     </ScrollView>
   )

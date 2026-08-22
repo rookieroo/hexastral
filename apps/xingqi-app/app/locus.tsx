@@ -44,7 +44,6 @@ import {
 import { openReadingScreen } from '@/lib/open-reading'
 import { ALL_CAPTURE_PARTS } from '@/lib/photo-parts'
 import { setHomeCaptureHandoff } from '@/lib/home-capture-handoff'
-import { shouldOpenBriefCard } from '@/lib/reading-brief'
 import { resolveReadingPhotoUri } from '@/lib/reading-photos'
 import {
   locusMarkerAccentForSkinTone,
@@ -281,22 +280,9 @@ export default function LocusViewerScreen() {
 
   const openChapter = () => {
     if (!readingId) return
-    let useBrief = false
-    if (resultJson?.trim()) {
-      try {
-        useBrief = shouldOpenBriefCard(JSON.parse(resultJson) as Record<string, unknown>)
-      } catch {
-        useBrief = false
-      }
-    }
-    if (useBrief) {
-      openReadingScreen({ readingId, resultJson, replace: true })
-      return
-    }
-    router.replace({
-      pathname: '/result',
-      params: { readingId, chapter: part === 'face' ? 'face' : 'palms' },
-    } as never)
+    // Single flight: openReadingScreen decides brief vs full, applies the nav
+    // lock, and maps the tapped part to the owning chapter.
+    openReadingScreen({ readingId, resultJson, replace: true, part })
   }
 
   const startNewPeriod = () => {

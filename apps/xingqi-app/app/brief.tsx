@@ -11,6 +11,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { TermAwareText } from '@/components/reading/TermAwareText'
+import { BriefPhotoHero } from '@/components/reading/BriefPhotoHero'
 import { GlossTapHint, useGlossTapHint } from '@/components/reading/GlossTapHint'
 import { XingqiLoader } from '@/components/XingqiLoader'
 import { PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
@@ -26,6 +27,15 @@ import {
   type ReadingBriefEvent,
   type ReadingBriefLocusHighlight,
 } from '@/lib/reading-brief'
+import { resolveReadingPhotoUri } from '@/lib/reading-photos'
+import {
+  clearFlight,
+  flightPending,
+  readFlight,
+  retriesRemaining,
+  setFlightTarget,
+  subscribeFlight,
+} from '@/lib/shared-element-flight'
 
 export default function BriefScreen() {
   const { colors, spacing } = useTheme()
@@ -44,9 +54,25 @@ export default function BriefScreen() {
     }),
     [colors]
   )
-  const params = useLocalSearchParams<{ readingId?: string; payload?: string }>()
+  const params = useLocalSearchParams<{
+    readingId?: string
+    payload?: string
+    part?: string
+  }>()
   const readingId = typeof params.readingId === 'string' ? params.readingId : undefined
   const paramPayload = typeof params.payload === 'string' ? params.payload : undefined
+  const partParam =
+    params.part === 'face' || params.part === 'palm_l' || params.part === 'palm_r'
+      ? params.part
+      : undefined
+
+  const [photos, setPhotos] = useState<Partial<Record<'face' | 'palm_l' | 'palm_r', string>>>({})
+  const [flightHoldsEntrance, setFlightHoldsEntrance] = useState(
+    () => readFlight().source !== null
+  )
+  const heroRef = useRef<View>(null)
+  const plateRef = useRef<View>(null)
+  const measuredRef = useRef(false)
 
   const [brief, setBrief] = useState<ReadingBrief | null>(null)
   const [events, setEvents] = useState<ReadingBriefEvent[]>([])
@@ -55,6 +81,69 @@ export default function BriefScreen() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const navLockRef = useRef(false)
+
+  useEffect(() => {
+    return subscribeFlight(() => {
+      setFlightHoldsEntrance(readFlight().source !== null)
+    })
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    if (!readingId) {
+      setPhotos({})
+      return
+    }
+    void Promise.all(
+      (['face', 'palm_l', 'palm_r'] as const).map(async (part) => {
+        const uri = await resolveReadingPhotoUri(readingId, part, { fallbackLive: true })
+        return [part, uri] as const
+      })
+    ).then((entries) => {
+      if (cancelled) return
+      const next: Partial<Record<'face' | 'palm_l' | 'palm_r', string>> = {}
+      for (const [part, uri] of entries) if (uri) next[part] = uri
+      setPhotos(next)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [readingId])
+
+  useEffect(() => {
+    if (readFlight().source) measuredRef.current = false
+  }, [readingId, partParam])
+
+  useEffect(() => {
+    if (loading || !brief || !flightPending()) return
+    const { source } = readFlight()
+    if (!source) return
+    const part = partParam ?? source.part ?? 'face'
+    if (photos[part]) return
+    measuredRef.current = true
+    clearFlight()
+  }, [loading, brief, photos, partParam])
+
+  useEffect(() => {
+    if (!flightPending() || measuredRef.current || loading || !brief) return
+    const { source } = readFlight()
+    if (!source) return
+    const part = partParam ?? source.part ?? 'face'
+    if (!photos[part]) return
+
+    const retry = retriesRemaining(() => {
+      const node = heroRef.current ?? plateRef.current
+      if (!node) return
+      node.measureInWindow((x, y, w, h) => {
+        if (w > 0 && h > 0) {
+          measuredRef.current = true
+          setFlightTarget({ x, y, w, h })
+        }
+      })
+    })
+    retry.run()
+    return retry.cancel
+  }, [loading, brief, photos, partParam])
 
   useEffect(() => {
     let cancelled = false
@@ -131,6 +220,9 @@ export default function BriefScreen() {
     }
   }, [axes])
 
+  const heroPart = partParam ?? 'face'
+  const heroUri = photos[heroPart] ?? photos.face
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -198,6 +290,16 @@ export default function BriefScreen() {
             onOpenTerms={() => router.push('/terms' as never)}
             onDismiss={dismissGlossHint}
           />
+          {heroUri ? (
+            <BriefPhotoHero
+              part={photos[heroPart] ? heroPart : 'face'}
+              uri={heroUri}
+              seed={(readingId?.length ?? 0) + heroPart.length}
+              heroRef={heroRef}
+              plateRef={plateRef}
+              deferEntrance={flightHoldsEntrance}
+            />
+          ) : null}
           <Text style={{ color: colors.text, fontSize: 24, fontWeight: '600', lineHeight: 32 }}>
             {brief.title}
           </Text>

@@ -6,10 +6,12 @@
  * Corner seal is 日主五行 when known — not a chapter theme glyph.
  */
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, type RefObject } from 'react'
 import { Text, View } from 'react-native'
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
 import Svg, { Defs, Ellipse, G, Line, RadialGradient, Rect, Stop } from 'react-native-svg'
 
+import { LocalPhoto } from '@/components/LocalPhoto'
 import {
   detectWuxing,
   type InkRelation,
@@ -17,6 +19,7 @@ import {
   type WuxingChar,
 } from '@/lib/ancient-glyphs'
 import { pickUi } from '@/lib/locale-zh'
+import type { CapturePart } from '@/lib/reading-draft'
 import type { XingqiChapter, XingqiChapterKind } from '@/lib/report-chapters'
 
 import { AncientSeal } from './AncientSeal'
@@ -324,6 +327,10 @@ export function InkCenterpiece({
   extraProse = '',
   washOnly = false,
   locale,
+  plateRef,
+  photos,
+  photoRefs,
+  deferEntrance = false,
 }: {
   chapter: XingqiChapter | XingqiChapterKind
   seed: number
@@ -333,6 +340,19 @@ export function InkCenterpiece({
   extraProse?: string
   washOnly?: boolean
   locale?: string
+  /** Optional ref to the paper plate — the shared-element flight measures it. */
+  plateRef?: RefObject<View | null>
+  /**
+   * Photos mounted on the plate — the actual forms the reading describes
+   * (face → 面部 chapter, palm_l/palm_r → 双手 chapter). Empty/omitted renders
+   * the abstract ink plate only. The shared-element flight lands on the tapped
+   * part's mount via `photoRefs`.
+   */
+  photos?: Array<{ part: CapturePart; uri: string }>
+  /** Per-part refs to each photo mount (flight target = the tapped part). */
+  photoRefs?: Partial<Record<CapturePart, RefObject<View | null>>>
+  /** Hide destination photo(s) during wheel→report flight; ink plate stays visible. */
+  deferEntrance?: boolean
 }) {
   const kind: XingqiChapterKind = typeof chapter === 'string' ? chapter : chapter.kind
   const relation = relationForChapter(kind)
@@ -347,16 +367,49 @@ export function InkCenterpiece({
   const sealSize = Math.max(22, Math.round(width * 0.09))
   const cap = INK_CAPTION[relation]
   const caption = locale == null ? null : pickUi(locale, cap.zh, cap.zhHant, cap.en, cap.ja)
+  // Photo mounts: one portrait (face) or two side-by-side (palms), sized to sit
+  // within the plate with paper margins so each reads as a mounted print.
+  const hasPhotos = photos != null && photos.length > 0
+  const photoH = Math.round(height * 0.74)
+  const photoW = hasPhotos && photos.length > 1 ? Math.round(photoH * 0.62) : Math.round(photoH * 0.78)
+  const photoPad = Math.max(6, Math.round(width * 0.02))
+
+  // During flight: ink plate is already on screen; only hide mounted photos so the
+  // Modal is the sole copy. After flight: snap photos in place (no second fade/spring).
+  // Chapter paging (no flight): soft spring on the photo layer only.
+  const wasFlightDeferredRef = useRef(false)
+  const photoAppear = useSharedValue(deferEntrance ? 0 : 1)
+  useEffect(() => {
+    if (deferEntrance) {
+      wasFlightDeferredRef.current = true
+      photoAppear.value = 0
+      return
+    }
+    if (wasFlightDeferredRef.current) {
+      wasFlightDeferredRef.current = false
+      photoAppear.value = 1
+      return
+    }
+    photoAppear.value = 0
+    photoAppear.value = withSpring(1, { damping: 16, stiffness: 150, mass: 0.9 })
+  }, [deferEntrance, relation, seed, photoAppear])
+  const photoAppearStyle = useAnimatedStyle(() => ({
+    opacity: photoAppear.value,
+  }))
 
   return (
     <View style={{ width, alignSelf: 'center', gap: 8 }}>
       <View
+        ref={plateRef}
+        collapsable={false}
         style={{
           width,
           height,
           overflow: 'hidden',
           // No border — 宣纸满幅；与深色滚动底自然衔接靠墨缘淡出
           backgroundColor: PAPER,
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
         <InkModePlate
@@ -365,6 +418,41 @@ export function InkCenterpiece({
           width={width}
           height={height}
         />
+
+        {hasPhotos ? (
+          <Animated.View
+            style={[
+              {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'row',
+                gap: photoPad,
+              },
+              photoAppearStyle,
+            ]}
+          >
+            {photos.map((p) => (
+              <View
+                key={p.part}
+                ref={photoRefs?.[p.part]}
+                collapsable={false}
+                style={{
+                  backgroundColor: PAPER_FIBER,
+                  padding: photoPad,
+                }}
+              >
+                <View style={{ width: photoW, height: photoH, overflow: 'hidden' }}>
+                  <LocalPhoto uri={p.uri} style={{ width: '100%', height: '100%' }} />
+                </View>
+              </View>
+            ))}
+          </Animated.View>
+        ) : null}
 
         {!washOnly && element ? (
           <View

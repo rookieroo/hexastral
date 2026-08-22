@@ -25,6 +25,7 @@ export function ChapterPager({
   renderCenterpiece,
   onPickQuote,
   highlightedQuotes,
+  highlightCitationLocus,
   natalFacts,
   onShare,
 }: {
@@ -43,6 +44,7 @@ export function ChapterPager({
   renderCenterpiece?: (chapter: XingqiChapter, index: number) => ReactNode
   onPickQuote?: (quote: string) => void
   highlightedQuotes?: readonly string[]
+  highlightCitationLocus?: 'face' | 'palm_l' | 'palm_r'
   natalFacts?: NatalFacts | null
   onShare?: () => void
 }) {
@@ -81,6 +83,7 @@ export function ChapterPager({
               colors={colors}
               onPickQuote={onPickQuote}
               highlightedQuotes={highlightedQuotes}
+              highlightCitationLocus={idx === currentIndex ? highlightCitationLocus : undefined}
               natalFacts={natalFacts}
               onShare={onShare}
             />

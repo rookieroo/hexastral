@@ -35,6 +35,15 @@ import {
   readingHasReportBody,
 } from '@/lib/report-chapters'
 import {
+  clearFlight,
+  flightPending,
+  readFlight,
+  retriesRemaining,
+  setFlightTarget,
+  subscribeFlight,
+} from '@/lib/shared-element-flight'
+import { resolveReadingPhotoUri } from '@/lib/reading-photos'
+import {
   XINGQI_BRAND_URL,
   XINGQI_INSTALL_URL,
   xingqiShareCaption,
@@ -47,10 +56,19 @@ export default function FaceResultScreen() {
   const locale = resolveLocale()
   const s = (hans: string, hant: string, en: string, ja?: string) =>
     pickUi(locale, hans, hant, en, ja)
-  const params = useLocalSearchParams<{ readingId?: string; payload?: string; chapter?: string }>()
+  const params = useLocalSearchParams<{
+    readingId?: string
+    payload?: string
+    chapter?: string
+    part?: string
+  }>()
   const readingId = typeof params.readingId === 'string' ? params.readingId : undefined
   const paramPayload = typeof params.payload === 'string' ? params.payload : undefined
   const initialChapter = typeof params.chapter === 'string' ? params.chapter : undefined
+  const partParam =
+    params.part === 'face' || params.part === 'palm_l' || params.part === 'palm_r'
+      ? params.part
+      : undefined
 
   const [output, setOutput] = useState<Record<string, unknown>>({})
   const [loading, setLoading] = useState(true)
@@ -58,6 +76,42 @@ export default function FaceResultScreen() {
   const [chapterIndex, setChapterIndex] = useState(0)
   const [pickedQuote, setPickedQuote] = useState<string | null>(null)
   const [highlights, setHighlights] = useState<string[]>([])
+  // The reading's actual photos — shown mounted on the plate per chapter
+  // (face → 面部, palms → 双手). The wheel tap deep-links + flies to the tapped
+  // part's photo, but the photos render regardless of how the report opened.
+  const [photos, setPhotos] = useState<Partial<Record<'face' | 'palm_l' | 'palm_r', string>>>({})
+  /** Hide current chapter plate until wheel→report flight clears (Modal is the only copy). */
+  const [flightHoldsEntrance, setFlightHoldsEntrance] = useState(
+    () => readFlight().source !== null
+  )
+
+  useEffect(() => {
+    return subscribeFlight(() => {
+      setFlightHoldsEntrance(readFlight().source !== null)
+    })
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    if (!readingId) {
+      setPhotos({})
+      return
+    }
+    void Promise.all(
+      (['face', 'palm_l', 'palm_r'] as const).map(async (part) => {
+        const uri = await resolveReadingPhotoUri(readingId, part, { fallbackLive: true })
+        return [part, uri] as const
+      })
+    ).then((entries) => {
+      if (cancelled) return
+      const next: Partial<Record<'face' | 'palm_l' | 'palm_r', string>> = {}
+      for (const [part, uri] of entries) if (uri) next[part] = uri
+      setPhotos(next)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [readingId])
 
   const entitlements = useEntitlements()
   const isPro =
@@ -125,7 +179,61 @@ export default function FaceResultScreen() {
   const { show: showPrimer, dismiss: dismissPrimer } = useReadingPrimer(hasBody && !loading)
   const { shotRef, capturing, share: shareImage } = useImageShare()
 
+  // Shared-element flight: when a home tap queued a photo, measure the current
+  // chapter's photo mount so the Modal can fly the photo onto it. Retries until
+  // the pager/scroll settles (initial chapter jump + entrance float).
+  const plateRef = useRef<View | null>(null)
+  const photoRefs = {
+    face: useRef<View | null>(null),
+    palm_l: useRef<View | null>(null),
+    palm_r: useRef<View | null>(null),
+  }
+  const measuredRef = useRef(false)
+  useEffect(() => {
+    if (readFlight().source) measuredRef.current = false
+  }, [readingId, partParam])
+
+  // No on-disk snapshot for the tapped part — abort flight instead of a meaningless morph.
+  useEffect(() => {
+    if (loading || !hasBody || !flightPending()) return
+    const { source } = readFlight()
+    if (!source) return
+    const part = partParam ?? source.part
+    if (photos[part]) return
+    measuredRef.current = true
+    clearFlight()
+  }, [loading, hasBody, photos, partParam])
+
+  useEffect(() => {
+    if (!flightPending() || measuredRef.current || loading || !hasBody) return
+    const { source } = readFlight()
+    if (!source) return
+    const part = partParam ?? source.part
+    if (!photos[part]) return
+
+    const retry = retriesRemaining(() => {
+      const node = photoRefs[part].current ?? plateRef.current
+      if (!node) return
+      node.measureInWindow((x, y, w, h) => {
+        if (w > 0 && h > 0) {
+          measuredRef.current = true
+          setFlightTarget({ x, y, w, h })
+        }
+      })
+    })
+    retry.run()
+    return retry.cancel
+  }, [chapterIndex, loading, hasBody, photos, partParam])
+
   const curChapter = chapters[chapterIndex]
+  const highlightCitationLocus = useMemo((): 'face' | 'palm_l' | 'palm_r' | undefined => {
+    if (!partParam) return undefined
+    const ch = chapters[chapterIndex]
+    if (!ch) return undefined
+    if (ch.kind === 'face' && partParam === 'face') return 'face'
+    if (ch.kind === 'palms' && (partParam === 'palm_l' || partParam === 'palm_r')) return partParam
+    return undefined
+  }, [partParam, chapterIndex, chapters])
   const rawLead = curChapter?.goldenLine.trim() ?? ''
   const shareLead = (() => {
     if (!rawLead) return ''
@@ -228,17 +336,35 @@ export default function FaceResultScreen() {
         colors={cardColors}
         onPickQuote={setPickedQuote}
         highlightedQuotes={highlights}
+        highlightCitationLocus={highlightCitationLocus}
         natalFacts={natalFacts}
         onShare={handleShare}
-        renderCenterpiece={(ch) => (
-          <InkCenterpiece
-            chapter={ch}
-            seed={inkSeed + ch.kind.length}
-            width={Dimensions.get('window').width - 56}
-            wuxing={wuxingFromDayMaster(natalFacts?.dayMaster)}
-            locale={locale}
-          />
-        )}
+        renderCenterpiece={(ch, index) => {
+          const isCurrent = index === chapterIndex
+          // Map the chapter to the photo(s) that form describes.
+          let chapterPhotos: Array<{ part: 'face' | 'palm_l' | 'palm_r'; uri: string }> = []
+          if (ch.kind === 'face' && photos.face) {
+            chapterPhotos = [{ part: 'face', uri: photos.face }]
+          } else if (ch.kind === 'palms') {
+            chapterPhotos = [
+              ...(photos.palm_l ? [{ part: 'palm_l' as const, uri: photos.palm_l }] : []),
+              ...(photos.palm_r ? [{ part: 'palm_r' as const, uri: photos.palm_r }] : []),
+            ]
+          }
+          return (
+            <InkCenterpiece
+              chapter={ch}
+              seed={inkSeed + ch.kind.length}
+              width={Dimensions.get('window').width - 56}
+              wuxing={wuxingFromDayMaster(natalFacts?.dayMaster)}
+              locale={locale}
+              plateRef={isCurrent ? plateRef : undefined}
+              photos={chapterPhotos}
+              photoRefs={isCurrent ? photoRefs : undefined}
+              deferEntrance={isCurrent && flightHoldsEntrance}
+            />
+          )
+        }}
       />
       {/* Off-screen capture target — mount only while sharing (Yuel pattern). */}
       {capturing && curChapter && shareLead.length > 0 ? (

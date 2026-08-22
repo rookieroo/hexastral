@@ -37,13 +37,12 @@ describe('clampExcerpt', () => {
 })
 
 describe('formatChromeDate', () => {
-  it('formats a compact rail date', () => {
+  it('formats a compact single-line rail date', () => {
     const zh = formatChromeDate('2026-08-12T12:00:00.000Z', 'zh')
-    expect(zh.includes('2026')).toBe(true)
-    expect(zh.includes('08') || zh.includes('8')).toBe(true)
+    // Single line: `YYYY.MM.DD`, no embedded newline.
+    expect(zh).toMatch(/^\d{4}\.\d{2}\.\d{2}$/)
     const en = formatChromeDate('2026-08-12T12:00:00.000Z', 'en')
-    expect(en.includes('2026')).toBe(true)
-    expect(en.includes('.')).toBe(true)
+    expect(en).toMatch(/^\d{4}\.\d{2}\.\d{2}$/)
   })
 
   it('returns empty for invalid dates', () => {

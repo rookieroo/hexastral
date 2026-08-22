@@ -50,6 +50,7 @@ function StackCard({
   inkEnabled,
   showLabels,
   photoCache,
+  ghostHint,
   onPressPart,
   onClearActive,
   clearAccessibilityLabel,
@@ -69,6 +70,7 @@ function StackCard({
   inkEnabled: boolean
   showLabels: boolean
   photoCache: 'memory-disk' | 'none'
+  ghostHint?: string
   onPressPart?: (part: CapturePart, hasPhoto: boolean) => void
   /** Shown under the active card when the slot can be cleared. */
   onClearActive?: () => void
@@ -136,7 +138,7 @@ function StackCard({
         {uri ? (
           <LocalPhoto uri={uri} style={{ width: '100%', height: '100%' }} cache={photoCache} />
         ) : (
-          <PolaroidGhost />
+          <PolaroidGhost hint={part === 'face' ? ghostHint : undefined} />
         )}
       </PolaroidChrome>
       {showLabels ? (
@@ -196,6 +198,7 @@ export function OffsetPhotoStack({
   onPressPart,
   onClearActive,
   clearAccessibilityLabel,
+  ghostHint,
 }: {
   readingId?: string
   uris?: Partial<Record<CapturePart, string>>
@@ -215,6 +218,8 @@ export function OffsetPhotoStack({
   /** Trash under the active card when the slot can be cleared. */
   onClearActive?: () => void
   clearAccessibilityLabel?: string
+  /** Label shown inside an empty well (e.g. 新一期). Only the face slot renders it. */
+  ghostHint?: string
 }) {
   const { isDark, colors } = useTheme()
   const [boxW, setBoxW] = useState(POLAROID_FAN_W)
@@ -301,6 +306,7 @@ export function OffsetPhotoStack({
           inkEnabled={inkEnabled}
           showLabels={compact}
           photoCache={photoCache}
+          ghostHint={ghostHint}
           onPressPart={onPressPart}
           onClearActive={activePart === part ? onClearActive : undefined}
           clearAccessibilityLabel={clearAccessibilityLabel}

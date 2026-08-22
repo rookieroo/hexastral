@@ -11,14 +11,14 @@ import type { SharedValue } from 'react-native-reanimated'
 import { PolaroidInkFrame } from '@/components/PolaroidInkFrame'
 
 export function polaroidLift(isDark: boolean, layer = 0): ViewStyle {
-  const y = 3 + layer * 2
-  const blur = 10 + layer * 3
-  const a = isDark ? 0.38 : 0.08 + layer * 0.012
+  const y = 5 + layer * 2
+  const blur = 14 + layer * 4
+  const a = isDark ? 0.5 : 0.09 + layer * 0.012
   return {
     boxShadow: isDark
       ? `0px ${y}px ${blur}px rgba(0, 0, 0, ${a})`
       : `0px ${y}px ${blur}px rgba(28, 27, 25, ${a})`,
-    elevation: 3 + layer,
+    elevation: 4 + layer,
   }
 }
 
@@ -42,9 +42,7 @@ export function PolaroidChrome({
   inkDrawn?: SharedValue<number>
 }) {
   const { colors, isDark } = useTheme()
-  const wellFill = isDark
-    ? 'rgba(216, 212, 203, 0.10)'
-    : 'rgba(44, 42, 39, 0.06)'
+  const wellFill = isDark ? 'rgba(216, 212, 203, 0.16)' : 'rgba(44, 42, 39, 0.07)'
   const plate = isDark ? (colors.cardElevated ?? colors.card) : (colors.card ?? colors.bg)
   const frame: ViewStyle = {
     flex: 1,

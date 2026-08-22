@@ -18,7 +18,9 @@ import { Appearance, AppState, StyleSheet, useColorScheme, View } from 'react-na
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
+import { SharedElementFlight } from '@/components/SharedElementFlight'
 import { PORTFOLIO_STORAGE_PREFIX, PORTFOLIO_TARGET_APP } from '@/lib/growth-config'
+import { ReducedMotionMount } from '@/lib/reduced-motion'
 import { initializeFaceIap, loginFaceIap } from '@/lib/iap'
 import { useXingqiNotificationDeepLink } from '@/lib/notification-deeplink'
 
@@ -92,8 +94,12 @@ function ThemedRoot({ children }: { children: ReactNode }) {
       <IapMount />
       <NotificationDeepLinkMount />
       <IcloudPhotoSyncMount />
+      <ReducedMotionMount />
       <StatusBar style={isDark ? 'light' : 'dark'} />
       {children}
+      {/* Renders above the native stack as a Modal, so the photo flies over the
+          incoming report screen rather than under it. */}
+      <SharedElementFlight />
     </View>
   )
 }

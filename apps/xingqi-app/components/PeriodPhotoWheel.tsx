@@ -4,19 +4,24 @@
  */
 
 import { useTheme } from '@zhop/core-ui'
-import { useEffect, useState } from 'react'
+import { spring, triggerHaptic } from '@zhop/core-ui'
+import { useEffect, useRef, useState } from 'react'
 import { Text, View } from 'react-native'
 import { Gesture, GestureDetector, Pressable } from 'react-native-gesture-handler'
 import Animated, {
   type SharedValue,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated'
 
 import { LocalPhoto } from '@/components/LocalPhoto'
 import { PolaroidChrome, polaroidLift } from '@/components/PolaroidChrome'
 import { PolaroidGhost } from '@/components/PolaroidGhost'
+import { setFlightSource } from '@/lib/shared-element-flight'
+import { getReducedMotion } from '@/lib/reduced-motion'
 import { periodPhotoMap } from '@/lib/period-photos'
 import type { CapturePart } from '@/lib/reading-draft'
 import { ALL_CAPTURE_PARTS, partsWithPhotoUris } from '@/lib/photo-parts'
@@ -62,20 +67,50 @@ function Polaroid({
   cardW: number
   cardH: number
   isDark: boolean
-  onPress: () => void
+  onPress: (part: CapturePart, rect?: { x: number; y: number; w: number; h: number }) => void
 }) {
+  const pressed = useSharedValue(0)
+  const cardRef = useRef<View | null>(null)
   const posStyle = useAnimatedStyle(() => {
     const pose = polaroidPoses(wheelSpread(index - scroll.value), boxW, cardW)[part]
     return {
       left: pose.left,
       top: pose.top,
       zIndex: pose.z,
-      transform: [{ rotate: `${pose.rotateDeg}deg` }, { scale: pose.scale }],
+      transform: [
+        { translateY: pressed.value * -6 },
+        { rotate: `${pose.rotateDeg}deg` },
+        { scale: pose.scale * (1 - pressed.value * 0.05) },
+      ],
     }
   })
 
+  const pressIn = () => {
+    pressed.value = withTiming(1, { duration: 120 })
+  }
+  const pressOut = () => {
+    pressed.value = withTiming(0, { duration: 200 })
+  }
+
+  const handlePress = () => {
+    // Measure on the JS thread — `measureInWindow` is more reliable than a UI
+    // thread `measure` on first tap, and matches the report plate's coordinate
+    // space (window coords). If it fails, open without a flight.
+    const node = cardRef.current
+    if (!node) {
+      onPress(part)
+      return
+    }
+    node.measureInWindow((x, y, w, h) => {
+      if (w > 0 && h > 0) onPress(part, { x, y, w, h })
+      else onPress(part)
+    })
+  }
+
   return (
     <Animated.View
+      ref={cardRef}
+      collapsable={false}
       style={[
         {
           position: 'absolute',
@@ -86,7 +121,7 @@ function Polaroid({
         posStyle,
       ]}
     >
-      <PolaroidChrome onPress={onPress}>
+      <PolaroidChrome onPress={handlePress} onPressIn={pressIn} onPressOut={pressOut}>
         {uri ? (
           <LocalPhoto
             uri={uri}
@@ -112,6 +147,7 @@ function WheelRow({
   isDark,
   onPressReading,
   onPressDraft,
+  snapTo,
 }: {
   item: WheelItem
   index: number
@@ -121,8 +157,10 @@ function WheelRow({
   revision: number
   colors: { card: string; separator: string; dim: string; text: string; secondary: string }
   isDark: boolean
-  onPressReading?: (readingId: string) => void
-  onPressDraft: () => void
+  onPressReading?: (readingId: string, part: CapturePart) => void
+  onPressDraft: (part: CapturePart) => void
+  /** Snap the wheel so this row is focused. Used when a *non-focused* row is tapped. */
+  snapTo: (index: number) => void
 }) {
   const [uris, setUris] = useState<Partial<Record<CapturePart, string>>>({})
   const cardW = POLAROID_CARD_W
@@ -172,9 +210,24 @@ function WheelRow({
     opacity: wheelSpread(index - scroll.value),
   }))
 
-  const open = () => {
-    if (draft) onPressDraft()
-    else onPressReading?.(item.id)
+  const open = (part: CapturePart = 'face', rect?: { x: number; y: number; w: number; h: number }) => {
+    if (draft) {
+      // Thread the tapped slot so capture opens with that part focused.
+      onPressDraft(part)
+      return
+    }
+    // Only open when this row is already focused; else snap the wheel here so a
+    // tap on an off-focus photo scrolls it into place rather than jumping.
+    if (Math.abs(index - scroll.value) > 0.18) {
+      snapTo(index)
+      return
+    }
+    // Focused — queue the shared-element flight from the tapped polaroid.
+    const uri = uris[part]
+    if (uri && rect && !getReducedMotion()) {
+      setFlightSource({ uri, rect, readingId: item.id, part })
+    }
+    onPressReading?.(item.id, part)
   }
 
   return (
@@ -196,15 +249,15 @@ function WheelRow({
       ]}
     >
       <Animated.View style={[{ width: DATE_RAIL_W, paddingRight: 8 }, railStyle]}>
-        <Pressable onPress={open} accessibilityRole='button' accessibilityLabel={item.title}>
+        <Pressable onPress={() => open()} accessibilityRole='button' accessibilityLabel={item.title}>
           <Text
-            numberOfLines={3}
+            numberOfLines={2}
             style={{
-              color: colors.text,
-              fontSize: 12,
-              lineHeight: 16,
+              color: colors.dim,
+              fontSize: 11,
+              lineHeight: 14,
               fontFamily: 'IBMPlexMono',
-              letterSpacing: 0.2,
+              letterSpacing: 0.4,
             }}
           >
             {item.title}
@@ -236,15 +289,19 @@ function WheelRow({
           ))}
         </View>
         {item.excerpt ? (
-          <Animated.View style={[{ maxWidth: fanW, marginTop: 6, paddingHorizontal: 4 }, excerptStyle]}>
-            <Pressable onPress={open}>
+          <Animated.View
+            style={[{ maxWidth: fanW, marginTop: 10, paddingHorizontal: 6 }, excerptStyle]}
+          >
+            <Pressable onPress={() => open()}>
               <Text
                 numberOfLines={2}
                 style={{
                   color: colors.secondary,
-                  fontSize: 12,
-                  lineHeight: 16,
+                  fontFamily: 'CrimsonPro',
+                  fontSize: 15,
+                  lineHeight: 21,
                   textAlign: 'center',
+                  letterSpacing: 0.4,
                 }}
               >
                 {item.excerpt}
@@ -267,8 +324,8 @@ export function PeriodPhotoWheel({
   items: WheelItem[]
   revision: number
   scrollIndex?: number
-  onPressReading?: (readingId: string) => void
-  onPressDraft: () => void
+  onPressReading?: (readingId: string, part: CapturePart) => void
+  onPressDraft: (part: CapturePart) => void
 }) {
   const { colors, isDark } = useTheme()
   const [boxW, setBoxW] = useState(320)
@@ -276,6 +333,24 @@ export function PeriodPhotoWheel({
   const scroll = useSharedValue(scrollIndex)
   const start = useSharedValue(0)
   const max = Math.max(0, items.length - 1)
+  // Track the last snapped-to row so a settle onto a *different* row triggers a
+  // light selection haptic (wheel-picker grammar). Same-row wraps (e.g. tap)
+  // stay silent to avoid double-buzz with the press-in feedback.
+  const settledRowRef = useRef(scrollIndex)
+
+  const snapHaptic = (target: number) => {
+    if (settledRowRef.current !== target) {
+      settledRowRef.current = target
+      triggerHaptic('selection')
+    }
+  }
+
+  /** Snap the wheel so a tapped (off-focus) row becomes focused. */
+  const snapTo = (index: number) => {
+    const target = Math.max(0, Math.min(max, index))
+    scroll.value = withSpring(target, spring.snap)
+    runOnJS(snapHaptic)(target)
+  }
 
   useEffect(() => {
     scroll.value = Math.max(0, Math.min(max, scrollIndex))
@@ -294,7 +369,8 @@ export function PeriodPhotoWheel({
     .onEnd((e) => {
       const projected = scroll.value - e.velocityY / WHEEL_ROW_GAP / 900
       const target = Math.round(Math.max(0, Math.min(max, projected)))
-      scroll.value = withSpring(target, { damping: 18, stiffness: 170 })
+      scroll.value = withSpring(target, spring.snap)
+      runOnJS(snapHaptic)(target)
     })
 
   return (
@@ -327,6 +403,7 @@ export function PeriodPhotoWheel({
             isDark={isDark}
             onPressReading={onPressReading}
             onPressDraft={onPressDraft}
+            snapTo={snapTo}
           />
         ))}
       </View>

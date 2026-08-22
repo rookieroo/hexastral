@@ -42,6 +42,7 @@ import {
   hydrateReadingDraft,
   patchReadingDraft,
   prepareNewPeriodCapture,
+  type CapturePart,
 } from '@/lib/reading-draft'
 import {
   bindReadingJobLifecycle,
@@ -84,6 +85,8 @@ export default function XingqiHomeScreen() {
   const enteringRef = useRef(false)
   const capturingRef = useRef(false)
   const stackAnchorRef = useRef<View>(null)
+  /** Tapped draft slot — held until CaptureStudioScreen mounts (async fan). */
+  const initialPartRef = useRef<CapturePart | undefined>(undefined)
   const skipStackResetRef = useRef(consumeIntroHomeHandoff())
   const skipInitialReloadRef = useRef(skipStackResetRef.current)
   const [entering, setEntering] = useState(false)
@@ -148,7 +151,10 @@ export default function XingqiHomeScreen() {
   }, [])
 
   const enterHomeCapture = useCallback(
-    (opts?: { fan?: boolean; preparePeriod?: boolean }) => {
+    (opts?: { fan?: boolean; preparePeriod?: boolean; part?: CapturePart }) => {
+      // CaptureStudioScreen mounts async (after the fan) — hold the tapped part
+      // so its `initialPart` is correct the moment it appears.
+      if (opts?.part) initialPartRef.current = opts.part
       const runFan = opts?.fan !== false
       if (!runFan) {
         setStackSpread(1)
@@ -351,44 +357,47 @@ export default function XingqiHomeScreen() {
     }
   }, [router])
 
-  const beginOnboarding = useCallback(async () => {
-    if (enteringRef.current || capturingRef.current) return
-    enteringRef.current = true
-    setEntering(true)
-    if (job.status === 'running') {
-      enteringRef.current = false
-      setEntering(false)
-      Alert.alert(
-        s('解读进行中', '解讀進行中', 'Reading in progress', '解読中'),
-        s(
-          '请等待当前解读完成，或点推送打开结果。',
-          '請等待目前解讀完成，或點推送打開結果。',
-          'Wait for the current reading, or open it from the push.',
-          '現在の解読が終わるまでお待ちください。プッシュ通知から開くこともできます。'
+  const beginOnboarding = useCallback(
+    async (part?: CapturePart) => {
+      if (enteringRef.current || capturingRef.current) return
+      enteringRef.current = true
+      setEntering(true)
+      if (job.status === 'running') {
+        enteringRef.current = false
+        setEntering(false)
+        Alert.alert(
+          s('解读进行中', '解讀進行中', 'Reading in progress', '解読中'),
+          s(
+            '请等待当前解读完成，或点推送打开结果。',
+            '請等待目前解讀完成，或點推送打開結果。',
+            'Wait for the current reading, or open it from the push.',
+            '現在の解読が終わるまでお待ちください。プッシュ通知から開くこともできます。'
+          )
         )
-      )
-      return
-    }
-    if (!(await requireConsent())) {
-      enteringRef.current = false
-      setEntering(false)
-      return
-    }
-    const draft = await hydrateReadingDraft()
-    if (!draftHasBirthInfo(draft)) {
-      enteringRef.current = false
-      setEntering(false)
-      setHomeCaptureHandoff()
-      router.push('/birth' as never)
-      return
-    }
-    if (items.length > 0) {
-      enterHomeCapture({ fan: true, preparePeriod: true })
-      return
-    }
-    patchReadingDraft({ outputKind: 'oneshot', updateKind: 'full', partialParts: undefined })
-    enterHomeCapture({ fan: true })
-  }, [enterHomeCapture, items.length, job.status, locale, requireConsent, router, s])
+        return
+      }
+      if (!(await requireConsent())) {
+        enteringRef.current = false
+        setEntering(false)
+        return
+      }
+      const draft = await hydrateReadingDraft()
+      if (!draftHasBirthInfo(draft)) {
+        enteringRef.current = false
+        setEntering(false)
+        setHomeCaptureHandoff()
+        router.push('/birth' as never)
+        return
+      }
+      if (items.length > 0) {
+        enterHomeCapture({ fan: true, preparePeriod: true, part })
+        return
+      }
+      patchReadingDraft({ outputKind: 'oneshot', updateKind: 'full', partialParts: undefined })
+      enterHomeCapture({ fan: true, part })
+    },
+    [enterHomeCapture, items.length, job.status, locale, requireConsent, router, s]
+  )
 
   const finishHistoryExit = useCallback(
     (wipePeriod: boolean) => {
@@ -523,16 +532,16 @@ export default function XingqiHomeScreen() {
             items={wheelItems}
             revision={photoTick}
             scrollIndex={cloudRunning || draftIncomplete ? 0 : 1}
-            onPressDraft={() => {
+            onPressDraft={(part) => {
               if (jobRunning) {
                 setShowJobProgress(true)
                 return
               }
-              void beginOnboarding()
+              void beginOnboarding(part)
             }}
-            onPressReading={(readingId) => {
+            onPressReading={(readingId, part) => {
               const item = items.find((r) => r.id === readingId)
-              openReadingScreen({ readingId, resultJson: item?.resultJson })
+              openReadingScreen({ readingId, resultJson: item?.resultJson, part })
             }}
           />
         </Animated.View>
@@ -621,6 +630,7 @@ export default function XingqiHomeScreen() {
                 ritual={stackRitual}
                 compact
                 labels={labels}
+                ghostHint={s('新一期', '新一期', 'New', '新しい')}
               />
             </View>
             {!hasReading && !fanPrelude ? (
@@ -651,15 +661,20 @@ export default function XingqiHomeScreen() {
           <CaptureStudioScreen
             embedded
             exiting={exitingCapture}
+            part={initialPartRef.current}
             entitlementRevision={entitlementRevision}
             onPhotosChanged={() => setPhotoTick((n) => n + 1)}
             onExit={() => {
               // Keep in-progress shots for timeline retry; only wipe empty / leftover seal files.
+              initialPartRef.current = undefined
               void draftHasInProgressPhotos().then((keep) => {
                 exitHomeCapture({ wipePeriod: !keep })
               })
             }}
-            onHandoff={() => exitHomeCapture({ wipePeriod: false })}
+            onHandoff={() => {
+              initialPartRef.current = undefined
+              exitHomeCapture({ wipePeriod: false })
+            }}
           />
         </Animated.View>
       ) : null}
