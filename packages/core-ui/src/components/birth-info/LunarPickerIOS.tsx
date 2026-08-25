@@ -6,16 +6,15 @@
  * spinner on iOS while Android keeps the custom wheels.
  *
  * DEFENSIVE LOADING: `@react-native-picker/picker` ships a native view that only
- * exists after a prebuild / EAS rebuild. It's an OPTIONAL dependency (Metro's
- * try/catch optional-require handling keeps the bundle green before it's installed),
- * so until a native build includes it this component transparently falls back to the
- * shared `LunarDateWheels`. Same pattern as @zhop/satellite-runtime / the kindred
- * timeline-push native guard. Android never reaches here (BirthDateField branches on
- * Platform.OS) — `@react-native-picker/picker` renders as a dropdown dialog there,
- * not an inline wheel.
+ * exists after a prebuild / EAS rebuild that lists the package as a direct app
+ * dependency. JS may still resolve (hoisted peer / monorepo) while the binary has
+ * no RNCPicker — that renders the red "Unimplemented component: <RNCPicker>" box.
+ * We require BOTH the JS module AND a live native view manager, otherwise fall
+ * back to `LunarDateWheels`. Android never reaches here (BirthDateField branches
+ * on Platform.OS).
  */
 
-import { View } from 'react-native'
+import { UIManager, View } from 'react-native'
 import { useTheme } from '../../theme'
 import { WHEEL_HEIGHT } from '../Wheel'
 import { type LunarDateValue, LunarDateWheels, useLunarColumns } from './LunarDateWheels'
@@ -40,6 +39,22 @@ function getPickerModule(): PickerModule | null {
   return pickerMod
 }
 
+/** True only when the binary actually linked RNCPicker (not merely JS present). */
+function hasNativeRncPicker(): boolean {
+  try {
+    const ui = UIManager as {
+      getViewManagerConfig?: (name: string) => unknown
+      hasViewManagerConfig?: (name: string) => boolean
+    }
+    if (typeof ui.hasViewManagerConfig === 'function') {
+      return ui.hasViewManagerConfig('RNCPicker')
+    }
+    return ui.getViewManagerConfig?.('RNCPicker') != null
+  } catch {
+    return false
+  }
+}
+
 export function LunarPickerIOS(props: {
   year: number
   month: number
@@ -58,8 +73,8 @@ export function LunarPickerIOS(props: {
     onChange
   )
 
-  // Native module absent (pre-rebuild / Expo Go) → custom wheel, same data.
-  if (!mod?.Picker) return <LunarDateWheels {...props} />
+  // JS present but native absent → Unimplemented <RNCPicker>; use custom wheels.
+  if (!mod?.Picker || !hasNativeRncPicker()) return <LunarDateWheels {...props} />
   const Picker = mod.Picker
 
   const itemStyle = { color: colors.text, fontSize: 20 }

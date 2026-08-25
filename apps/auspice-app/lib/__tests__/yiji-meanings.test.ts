@@ -23,6 +23,16 @@ describe('yijiMeaning — 维基百科择日宜忌释义', () => {
     expect(hasYijiMeaning('不存在的词')).toBe(false)
   })
 
+  test('建除拆词：塞穴 / 补垣 / 求医 / 疗病 / 破屋', () => {
+    expect(yijiMeaning('塞穴', 'zh-Hans')).toContain('洞穴')
+    expect(yijiMeaning('补垣', 'zh-Hans')).toContain('围墙')
+    expect(yijiMeaning('求医', 'zh-Hans')).toContain('求医')
+    expect(yijiMeaning('疗病', 'zh-Hans')).toContain('求医')
+    expect(yijiMeaning('破屋', 'zh-Hans')).toContain('拆除')
+    expect(hasYijiMeaning('塞穴')).toBe(true)
+    expect(yijiMeaning('塞穴', 'en')).toContain('sāixué')
+  })
+
   test('分组齐全（59 wiki + 29 补充 = 88）', () => {
     const all = [
       ...YIJI_MEANING_GROUPS.flatMap((g) => g.terms),

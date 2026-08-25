@@ -39,6 +39,7 @@
     "NEXT_PUBLIC_APP_URL": "https://hexastral.com",
     "NEXT_PUBLIC_API_URL": "https://api.hexastral.com",
     "NEXT_PUBLIC_APP_STORE_URL": "https://apps.apple.com/app/hexastral/id0000000000",
+    "NEXT_PUBLIC_APP_STORE_URL_AUSPICE": "https://apps.apple.com/app/id6796927374",
     // Cloudflare Turnstile — public site key for rendering the widget in web forms
     // Get from: Cloudflare Dashboard → Turnstile → your site → Site Key (safe to expose)
     "NEXT_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAACzwgZxj-UShx-9l"
