@@ -119,7 +119,8 @@
         ],
         "NSPrivacyTracking": false
       },
-      "appleTeamId": "L9Z47DW56X"
+      "appleTeamId": "L9Z47DW56X",
+      "buildNumber": "14"
     },
     "android": {
       "package": "com.hexastral.yuun",
