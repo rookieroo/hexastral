@@ -22,6 +22,13 @@ Pruned to **launch scope**: four shipping apps (**Yuun**, **Yuel**, **Feng**, **
 
 Design assets: [design/](./design/) · Market research: [research/](./research/)
 
+Out of launch scope, kept for reference — 独立的原生端侧买断产品线（非 HexAstral，不共享代码、不共享仓库）：
+
+| Doc | Purpose |
+|---|---|
+| [research/ondevice-apple-buyout-line.md](./research/ondevice-apple-buyout-line.md) | 策略与判断依据：筛选器、硬件门 API、成本依据套利、AUR、中国区 Gate、资源冲突 |
+| [research/ondevice-app-todo.md](./research/ondevice-app-todo.md) | 立项清单：**v1 = D′ RedactBeforeSend**；仓在平级 `ondevice-apps/`；S/F stub |
+
 ---
 
 ## Setup (infra wiring)
