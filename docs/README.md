@@ -27,7 +27,7 @@ Out of launch scope, kept for reference — 独立的原生端侧买断产品线
 | Doc | Purpose |
 |---|---|
 | [research/ondevice-apple-buyout-line.md](./research/ondevice-apple-buyout-line.md) | 策略与判断依据：筛选器、硬件门 API、成本依据套利、AUR、中国区 Gate、资源冲突 |
-| [research/ondevice-app-todo.md](./research/ondevice-app-todo.md) | 立项清单：**v1 = D′ RedactBeforeSend**；仓在平级 `ondevice-apps/`；S/F stub |
+| [research/ondevice-app-todo.md](./research/ondevice-app-todo.md) | 立项清单 + **平台矩阵**：D′/T 主 iOS·iPadOS；S 仅 macOS；F 主 iOS·iPadOS；R→HexAstral 风水 |
 
 ---
 

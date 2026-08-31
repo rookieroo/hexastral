@@ -13,22 +13,36 @@
 
 | 问题 | 结论 |
 |---|---|
-| 做哪几个 | **v1 = D′ RedactBeforeSend**（iOS 视频关键帧打码+图片）；其后 **S** / **F**；R 候补；P 搁置 |
-| 先做哪个 | **D′（已锁定）** — 仓库：`../ondevice-apps`（与 hexastral 平级） |
-| 同时在架上限 | **1 个** |
-| 仓库 | **独立 Swift monorepo `ondevice-apps/`**，不进 hexastral |
-| 技术栈 | Swift 6 + SwiftUI · SPM · StoreKit 2 · **无后端** |
-| Expo | **不用** |
-| 变现 | 一次性买断 + 家庭共享；免费短导出+水印 |
-| 共享包 | v1 仅 **BuyoutKit**；第二款再抽 Permission/AppShell/Design |
+| 做哪几个 | **v1 = D′**；其后 **S（Mac 独立）** / **F**；**T** 候补可排；**R → 并入 HexAstral 风水**；P 搁置 |
+| 先做哪个 | **D′（已锁定）** — 仓：`../ondevice-apps` |
+| 同时在架上限 | **1 个**（S 为 macOS 独立 listing，与 iOS 矩阵分开算审核位时仍要克制） |
+| 仓库 | **独立 Swift monorepo `ondevice-apps/`**（R 除外，见下） |
+| 技术栈 | Swift 6 + SwiftUI · SPM · StoreKit 2 · **默认无后端** |
+| Expo | **不用**（端侧买断线）；R 若进 HexAstral 可跟卫星矩阵 |
+| 变现 | 买断 + 家庭共享（F/D′/T 尤其吃）；免费短导出+水印 |
+| 共享包 | **BuyoutKit** + **DesignKit**（地基阶段已抽；Cite Ask 对齐） |
+
+### 平台矩阵（2026-08-30 拍板）
+
+| 产品 | iOS | iPadOS | macOS | 分发要点 |
+|---|---|---|---|---|
+| **T 端侧转写** | ◎ 主 | ◎ 主 | ✓ 可上 | **三端都能上，主战场 iOS / iPadOS**（采集+日常）；Mac 吃长音频批量 |
+| **S 屏幕录屏隐私** | ✗ 实时挡 | ✗ 实时挡 | ◎ **唯一** | **macOS 独立分发**（ScreenCaptureKit 实时遮挡）；不做「同一 bundle 硬凑 iOS 实时」 |
+| **D′ 视频/图片打码** | ◎ 主 · **v1** | ◎ 主 | ✓ 可上 | **三端都能上，主战场 iOS / iPadOS**；Mac 为补齐 |
+| **F 家庭文件柜** | ◎ 主分发 | ◎ 主分发 | ○ 收集入口 | **三端可收集**（拍保修卡/导入），**主分发 iOS / iPadOS**；家庭共享；生日/账单/保修等到期提醒 |
+| **R LiDAR 量房** | ◎ Pro+LiDAR | ◎ | ✗ | **主场景 = 风水**；**并入 HexAstral**（feng 等），不单开 ondevice 买断壳 |
 
 ---
 
 ## 二、立项清单
 
-### 2.1 T — 端侧转写（推荐首发）
+### 2.1 T — 端侧转写
 
 **一句话：** 会议、讲座、访谈录音在本机转成带说话人的稿子，音频永不上传，一次买断全家可用。
+
+**平台：** **iOS / iPadOS / macOS 三端都能上，主战场 iOS + iPadOS**（现场采音、日常打开）；macOS 承接长音频批量与导出。通用购买覆盖三端。
+
+**状态：** 候补（须与系统备忘录/转写差够大才开工）；成本套利故事仍在（SpeechAnalyzer vs Otter）。
 
 **为什么值得做**
 
@@ -156,18 +170,18 @@ flowchart TB
 
 ---
 
-### 2.2 S — 屏幕隐私（macOS 实时遮挡 + iOS 截图预检）
+### 2.2 S — 屏幕录屏隐私（**仅 macOS 独立分发**）
 
-**一句话：** macOS 上共享/录屏时一键进入安全模式，自动遮挡通知、书签栏、终端密钥、客户名；iOS 上只做发前截图预检（**不是**手机录屏实时挡 —— 系统做不到）。
+**一句话：** macOS 上共享/录屏时一键进入安全模式，自动遮挡通知、书签栏、终端密钥、客户名。
+
+**分发（已拍板）：** **macOS 独立 App / MAS listing** —— 实时遮挡只在 Mac 成立；**不要**做成「三端通用购买里塞一个残废 iOS 实时挡」。发前截图/视频净版交给 **D′**（主 iOS/iPadOS），与 S 拆开。
 
 **平台为何必须这样切：**
 
 | | macOS | iOS / iPadOS |
 |---|---|---|
-| 录屏进行中挡泄密 | ScreenCaptureKit + 覆盖窗口 → **能** | 无系统级浮层、插不进控制中心录屏管线 → **不能** |
-| 发前静态预检 | 次要 | 分享 sheet 进 App → checklist + 打码 → **能** |
-
-这正是产品名里的分工：**屏幕隐私 = macOS 实时遮挡 + iOS 截图预检**。
+| 录屏进行中挡泄密 | ScreenCaptureKit + 覆盖窗口 → **能** → **本产品全部价值** | 无系统级浮层 → **不做进 S** |
+| 发前静态/视频预检 | 可用 D′ Mac 补齐 | **D′ 主战场** |
 
 **为什么值得做**：创始人**个人已验证需求**，且已存在很烂的 workaround（专用浏览器 profile、新建访客账户、共享前手动关通知、只敢共享单窗口）—— buyout-line §2.1。护城河是逐 App 区域规则库 + Evaluations 回归集，抄袭成本高。演示媒介就是产品本身。
 
@@ -288,11 +302,13 @@ flowchart LR
 
 ---
 
-### 2.4 D′ — 发前隐私（**可立项切片：视频打码导出 + 图片打码**）
+### 2.4 D′ — 视频/图片打码（**三端可上 · 主 iOS / iPadOS · v1**）
 
-**一句话：** 不卖「更聪明的静态打码」（DAMA 主场），卖 **「发出去之前的净版视频/图」**——DAMA 不做视频，这是硬差。
+**一句话：** 不卖「更聪明的静态打码」（DAMA 主场），卖 **「发出去之前的净版视频/图」**——关键帧标注 → 动态跟随 → 导出。
 
-**立项条件（2026-08-30 拍板）：** 端侧 **视频抽帧打码导出** 成立，再 **补足图片打码** → **可以立项**。不靠云 VLM。
+**平台（已拍板）：** **iOS / iPadOS / macOS 都能上，主战场 iOS + iPadOS**；Mac 为通用购买补齐（同样引擎，非实时录屏挡）。
+
+**立项条件：** 端侧视频抽帧打码导出 + 图片打码 → **已立项**（`ondevice-apps/Apps/RedactBeforeSend`）。
 
 **禁止做成：** 仅静态图 + 正则的 DAMA 壳。
 
@@ -452,46 +468,46 @@ flowchart LR
 
 ---
 
-### 2.5 F — 家庭文件柜（成立 · **排在 S / 录屏隐私之后**）
+### 2.5 F — 家庭文件柜
 
-**一句话：** 「空调保修到几号」+ 到期提醒 + 家庭共享 —— 文档进柜、字段抽齐、全家同看。
+**一句话：** 家庭共享的提醒柜 —— **生日、账单、保修/证件到期** 等；文档进柜、字段抽齐、全家同看。
 
-**排序（已拍板）：** **S（含 Mac 录屏遮挡）先发 → F 作第二款**（渠道验证后再开）。不与 S 抢首发。
+**平台（已拍板）：**
 
-**为什么成立**
-
-| 判据 | 结论 |
+| | 角色 |
 |---|---|
-| 痛点 | 保修卡 / 保单 / 护照 / 合同散落；到期才想起来；家人互问「存哪了」 |
-| 魔法 | 拍照/导入 → OCR + 端侧抽取「品类 · 到期日 · 保修电话」→ 本地库 + 系统提醒 |
-| 家庭共享 | 一人买断，配偶/父母同柜（CloudKit 共享区） |
-| 不做的事 | 不当 Raycast/Spotlight 替代品 |
+| **iOS / iPadOS** | **主分发面**（日常打开、提醒、家庭共享体验） |
+| **macOS** | **收集/导入入口**（桌面拖文件、批量进柜），不是主日常面 |
+| 整体 | 三端都可收集材料；**商店叙事与 ARPU 盯 iPhone/iPad** |
 
-**核心字段（v1）：** 标题、品类、到期日、提醒日、附件缩略图、备注、所属成员。
+**家庭共享：** 一人买断，配偶/父母同柜（CloudKit 共享区）—— **第一天主叙事**。
+
+**核心场景：** 生日提醒 · 账单/订阅续费提醒 · 保修/护照/合同到期 · 「空调保修到几号」。
+
+**排序：** D′ / S 渠道验证后再开；不与 v1 双开。
+
+**核心字段（v1）：** 标题、品类（生日/账单/保修/证件/其它）、到期日、提醒日、附件缩略图、备注、所属成员。
 
 **免费 / 付费：** 免费少数件+提醒；付费无限件、家庭共享、批量导入、导出备份。
 
-**风险：** 到期日抽取评测；AUR 勿承诺法律效力。
+**风险：** 到期日抽取评测；AUR 勿承诺法律效力；不做第二个 Spotlight。
 
 ---
 
-### 2.6 R — LiDAR 量房（以业务出发，禁止「会扫就行」）
+### 2.6 R — LiDAR 量房（**风水主场景 · 并入 HexAstral**）
 
-**硬件门：** `RoomCaptureSession.isSupported` → 仅 **LiDAR** 机型（iPhone 12 Pro+ Pro 线 / 部分 iPad Pro）。非 Pro 不装；商店文案必须写清。
+**硬件门：** `RoomCaptureSession.isSupported` → 仅 **LiDAR** 机型。非 Pro 不装。
 
-**禁止做成：** 「扫一下出平面图」的 RoomPlan demo 壳（苹果 Sample、Magicplan 等已占位）。
+**定位（已拍板）：** 主要为 **风水场景**（平面 + 朝向/方位 + 规则引擎），**结合进 HexAstral**（如 feng-app / 共享几何层），**不**作为 ondevice-apps 独立买断壳去跟 Magicplan 抢「会扫」。
 
-**必须从真实任务反推：**
+| 业务角 | 优先级 | 交付 |
+|---|---|---|
+| **风水布局** | **主** | 量房 → 方位叠加 → 规则建议（娱乐/文化表述，勿医疗承诺） |
+| 自装修 / 出图 | 次 / 可降级 | 若做也挂在同一几何能力上，不必单开 ASO |
 
-| 业务角 | 用户要完成什么 | App 交付物 | 与 HexAstral 关系 |
-|---|---|---|---|
-| **自装修** | 量现房、算面积、给工人/设计师看 | 带尺寸平面图、墙长、门窗位置、导出 PDF/USDZ | 独立工具 |
-| **风水布局** | 量完房间再摆家具/看气口方位 | 平面 + 朝向/方位叠加 + **规则引擎**建议（非开放域 LLM 玄学闲聊） | 可与 feng 产品线**概念相邻**，代码仍独立仓库；文案走娱乐/文化勿碰医疗承诺 |
-| **画图 / 出图** | 给电商定制柜、窗帘、地暖报价 | 可标注尺寸的矢量/CAD 友好导出（DXF/SVG/PDF） | 垂直 B 端轻工具 |
+**禁止：** 纯 RoomPlan Demo 壳；与 HexAstral 品牌串味时用卫星命名规范处理。
 
-**买断故事：** 免费扫一间看图带水印；付费多房间、无水印导出、模板（厨房柜体清单等）。**家庭共享**对装修家庭成立（夫妻同看方案）。
-
-**不做：** 云端装修报价市场、设计师撮合、需要持续服务器的协作白板（那是另一类生意）。
+**仓归属：** 能力进 HexAstral 卫星或 `@zhop/*` 几何包；**不**占 ondevice-apps 在架位。
 
 ---
 
@@ -516,10 +532,10 @@ flowchart LR
 
 | 方向 | 状态 | 复用什么 |
 |---|---|---|
-| T 端侧转写 | 仅当与备忘录/系统能力差够大（长稿、说话人、脱敏导出） | SpeechAnalyzer |
-| ④ 面单 / 票据脱敏 | 可并入 D′ 垂直场景 | OCR + 打码 |
-| ⑦ 旅行证件包 | 可并入 F 品类模板 | OCR + 提醒 |
-| ② 诈骗软预警 | 候补，非 v1 | 规则 + OCR/ASR |
+| T 端侧转写 | 候补；三端可上 · 主 iOS/iPadOS | SpeechAnalyzer |
+| ④ 面单 / 票据 | 可并入 D′ / F | OCR |
+| ⑦ 旅行证件 | 并入 F 品类 | OCR + 提醒 |
+| ② 诈骗软预警 | 候补 | 规则 + OCR/ASR |
 
 ### 2.9 明确不做
 
@@ -536,23 +552,30 @@ flowchart LR
 
 ## 三、排序（已锁定）
 
-| 顺序 | 产品 | 说明 |
+| 顺序 | 产品 | 平台摘要 |
 |---|---|---|
-| **1 · v1** | **D′ RedactBeforeSend** | 代码在 `ondevice-apps/`；关键帧打码+跟踪式跨度；买断+水印 |
-| **其后** | **S Mac 录屏遮挡** | stub；渠道验证后再开 |
-| **其后** | **F 家庭文件柜** | stub |
-| 候补 | R 量房 | |
+| **1 · v1** | **D′ RedactBeforeSend** | 三端可上 · **主 iOS/iPadOS** · 已有代码 |
+| **其后** | **S ScreenPrivacy** | **仅 macOS 独立分发** · stub |
+| **其后** | **F FamilyVault** | 三端收集 · **主分发 iOS/iPadOS** · 生日/账单/保修提醒 · stub |
+| 候补 | **T 转写** | 三端可上 · **主 iOS/iPadOS** |
+| **并入 HexAstral** | **R 量房** | LiDAR · **风水主场景** |
 | **搁置** | **P 播客** | 可克隆门 |
 
-**D′ 下一步：** 真机填 [ondevice-apps/Docs/probes/2026-08-30-phase0.md](../../../ondevice-apps/Docs/probes/2026-08-30-phase0.md) 热/后台项。
+**D′ 下一步：** 真机 Phase0 热/后台；再补 iPad 布局与可选 Mac target。
 
 ---
 
 ## 四、仓库结构：独立 Swift monorepo
 
-**结论：新建独立 git 仓库 `ondevice-apps/`，不进 hexastral。**
+**结论：买断线 App（D′ / S / F / T）进 `ondevice-apps/`；R 不进本仓。**
 
-**为什么不进 hexastral**
+| 产品 | 仓 |
+|---|---|
+| D′ · S · F · T | **`ondevice-apps/`**（Swift / SPM / StoreKit 2） |
+| R LiDAR 风水量房 | **HexAstral**（feng 等卫星 / 共享几何） |
+| P 播客 | 不立项 |
+
+**为什么不进 hexastral（D′/S/F/T）**
 
 | 冲突点 | hexastral | 端侧线 |
 |---|---|---|
@@ -569,24 +592,24 @@ flowchart LR
 ```text
 ondevice-apps/                    # 独立 git 仓库（≠ hexastral）
   Apps/
-    RedactBeforeSend/             # D′ — iOS：视频关键帧打码+跟踪 · 图片打码
+    RedactBeforeSend/             # D′ — 主 iOS/iPadOS；可扩 Mac · v1
       Domain/DetectTrackExport/
-    ScreenPrivacy/                # S — macOS 先行：录屏/共享实时遮挡
+    ScreenPrivacy/                # S — macOS ONLY 独立分发 · stub
       Domain/MaskEngine/
-    FamilyVault/                  # F — 家庭文件柜（第二款后）
+    FamilyVault/                  # F — 主 iOS/iPadOS 分发；Mac 收集 · stub
       Domain/DocExpiry/
-    # RoomScan/                   # R 候补
+    Transcribe/                   # T — 主 iOS/iPadOS · stub README only
+  # R 量房 → HexAstral（风水），禁止在本仓建 RoomScan listing
   Packages/
-    BuyoutKit/                    # StoreKit 2 买断 · 家庭共享 · 水印/时长闸 · 恢复购买
-    PermissionKit/
-    AppShell/
-    EvalKit/
-    DesignKit/
+    BuyoutKit/
+    DesignKit/                    # Cite Ask 对齐 UI 地基（D′/S/F/T）
   Package.swift
   ondevice-apps.xcworkspace
+  Docs/SSOT.md                    # 仓归属短 SSOT
+  Docs/DESIGN.md                  # DesignKit token / motion SSOT
 ```
 
-**抽包时机：** 第一个 App 先落地 `BuyoutKit`；第二个 App 立项时再抽 Permission/AppShell/Design。不要空仓五包。
+**抽包时机：** `BuyoutKit` + **`DesignKit` 已在地基阶段抽出**（禁止各 App 再复制 zinc/teal）。`PermissionKit` / `AppShell` / `EvalKit` 仍等第二款业务 App 立项再抽——不要空仓五包。
 
 **同时在架仍 ≤1**：mono 里可以多 App 工程，商店只上架一个。
 
@@ -672,7 +695,8 @@ ondevice-apps/                    # 独立 git 仓库（≠ hexastral）
 
 ### 阶段 3 — S（仅当阶段 2 通过且探针 A 通过）
 
-- [ ] 抽 `PermissionKit` / `AppShell` / `EvalKit` / `DesignKit`
+- [x] 抽 `DesignKit`（地基阶段，与 Cite Ask 对齐）
+- [ ] 抽 `PermissionKit` / `AppShell` / `EvalKit`
 - [ ] S macOS 完整范围（遮挡目标见 §2.2）
 - [ ] 仍只 +1 个在架 App
 
