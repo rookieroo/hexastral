@@ -7,7 +7,7 @@
  * 调用方配置 (wrangler.jsonc):
  *   { "binding": "SVC_MAILER", "service": "hexastral-svc-mailer" }
  *
- * Callers: hexastral-api, notionflare-newsletter (ALLOWED_CALLERS).
+ * Callers: hexastral-api, notionflare-newsletter, stillmask-api (ALLOWED_CALLERS).
  * Optional `from` must be in ALLOWED_FROM_EMAILS (defaults to AWS_SES_FROM).
  */
 
@@ -29,7 +29,7 @@ interface Env {
 
 const app = new Hono<{ Bindings: Env }>()
 
-const DEFAULT_CALLERS = ['hexastral-api', 'notionflare-newsletter']
+const DEFAULT_CALLERS = ['hexastral-api', 'notionflare-newsletter', 'stillmask-api']
 
 function getSESClient(env: Env): SESv2Client {
   return new SESv2Client({

@@ -13,8 +13,8 @@
   "vars": {
     "AWS_REGION": "us-east-1",
     "AWS_SES_FROM": "noreply@hexastral.com",
-    "ALLOWED_FROM_EMAILS": "noreply@hexastral.com,noreply@notionflare.com",
-    "ALLOWED_CALLERS": "hexastral-api,notionflare-newsletter"
+    "ALLOWED_FROM_EMAILS": "noreply@hexastral.com,noreply@notionflare.com,licenses@stillmask.com",
+    "ALLOWED_CALLERS": "hexastral-api,notionflare-newsletter,stillmask-api"
   },
 
   // Secrets (via `wrangler secret put`):

@@ -103,6 +103,7 @@
       "expo-dev-client",
       "expo-notifications",
       "./plugins/withAutomaticAppearance.js",
+      "./plugins/withUiSceneLifecycle.js",
       "./plugins/withIosPodDeploymentTarget.cjs",
       "./plugins/withGoogleModularHeaders.js",
       "./plugins/withIcloudDocuments.js",
